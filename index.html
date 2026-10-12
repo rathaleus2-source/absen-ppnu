@@ -1126,7 +1126,7 @@
                 if (emptyPublic) emptyPublic.classList.add('hidden');
 
                 if (availableMonths && availableMonths.length > 0) {
-                    if (!selectedMonthKey || (selectedMonthKey !== 'all' && !availableMonths.some(m => m.key === selectedMonthKey))) {
+                    if (!selectedMonthKey || !availableMonths.some(m => m.key === selectedMonthKey)) {
                         selectedMonthKey = availableMonths[availableMonths.length - 1].key;
                     }
                 }
@@ -1302,7 +1302,7 @@
 
             availableMonths = Array.from(monthMap.values()).sort((a, b) => a.key.localeCompare(b.key));
 
-            if (!selectedMonthKey || (selectedMonthKey !== 'all' && !availableMonths.some(m => m.key === selectedMonthKey))) {
+            if (!selectedMonthKey || !availableMonths.some(m => m.key === selectedMonthKey)) {
                 selectedMonthKey = availableMonths.length > 0 ? availableMonths[availableMonths.length - 1].key : '';
             }
 
@@ -1328,7 +1328,7 @@
             }
 
             // Pastikan selectedMonthKey adalah salah satu bulan yang valid (default: bulan aktif/terakhir)
-            if (!selectedMonthKey || (selectedMonthKey !== 'all' && !availableMonths.some(m => m.key === selectedMonthKey))) {
+            if (!selectedMonthKey || !availableMonths.some(m => m.key === selectedMonthKey)) {
                 selectedMonthKey = availableMonths[availableMonths.length - 1].key;
             }
 
@@ -1343,17 +1343,6 @@
                     </button>
                 `;
             });
-
-            // Tombol Semua Bulan (jika data memiliki lebih dari 1 bulan)
-            if (availableMonths.length > 1) {
-                const isAllActive = (selectedMonthKey === 'all');
-                html += `
-                    <button onclick="ubahFilterBulan('all')" 
-                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${isAllActive ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-300'}" title="Tampilkan seluruh bulan secara berurutan">
-                        <span>Semua Bulan</span>
-                    </button>
-                `;
-            }
 
             pillsBox.innerHTML = html;
         }
