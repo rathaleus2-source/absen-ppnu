@@ -2101,13 +2101,42 @@
         }
 
         // Helper Single-Source-of-Truth untuk Resolusi Cell Asrama & MDNU
-        // Jika cell belum ada scan / bernilai strip '-', otomatis merujuk ke jadwal resmi pondok (misal: Subuh Jumat/Minggu = LIBUR)
+        // ATURAN MUTLAK PONDOK:
+        // Jika jadwal resmi suatu sesi adalah 'LIBUR' (misal: Subuh Jumat/Minggu, atau hari libur khusus),
+        // maka statusnya WAJIB DIPUTIHKAN (tetap 'LIBUR') untuk seluruh santri,
+        // meskipun di mesin ada santri yang tidak sengaja scan/absen.
         function getAsramaCell(pin, day, tgl) {
             const defItem = getAsramaDefault(pin, day, tgl);
             const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
+            
+            const ovrSubuh = (manualCellOverrides && manualCellOverrides[`${pin}__${tgl}__subuh__asrama`] !== undefined) 
+                ? manualCellOverrides[`${pin}__${tgl}__subuh__asrama`] 
+                : undefined;
+            const ovrMalam = (manualCellOverrides && manualCellOverrides[`${pin}__${tgl}__malam__asrama`] !== undefined) 
+                ? manualCellOverrides[`${pin}__${tgl}__malam__asrama`] 
+                : undefined;
+
+            let subuh = defItem.subuh;
+            if (ovrSubuh !== undefined) {
+                subuh = ovrSubuh;
+            } else if (defItem.subuh === 'LIBUR') {
+                subuh = 'LIBUR'; // Putihkan total!
+            } else {
+                subuh = (raw.subuh !== undefined && raw.subuh !== '-') ? raw.subuh : defItem.subuh;
+            }
+
+            let malam = defItem.malam;
+            if (ovrMalam !== undefined) {
+                malam = ovrMalam;
+            } else if (defItem.malam === 'LIBUR') {
+                malam = 'LIBUR'; // Putihkan total!
+            } else {
+                malam = (raw.malam !== undefined && raw.malam !== '-') ? raw.malam : defItem.malam;
+            }
+
             return {
-                subuh: (raw.subuh !== undefined && raw.subuh !== '-') ? raw.subuh : defItem.subuh,
-                malam: (raw.malam !== undefined && raw.malam !== '-') ? raw.malam : defItem.malam,
+                subuh,
+                malam,
                 subuh_time: raw.subuh_time || '',
                 malam_time: raw.malam_time || ''
             };
@@ -2116,16 +2145,29 @@
         function getMDNUCell(pin, day, tgl) {
             const defItem = getMDNUDefault(pin, day, tgl);
             const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
-            return {
-                sore: (raw.sore !== undefined && raw.sore !== '-') ? raw.sore : defItem.sore,
-                pel1: (raw.pel1 !== undefined && raw.pel1 !== '-') ? raw.pel1 : defItem.pel1,
-                pel2: (raw.pel2 !== undefined && raw.pel2 !== '-') ? raw.pel2 : defItem.pel2,
-                pel3: (raw.pel3 !== undefined && raw.pel3 !== '-') ? raw.pel3 : defItem.pel3,
+            
+            const res = {
                 sore_time: raw.sore_time || '',
                 pel1_time: raw.pel1_time || '',
                 pel2_time: raw.pel2_time || '',
                 pel3_time: raw.pel3_time || ''
             };
+
+            ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
+                const ovr = (manualCellOverrides && manualCellOverrides[`${pin}__${tgl}__${sesi}__mdnu`] !== undefined)
+                    ? manualCellOverrides[`${pin}__${tgl}__${sesi}__mdnu`]
+                    : undefined;
+
+                if (ovr !== undefined) {
+                    res[sesi] = ovr;
+                } else if (defItem[sesi] === 'LIBUR') {
+                    res[sesi] = 'LIBUR'; // Putihkan total!
+                } else {
+                    res[sesi] = (raw[sesi] !== undefined && raw[sesi] !== '-') ? raw[sesi] : defItem[sesi];
+                }
+            });
+
+            return res;
         }
 
         // Cek apakah user adalah admin (aaa, mdnu, p2mbs)
@@ -2463,7 +2505,7 @@
                 // Format Badge Tampilan Cell Standar Presisi (H, A, I, K, LIBUR, -)
         function renderBadge(val, pin, tgl, sesi, tab, time) {
             if (val === 'LIBUR') {
-                return `<span class="inline-flex items-center justify-center px-1 h-6 rounded text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 select-none">LIBUR</span>`;
+                return `<span class="inline-flex items-center justify-center px-1.5 h-6 rounded text-[10px] font-bold text-slate-400 bg-white border border-slate-200 select-none shadow-2xs">LIBUR</span>`;
             }
             if (val === 'BELUM' || val === 'NONAKTIF') {
                 return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default" title="Belum Mondok / Belum Wajib Absen">-</span>`;
