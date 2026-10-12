@@ -1144,12 +1144,8 @@
                 const emptyPublic = document.getElementById('emptyStatePublic');
                 if (emptyPublic) emptyPublic.classList.add('hidden');
 
-                if (availableMonths && availableMonths.length > 0) {
-                    if (!selectedMonthKey || !availableMonths.some(m => m.key === selectedMonthKey)) {
-                        selectedMonthKey = availableMonths[availableMonths.length - 1].key;
-                    }
-                }
-                renderPillsFilterBulan();
+                // Ekstrak bulan dinamis dari dateList agar jika ada tanggal/bulan baru langsung terdaftar
+                ekstrakBulanTersedia();
                 renderAdminPanelMalamSabtu();
                 terapkanFilter();
                 renderEvaluasi();
@@ -2104,6 +2100,34 @@
             return { sore, pel1, pel2, pel3, sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
         }
 
+        // Helper Single-Source-of-Truth untuk Resolusi Cell Asrama & MDNU
+        // Jika cell belum ada scan / bernilai strip '-', otomatis merujuk ke jadwal resmi pondok (misal: Subuh Jumat/Minggu = LIBUR)
+        function getAsramaCell(pin, day, tgl) {
+            const defItem = getAsramaDefault(pin, day, tgl);
+            const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
+            return {
+                subuh: (raw.subuh !== undefined && raw.subuh !== '-') ? raw.subuh : defItem.subuh,
+                malam: (raw.malam !== undefined && raw.malam !== '-') ? raw.malam : defItem.malam,
+                subuh_time: raw.subuh_time || '',
+                malam_time: raw.malam_time || ''
+            };
+        }
+
+        function getMDNUCell(pin, day, tgl) {
+            const defItem = getMDNUDefault(pin, day, tgl);
+            const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
+            return {
+                sore: (raw.sore !== undefined && raw.sore !== '-') ? raw.sore : defItem.sore,
+                pel1: (raw.pel1 !== undefined && raw.pel1 !== '-') ? raw.pel1 : defItem.pel1,
+                pel2: (raw.pel2 !== undefined && raw.pel2 !== '-') ? raw.pel2 : defItem.pel2,
+                pel3: (raw.pel3 !== undefined && raw.pel3 !== '-') ? raw.pel3 : defItem.pel3,
+                sore_time: raw.sore_time || '',
+                pel1_time: raw.pel1_time || '',
+                pel2_time: raw.pel2_time || '',
+                pel3_time: raw.pel3_time || ''
+            };
+        }
+
         // Cek apakah user adalah admin (aaa, mdnu, p2mbs)
         function isAdminUser(pin, nama) {
             const p = String(pin || '').toLowerCase().trim();
@@ -2169,61 +2193,57 @@
             datesToUse.forEach(d => {
                 const tgl = d.displayDate;
                 if (tab === 'asrama') {
-                    const item = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : null;
-                    if (item) {
-                        // Sesi Subuh
-                        if (item.subuh !== 'LIBUR' && item.subuh !== 'BELUM' && item.subuh !== 'NONAKTIF') {
-                            if (item.subuh === 'K' || item.subuh === 'KKN') {
-                                cellKkn++; // Dispensasi KKN: tidak dihitung Alpha, tidak menambah beban JP
+                    const item = getAsramaCell(pin, d.dayIndex, tgl);
+                    // Sesi Subuh
+                    if (item.subuh !== 'LIBUR' && item.subuh !== 'BELUM' && item.subuh !== 'NONAKTIF') {
+                        if (item.subuh === 'K' || item.subuh === 'KKN') {
+                            cellKkn++; // Dispensasi KKN: tidak dihitung Alpha, tidak menambah beban JP
+                        } else {
+                            jp++;
+                            if (item.subuh === 'IZIN' || item.subuh === 'I') {
+                                cellIzin++;
+                            } else if (item.subuh === 'A' || item.subuh === '-' || !item.subuh) {
+                                cellAlpha++;
                             } else {
-                                jp++;
-                                if (item.subuh === 'IZIN' || item.subuh === 'I') {
-                                    cellIzin++;
-                                } else if (item.subuh === 'A' || item.subuh === '-' || !item.subuh) {
-                                    cellAlpha++;
-                                } else {
-                                    h++;
-                                }
+                                h++;
                             }
                         }
-                        // Sesi Malam
-                        if (item.malam !== 'LIBUR' && item.malam !== 'BELUM' && item.malam !== 'NONAKTIF') {
-                            if (item.malam === 'K' || item.malam === 'KKN') {
-                                cellKkn++; // Dispensasi KKN
+                    }
+                    // Sesi Malam
+                    if (item.malam !== 'LIBUR' && item.malam !== 'BELUM' && item.malam !== 'NONAKTIF') {
+                        if (item.malam === 'K' || item.malam === 'KKN') {
+                            cellKkn++; // Dispensasi KKN
+                        } else {
+                            jp++;
+                            if (item.malam === 'IZIN' || item.malam === 'I') {
+                                cellIzin++;
+                            } else if (item.malam === 'A' || item.malam === '-' || !item.malam) {
+                                cellAlpha++;
                             } else {
-                                jp++;
-                                if (item.malam === 'IZIN' || item.malam === 'I') {
-                                    cellIzin++;
-                                } else if (item.malam === 'A' || item.malam === '-' || !item.malam) {
-                                    cellAlpha++;
-                                } else {
-                                    h++;
-                                }
+                                h++;
                             }
                         }
                     }
                 } else {
                     // Sesi MDNU: sore, pel1, pel2, pel3
-                    const item = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : null;
-                    if (item) {
-                        ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
-                            const val = item[sesi];
-                            if (val !== 'LIBUR' && val !== 'BELUM' && val !== 'NONAKTIF') {
-                                if (val === 'K' || val === 'KKN') {
-                                    cellKkn++; // Dispensasi KKN
+                    const item = getMDNUCell(pin, d.dayIndex, tgl);
+                    ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
+                        const val = item[sesi];
+                        if (val !== 'LIBUR' && val !== 'BELUM' && val !== 'NONAKTIF') {
+                            if (val === 'K' || val === 'KKN') {
+                                cellKkn++; // Dispensasi KKN
+                            } else {
+                                jp++;
+                                if (val === 'IZIN' || val === 'I') {
+                                    cellIzin++;
+                                } else if (val === 'A' || val === '-' || !val) {
+                                    cellAlpha++;
                                 } else {
-                                    jp++;
-                                    if (val === 'IZIN' || val === 'I') {
-                                        cellIzin++;
-                                    } else if (val === 'A' || val === '-' || !val) {
-                                        cellAlpha++;
-                                    } else {
-                                        h++;
-                                    }
+                                    h++;
                                 }
                             }
-                        });
-                    }
+                        }
+                    });
                 }
             });
 
@@ -2815,8 +2835,7 @@
                     if (hideEmptyLiburColumns) {
                         sessList = sessList.filter(sess => {
                             return activePinsAsr.some(pin => {
-                                const row = asramaMatrix[pin] && asramaMatrix[pin][d.displayDate];
-                                if (!row) return false;
+                                const row = getAsramaCell(pin, d.dayIndex, d.displayDate);
                                 const v = row[sess];
                                 return v === 'H' || v === 'A' || v === 'I' || v === 'S';
                             });
@@ -2934,9 +2953,7 @@
                         const sessList = activeDateSessionsMapAsr.get(d.displayDate);
                         if (!sessList || sessList.length === 0) return;
 
-                        const item = (asramaMatrix[s.pin] && asramaMatrix[s.pin][d.displayDate])
-                            ? asramaMatrix[s.pin][d.displayDate]
-                            : { subuh: '-', malam: '-' };
+                        const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
 
                         sessList.forEach(sess => {
                             tbodyRows += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'asrama', item[sess + '_time'])}</td>`;
@@ -3019,8 +3036,7 @@
                     if (hideEmptyLiburColumns) {
                         sessList = sessList.filter(sess => {
                             return activePinsMDN.some(pin => {
-                                const row = mdnuMatrix[pin] && mdnuMatrix[pin][d.displayDate];
-                                if (!row) return false;
+                                const row = getMDNUCell(pin, d.dayIndex, d.displayDate);
                                 const v = row[sess];
                                 return v === 'H' || v === 'A' || v === 'I' || v === 'S';
                             });
@@ -3142,9 +3158,7 @@
                         const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
                         if (!sessList || sessList.length === 0) return;
 
-                        const item = (mdnuMatrix[s.pin] && mdnuMatrix[s.pin][d.displayDate])
-                            ? mdnuMatrix[s.pin][d.displayDate]
-                            : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
 
                         sessList.forEach(sess => {
                             tbodyRows += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'mdnu', item[sess + '_time'])}</td>`;
@@ -3313,9 +3327,7 @@
                         <td class="col-pct font-mono border-r-thick ${cellPct}">${stat.persen}%</td>`;
 
                     dateList.forEach(d => {
-                        const item = (asramaMatrix[s.pin] && asramaMatrix[s.pin][d.displayDate])
-                            ? asramaMatrix[s.pin][d.displayDate]
-                            : { subuh: '-', malam: '-' };
+                        const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
                         tbody += `
                             <td class="col-sesi">${renderBadge(item.subuh, s.pin, d.displayDate, 'subuh', 'asrama', item.subuh_time)}</td>
                             <td class="col-sesi">${renderBadge(item.malam, s.pin, d.displayDate, 'malam', 'asrama', item.malam_time)}</td>
@@ -3399,9 +3411,7 @@
                         <td class="col-pct font-mono border-r-thick ${cellPct}">${stat.persen}%</td>`;
 
                     dateList.forEach(d => {
-                        const item = (mdnuMatrix[s.pin] && mdnuMatrix[s.pin][d.displayDate])
-                            ? mdnuMatrix[s.pin][d.displayDate]
-                            : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
                         tbody += `
                             <td class="col-sesi">${renderBadge(item.sore, s.pin, d.displayDate, 'sore', 'mdnu', item.sore_time)}</td>
                             <td class="col-sesi">${renderBadge(item.pel1, s.pin, d.displayDate, 'pel1', 'mdnu', item.pel1_time)}</td>
@@ -3539,9 +3549,7 @@
                     const stat = hitungStatistikSantri(s.pin, 'asrama');
                     tsv += `${s.pin}\t${s.nama}\t${stat.h}\t${stat.a}\t${stat.i}\t${stat.jp}\t${stat.persen}%`;
                     dateList.forEach(d => {
-                        const item = (asramaMatrix[s.pin] && asramaMatrix[s.pin][d.displayDate])
-                            ? asramaMatrix[s.pin][d.displayDate]
-                            : { subuh: '-', malam: '-' };
+                        const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
                         tsv += `\t${item.subuh}\t${item.malam}`;
                     });
                     tsv += "\n";
@@ -3567,9 +3575,7 @@
                     const stat = hitungStatistikSantri(s.pin, 'mdnu');
                     tsv += `${s.pin}\t${s.nama}\t${stat.h}\t${stat.a}\t${stat.i}\t${stat.jp}\t${stat.persen}%`;
                     dateList.forEach(d => {
-                        const item = (mdnuMatrix[s.pin] && mdnuMatrix[s.pin][d.displayDate])
-                            ? mdnuMatrix[s.pin][d.displayDate]
-                            : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
                         tsv += `\t${item.sore}\t${item.pel1}\t${item.pel2}\t${item.pel3}`;
                     });
                     tsv += "\n";
@@ -3620,9 +3626,7 @@
                     const stat = hitungStatistikSantri(s.pin, 'asrama', datesInMonth);
                     const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
                     datesInMonth.forEach(d => {
-                        const item = (asramaMatrix[s.pin] && asramaMatrix[s.pin][d.displayDate])
-                            ? asramaMatrix[s.pin][d.displayDate]
-                            : { subuh: '-', malam: '-' };
+                        const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
                         row.push(item.subuh, item.malam);
                     });
                     aoaAsrama.push(row);
@@ -3655,9 +3659,7 @@
                     const stat = hitungStatistikSantri(s.pin, 'mdnu', datesInMonth);
                     const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
                     datesInMonth.forEach(d => {
-                        const item = (mdnuMatrix[s.pin] && mdnuMatrix[s.pin][d.displayDate])
-                            ? mdnuMatrix[s.pin][d.displayDate]
-                            : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
                         row.push(item.sore, item.pel1, item.pel2, item.pel3);
                     });
                     aoaMDNU.push(row);
@@ -3788,7 +3790,7 @@
                 dateList.forEach(d => {
                     const tgl = d.displayDate;
                     if (isAsrama) {
-                        const cell = asramaMatrix[pin] && asramaMatrix[pin][tgl] ? asramaMatrix[pin][tgl] : { subuh: '-', malam: '-' };
+                        const cell = getAsramaCell(pin, d.dayIndex, tgl);
                         if (cell.subuh === 'H') h++; else if (cell.subuh === 'A') a++; else if (cell.subuh === 'I') i++;
                         if (cell.subuh !== 'LIBUR' && cell.subuh !== '-') jp++;
 
@@ -3797,7 +3799,7 @@
 
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam });
                     } else if (isMDNU) {
-                        const cell = mdnuMatrix[pin] && mdnuMatrix[pin][tgl] ? mdnuMatrix[pin][tgl] : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                        const cell = getMDNUCell(pin, d.dayIndex, tgl);
                         ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
                             const val = cell[sesi];
                             if (val === 'H') h++; else if (val === 'A') a++; else if (val === 'I') i++;
@@ -3805,8 +3807,8 @@
                         });
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3 });
                     } else {
-                        const cAsr = asramaMatrix[pin] && asramaMatrix[pin][tgl] ? asramaMatrix[pin][tgl] : { subuh: '-', malam: '-' };
-                        const cMdn = mdnuMatrix[pin] && mdnuMatrix[pin][tgl] ? mdnuMatrix[pin][tgl] : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                        const cAsr = getAsramaCell(pin, d.dayIndex, tgl);
+                        const cMdn = getMDNUCell(pin, d.dayIndex, tgl);
                         [cAsr.subuh, cAsr.malam, cMdn.sore, cMdn.pel1, cMdn.pel2, cMdn.pel3].forEach(v => {
                             if (v === 'H') h++; else if (v === 'A') a++; else if (v === 'I') i++;
                             if (v !== 'LIBUR' && v !== '-') jp++;
