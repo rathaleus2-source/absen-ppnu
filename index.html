@@ -1137,10 +1137,8 @@
 
                 const countAktifAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]).length;
                 const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
-                const hAsr = Object.keys(hiddenSantriAsrama).length;
-                const hMdn = Object.keys(hiddenSantriMDNU).length;
-                document.getElementById('badgeCountAsrama').innerText = `${countAktifAsr} Santri` + (hAsr > 0 ? ` (${hAsr} laju/sembunyi)` : '');
-                document.getElementById('badgeCountMDNU').innerText = `${countAktifMdn} Santri` + (hMdn > 0 ? ` (${hMdn} sembunyi)` : '');
+                document.getElementById('badgeCountAsrama').innerText = `${countAktifAsr} Santri`;
+                document.getElementById('badgeCountMDNU').innerText = `${countAktifMdn} Santri`;
                 const bRekap = document.getElementById('badgeCountRekap');
                 if (bRekap) bRekap.innerText = `${dateList.length} Hari`;
 
@@ -1745,11 +1743,11 @@
                 const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
                 const bAsr = document.getElementById('badgeCountAsrama');
                 if (bAsr) {
-                    bAsr.innerText = `${countAktifAsr} Santri` + (countHiddenAsr > 0 ? ` (${countHiddenAsr} disembunyikan)` : '');
+                    bAsr.innerText = `${countAktifAsr} Santri`;
                 }
                 const bMdn = document.getElementById('badgeCountMDNU');
                 if (bMdn) {
-                    bMdn.innerText = `${countAktifMdn} Santri` + (countHiddenMdn > 0 ? ` (${countHiddenMdn} disembunyikan)` : '');
+                    bMdn.innerText = `${countAktifMdn} Santri`;
                 }
             }
         }
@@ -2800,10 +2798,8 @@
             document.getElementById('statTotalDays').innerText = dateList.length.toLocaleString('id-ID');
             const countAktifAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]).length;
             const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
-            const hAsr = Object.keys(hiddenSantriAsrama).length;
-            const hMdn = Object.keys(hiddenSantriMDNU).length;
-            document.getElementById('badgeCountAsrama').innerText = `${countAktifAsr} Santri` + (hAsr > 0 ? ` (${hAsr} laju/sembunyi)` : '');
-            document.getElementById('badgeCountMDNU').innerText = `${countAktifMdn} Santri` + (hMdn > 0 ? ` (${hMdn} sembunyi)` : '');
+            document.getElementById('badgeCountAsrama').innerText = `${countAktifAsr} Santri`;
+            document.getElementById('badgeCountMDNU').innerText = `${countAktifMdn} Santri`;
             updateHiddenBadges();
             updateLiburBadges();
 
