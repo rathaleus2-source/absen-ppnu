@@ -699,6 +699,15 @@
                             <span id="badgeLiburCountTotal"
                                 class="hidden bg-amber-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold">0</span>
                         </button>
+                        <button id="btnToggleHideLibur" onclick="toggleHideEmptyLibur()"
+                            class="px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
+                            title="Sembunyikan atau tampilkan kolom libur yang 100% kosong tanpa absensi">
+                            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                            </svg>
+                            <span id="labelToggleHideLibur">Kolom Libur: Disembunyikan</span>
+                        </button>
                         <button onclick="bukaModalHapusData()"
                             class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
                             title="Hapus data absensi per tanggal, per bulan, atau reset semua data">
@@ -1270,6 +1279,31 @@
         // Fitur: Hari Libur Khusus (Hari kosong / acara spesial) terpisah per Asrama & MDNU
         let specialLiburAsrama = {}; // Format: { [tglKey]: true }
         let specialLiburMDNU = {};   // Format: { [tglKey]: true }
+        let hideEmptyLiburColumns = localStorage.getItem('ppnu_hide_empty_libur') !== 'false'; // Default: true (aktif di Mode Admin)
+
+        function toggleHideEmptyLibur() {
+            hideEmptyLiburColumns = !hideEmptyLiburColumns;
+            try { localStorage.setItem('ppnu_hide_empty_libur', hideEmptyLiburColumns ? 'true' : 'false'); } catch (e) {}
+            updateToggleHideLiburUI();
+            terapkanFilter();
+            tampilkanToast(hideEmptyLiburColumns 
+                ? "Kolom libur kosong (tanpa absensi) sekarang disembunyikan." 
+                : "Seluruh kolom libur sekarang ditampilkan penuh.");
+        }
+
+        function updateToggleHideLiburUI() {
+            const btn = document.getElementById('btnToggleHideLibur');
+            const lbl = document.getElementById('labelToggleHideLibur');
+            if (!btn || !lbl) return;
+
+            if (hideEmptyLiburColumns) {
+                btn.className = "px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
+                lbl.innerText = "Kolom Libur: Disembunyikan";
+            } else {
+                btn.className = "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
+                lbl.innerText = "Kolom Libur: Tampil Penuh";
+            }
+        }
         let modalSantriActiveTab = 'asrama';
         let modalSantriFilterStatus = 'all'; // 'all', 'hidden', 'active' // Format key: `${pin}__${tgl}__${sesi}__${tab}` -> 'H' / 'A' / 'I'
 
@@ -2351,6 +2385,7 @@
             });
 
             // 5. Perbarui render tabel & header agar tombol/interaksi menyesuaikan hak akses
+            updateToggleHideLiburUI();
             if (dateList.length > 0) {
 
                 terapkanFilter();
@@ -2754,9 +2789,32 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Jam Pelajaran / Total Sesi">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
+                // Peta Sesi Aktif per Tanggal (di Mode Admin: sembunyikan kolom jika 100% libur tanpa absensi)
+                const activePinsAsr = activeSantriArr.map(s => s.pin);
+                const activeDateSessionsMapAsr = new Map();
                 datesInMonth.forEach(d => {
+                    let sessList = ['subuh', 'malam'];
+                    if (isModeAdmin && hideEmptyLiburColumns) {
+                        sessList = sessList.filter(sess => {
+                            return activePinsAsr.some(pin => {
+                                const row = asramaMatrix[pin] && asramaMatrix[pin][d.displayDate];
+                                if (!row) return false;
+                                const v = row[sess];
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S';
+                            });
+                        });
+                    }
+                    if (sessList.length > 0) {
+                        activeDateSessionsMapAsr.set(d.displayDate, sessList);
+                    }
+                });
+
+                datesInMonth.forEach(d => {
+                    const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                    if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
+
                     let malamSabtuSelectorAsrama = '';
-                    if (d.dayIndex === 5) {
+                    if (d.dayIndex === 5 && sessList.includes('malam')) {
                         const curVal = getMalamSabtuSetting(d.displayDate);
                         if (isModeAdmin) {
                             malamSabtuSelectorAsrama = `
@@ -2797,7 +2855,7 @@
 
                     const bgHeaderAsr = specialLiburAsrama[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-emerald-100");
 
-                    h1Asrama += `<th colspan="2" class="${bgHeaderAsr} py-1.5 px-1">
+                    h1Asrama += `<th colspan="${sessList.length}" class="${bgHeaderAsr} py-1.5 px-1">
                         <span class="block text-xs font-black text-emerald-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-emerald-800 font-semibold">${d.displayDate}</span>
                         ${malamSabtuSelectorAsrama}
@@ -2810,10 +2868,13 @@
                         malamLabel = curVal === 'pel1' ? "Malam (Jam 1)" : "Malam (Jam 2)";
                     }
 
-                    h2Asrama += `
-                        <th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>
-                        <th class="col-sesi bg-emerald-50 text-emerald-950">${malamLabel}</th>
-                    `;
+                    sessList.forEach(sess => {
+                        if (sess === 'subuh') {
+                            h2Asrama += `<th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>`;
+                        } else {
+                            h2Asrama += `<th class="col-sesi bg-emerald-50 text-emerald-950">${malamLabel}</th>`;
+                        }
+                    });
                 });
 
                 h1Asrama += `</tr>`;
@@ -2852,14 +2913,16 @@
                         <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${stat.persen}%</td>`;
 
                     datesInMonth.forEach(d => {
+                        const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
                         const item = (asramaMatrix[s.pin] && asramaMatrix[s.pin][d.displayDate])
                             ? asramaMatrix[s.pin][d.displayDate]
                             : { subuh: '-', malam: '-' };
 
-                        tbodyRows += `
-                            <td class="col-sesi">${renderBadge(item.subuh, s.pin, d.displayDate, 'subuh', 'asrama', item.subuh_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.malam, s.pin, d.displayDate, 'malam', 'asrama', item.malam_time)}</td>
-                        `;
+                        sessList.forEach(sess => {
+                            tbodyRows += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'asrama', item[sess + '_time'])}</td>`;
+                        });
                     });
 
                     tbodyRows += `</tr>`;
@@ -2930,9 +2993,32 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Jam Pelajaran / Total Sesi">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
+                // Peta Sesi Aktif per Tanggal (di Mode Admin: sembunyikan kolom jika 100% libur tanpa absensi)
+                const activePinsMDN = activeSantriArr.map(s => s.pin);
+                const activeDateSessionsMapMDNU = new Map();
                 datesInMonth.forEach(d => {
+                    let sessList = ['sore', 'pel1', 'pel2', 'pel3'];
+                    if (isModeAdmin && hideEmptyLiburColumns) {
+                        sessList = sessList.filter(sess => {
+                            return activePinsMDN.some(pin => {
+                                const row = mdnuMatrix[pin] && mdnuMatrix[pin][d.displayDate];
+                                if (!row) return false;
+                                const v = row[sess];
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S';
+                            });
+                        });
+                    }
+                    if (sessList.length > 0) {
+                        activeDateSessionsMapMDNU.set(d.displayDate, sessList);
+                    }
+                });
+
+                datesInMonth.forEach(d => {
+                    const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                    if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
+
                     let malamSabtuSelectorMDNU = '';
-                    if (d.dayIndex === 5) {
+                    if (d.dayIndex === 5 && (sessList.includes('pel1') || sessList.includes('pel2'))) {
                         const curVal = getMalamSabtuSetting(d.displayDate);
                         if (isModeAdmin) {
                             malamSabtuSelectorMDNU = `
@@ -2973,7 +3059,7 @@
 
                     const bgHeaderMdn = specialLiburMDNU[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-indigo-100");
 
-                    h1MDNU += `<th colspan="4" class="${bgHeaderMdn} py-1.5 px-1">
+                    h1MDNU += `<th colspan="${sessList.length}" class="${bgHeaderMdn} py-1.5 px-1">
                         <span class="block text-xs font-black text-indigo-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-indigo-800 font-semibold">${d.displayDate}</span>
                         ${malamSabtuSelectorMDNU}
@@ -2991,12 +3077,12 @@
                         }
                     }
 
-                    h2MDNU += `
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">${p1Label}</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">${p2Label}</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>
-                    `;
+                    sessList.forEach(sess => {
+                        if (sess === 'sore') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>`;
+                        else if (sess === 'pel1') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p1Label}</th>`;
+                        else if (sess === 'pel2') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p2Label}</th>`;
+                        else if (sess === 'pel3') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>`;
+                    });
                 });
 
                 h1MDNU += `</tr>`;
@@ -3035,16 +3121,16 @@
                         <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${stat.persen}%</td>`;
 
                     datesInMonth.forEach(d => {
+                        const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
                         const item = (mdnuMatrix[s.pin] && mdnuMatrix[s.pin][d.displayDate])
                             ? mdnuMatrix[s.pin][d.displayDate]
                             : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
 
-                        tbodyRows += `
-                            <td class="col-sesi">${renderBadge(item.sore, s.pin, d.displayDate, 'sore', 'mdnu', item.sore_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel1, s.pin, d.displayDate, 'pel1', 'mdnu', item.pel1_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel2, s.pin, d.displayDate, 'pel2', 'mdnu', item.pel2_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel3, s.pin, d.displayDate, 'pel3', 'mdnu', item.pel3_time)}</td>
-                        `;
+                        sessList.forEach(sess => {
+                            tbodyRows += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'mdnu', item[sess + '_time'])}</td>`;
+                        });
                     });
 
                     tbodyRows += `</tr>`;
