@@ -1109,6 +1109,10 @@
             specialLiburAsrama = data.specialLiburAsrama || {};
             specialLiburMDNU = data.specialLiburMDNU || {};
             manualIzinData = data.manualIzinData || {};
+            if (data.hideEmptyLiburColumns !== undefined) {
+                hideEmptyLiburColumns = (data.hideEmptyLiburColumns !== false);
+            }
+            updateToggleHideLiburUI();
 
             if (santriList.length > 0 && dateList.length > 0) {
                 document.getElementById('statTotalSantri').innerText = santriList.length;
@@ -1173,7 +1177,8 @@
                     hiddenSantriMDNU: hiddenSantriMDNU,
                     specialLiburAsrama: specialLiburAsrama,
                     specialLiburMDNU: specialLiburMDNU,
-                    manualIzinData: manualIzinData
+                    manualIzinData: manualIzinData,
+                    hideEmptyLiburColumns: hideEmptyLiburColumns
                 };
                 localStorage.setItem('ppnu_absen_cache', JSON.stringify(cacheData));
             } catch (e) {
@@ -1229,7 +1234,8 @@
                     hiddenSantriMDNU: hiddenSantriMDNU,
                     specialLiburAsrama: specialLiburAsrama,
                     specialLiburMDNU: specialLiburMDNU,
-                    manualIzinData: manualIzinData
+                    manualIzinData: manualIzinData,
+                    hideEmptyLiburColumns: hideEmptyLiburColumns
                 };
 
                 fbDb.ref('absensi_ppnu').set(payload)
@@ -1279,16 +1285,22 @@
         // Fitur: Hari Libur Khusus (Hari kosong / acara spesial) terpisah per Asrama & MDNU
         let specialLiburAsrama = {}; // Format: { [tglKey]: true }
         let specialLiburMDNU = {};   // Format: { [tglKey]: true }
-        let hideEmptyLiburColumns = localStorage.getItem('ppnu_hide_empty_libur') !== 'false'; // Default: true (aktif di Mode Admin)
+        let hideEmptyLiburColumns = localStorage.getItem('ppnu_hide_empty_libur') !== 'false'; // Default: true
 
         function toggleHideEmptyLibur() {
+            if (!isAdmin) {
+                bukaModalLoginAdmin();
+                return;
+            }
             hideEmptyLiburColumns = !hideEmptyLiburColumns;
             try { localStorage.setItem('ppnu_hide_empty_libur', hideEmptyLiburColumns ? 'true' : 'false'); } catch (e) {}
             updateToggleHideLiburUI();
             terapkanFilter();
+            simpanKeLocalStorage();
+            simpanKeCloud();
             tampilkanToast(hideEmptyLiburColumns 
-                ? "Kolom libur kosong (tanpa absensi) sekarang disembunyikan." 
-                : "Seluruh kolom libur sekarang ditampilkan penuh.");
+                ? "Kolom libur kosong disembunyikan (berlaku untuk Publik & Admin)." 
+                : "Seluruh kolom libur ditampilkan penuh (berlaku untuk Publik & Admin).");
         }
 
         function updateToggleHideLiburUI() {
@@ -2789,12 +2801,12 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Jam Pelajaran / Total Sesi">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
-                // Peta Sesi Aktif per Tanggal (di Mode Admin: sembunyikan kolom jika 100% libur tanpa absensi)
+                // Peta Sesi Aktif per Tanggal (sembunyikan kolom jika 100% libur tanpa absensi)
                 const activePinsAsr = activeSantriArr.map(s => s.pin);
                 const activeDateSessionsMapAsr = new Map();
                 datesInMonth.forEach(d => {
                     let sessList = ['subuh', 'malam'];
-                    if (isModeAdmin && hideEmptyLiburColumns) {
+                    if (hideEmptyLiburColumns) {
                         sessList = sessList.filter(sess => {
                             return activePinsAsr.some(pin => {
                                 const row = asramaMatrix[pin] && asramaMatrix[pin][d.displayDate];
@@ -2993,12 +3005,12 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Jam Pelajaran / Total Sesi">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
-                // Peta Sesi Aktif per Tanggal (di Mode Admin: sembunyikan kolom jika 100% libur tanpa absensi)
+                // Peta Sesi Aktif per Tanggal (sembunyikan kolom jika 100% libur tanpa absensi)
                 const activePinsMDN = activeSantriArr.map(s => s.pin);
                 const activeDateSessionsMapMDNU = new Map();
                 datesInMonth.forEach(d => {
                     let sessList = ['sore', 'pel1', 'pel2', 'pel3'];
-                    if (isModeAdmin && hideEmptyLiburColumns) {
+                    if (hideEmptyLiburColumns) {
                         sessList = sessList.filter(sess => {
                             return activePinsMDN.some(pin => {
                                 const row = mdnuMatrix[pin] && mdnuMatrix[pin][d.displayDate];
