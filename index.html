@@ -598,20 +598,17 @@
                                 </span>
                             </div>
                             <p class="text-xs text-amber-800 font-medium mt-0.5">
-                                Jam khusus Asrama (<strong>Jam 1: s.d 20:00</strong> atau <strong>Jam 2: s.d
-                                    21:00</strong>) dapat ditentukan berbeda untuk <strong>setiap malam sabtu</strong>
-                                menyesuaikan kehadiran ustadz. Pilihan juga tersedia langsung di header tabel di atas
-                                kolom setiap hari Sabtu / Malam Sabtu.
+                                Jam khusus Asrama (<strong>Jam 1</strong>, <strong>Jam 2</strong>, atau <strong>Jam 3</strong>) dapat ditentukan berbeda untuk <strong>setiap malam sabtu</strong> menyesuaikan kehadiran ustadz. Klik tab tanggal Jumat malam di bawah, lalu pilih alokasi jam yang diinginkan.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Kartu Pilihan Per Tanggal Malam Sabtu (Diisi dinamis oleh JavaScript) -->
-                <div id="panelListMalamSabtu" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                <!-- Tab Tanggal & 3 Opsi Pilihan Jam Malam Sabtu (Diisi dinamis oleh JavaScript) -->
+                <div id="panelListMalamSabtu" class="space-y-3">
                     <div
-                        class="bg-white/80 border border-amber-200 rounded-xl p-3 text-center text-xs text-amber-800 italic col-span-full">
-                        Unggah file Excel atau klik "Uji Demo Data" untuk menampilkan daftar tanggal Malam Sabtu.
+                        class="bg-white/80 border border-amber-200 rounded-xl p-3 text-center text-xs text-amber-800 italic">
+                        Memuat daftar tanggal Malam Sabtu...
                     </div>
                 </div>
 
@@ -712,6 +709,17 @@
                                     d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
                             </svg>
                             <span id="labelToggleHideLibur">Kolom Libur: Disembunyikan</span>
+                        </button>
+                        <button onclick="bukaModalFreezeData()"
+                            class="px-3.5 py-2 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-900 border border-cyan-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
+                            title="Kunci data absensi masa lalu agar tidak tertimpa mesin">
+                            <svg class="w-4 h-4 text-cyan-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            <span>Kunci Data (Freeze)</span>
+                            <span id="badgeFreezeStatus"
+                                class="bg-cyan-200 text-cyan-950 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold">s.d 30 Sep</span>
                         </button>
                         <button onclick="bukaModalHapusData()"
                             class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
@@ -1121,6 +1129,8 @@
             specialLiburAsrama = data.specialLiburAsrama || {};
             specialLiburMDNU = data.specialLiburMDNU || {};
             manualIzinData = data.manualIzinData || {};
+            frozenUntilDate = data.frozenUntilDate || '2026-09-30';
+            updateFreezeUI();
             if (data.hideEmptyLiburColumns !== undefined) {
                 hideEmptyLiburColumns = (data.hideEmptyLiburColumns === true);
             } else {
@@ -1187,7 +1197,8 @@
                     specialLiburAsrama: specialLiburAsrama,
                     specialLiburMDNU: specialLiburMDNU,
                     manualIzinData: manualIzinData,
-                    hideEmptyLiburColumns: hideEmptyLiburColumns
+                    hideEmptyLiburColumns: hideEmptyLiburColumns,
+                    frozenUntilDate: frozenUntilDate
                 };
                 localStorage.setItem('ppnu_absen_cache', JSON.stringify(cacheData));
             } catch (e) {
@@ -1244,7 +1255,8 @@
                     specialLiburAsrama: specialLiburAsrama,
                     specialLiburMDNU: specialLiburMDNU,
                     manualIzinData: manualIzinData,
-                    hideEmptyLiburColumns: hideEmptyLiburColumns
+                    hideEmptyLiburColumns: hideEmptyLiburColumns,
+                    frozenUntilDate: frozenUntilDate
                 };
 
                 fbDb.ref('absensi_ppnu').set(payload)
@@ -1325,8 +1337,67 @@
                 lbl.innerText = "Kolom Libur: Tampil Penuh";
             }
         }
+
+        // ========================================================
+        // FITUR KUNCI DATA ABSENSI / FREEZE (ADMIN ONLY)
+        // ========================================================
+        let frozenUntilDate = '2026-09-30'; // Batas tanggal masa lalu yang digembok
+
+        function updateFreezeUI() {
+            const badge = document.getElementById('badgeFreezeStatus');
+            if (badge) {
+                if (!frozenUntilDate) {
+                    badge.innerText = 'Bebas';
+                    badge.className = 'bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold';
+                } else {
+                    const parts = frozenUntilDate.split('-');
+                    const mName = parts.length >= 2 ? ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][parseInt(parts[1], 10)-1] : '';
+                    badge.innerText = `s.d ${parseInt(parts[2], 10)} ${mName}`;
+                    badge.className = 'bg-cyan-200 text-cyan-950 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold';
+                }
+            }
+        }
+
+        function bukaModalFreezeData() {
+            if (!isAdmin) {
+                bukaModalLoginAdmin();
+                return;
+            }
+            const inp = document.getElementById('inputFreezeUntilDate');
+            if (inp) inp.value = frozenUntilDate || '';
+            const statusTxt = document.getElementById('freezeCurrentStatusText');
+            if (statusTxt) {
+                if (frozenUntilDate) {
+                    statusTxt.innerHTML = `🛡️ Data rekaman absensi s.d <strong>${frozenUntilDate}</strong> terkunci aman dari perubahan mesin.`;
+                } else {
+                    statusTxt.innerHTML = `🔓 Semua data terbuka (tidak ada batas gembok).`;
+                }
+            }
+            document.getElementById('modalFreezeData').classList.remove('hidden');
+        }
+
+        function tutupModalFreezeData() {
+            document.getElementById('modalFreezeData').classList.add('hidden');
+        }
+
+        function setPresetFreeze(tgl) {
+            const inp = document.getElementById('inputFreezeUntilDate');
+            if (inp) inp.value = tgl || '';
+        }
+
+        function simpanFreezeData() {
+            const inp = document.getElementById('inputFreezeUntilDate');
+            frozenUntilDate = inp ? inp.value.trim() : '';
+            updateFreezeUI();
+            tutupModalFreezeData();
+            if (isAdmin) {
+                simpanKeCloud();
+                tampilkanToast(`✅ Pengaturan Kunci Data tersimpan: ${frozenUntilDate ? 's.d ' + frozenUntilDate : 'Terbuka Semua'}`);
+            }
+        }
+
         let modalSantriActiveTab = 'asrama';
-        let modalSantriFilterStatus = 'all'; // 'all', 'hidden', 'active' // Format key: `${pin}__${tgl}__${sesi}__${tab}` -> 'H' / 'A' / 'I'
+        let modalSantriFilterStatus = 'all';
 
         // Ambil setting malam sabtu untuk tanggal tertentu (default 'pel1')
         function getMalamSabtuSetting(tglKey) {
@@ -1426,55 +1497,135 @@
             if (isAdmin) simpanKeCloud();
         }
 
-        // Render Kartu Pengaturan Malam Sabtu pada Panel Admin
+        let activeMalamSabtuDate = '';
+
+        function setTabMalamSabtuAktif(tgl) {
+            activeMalamSabtuDate = tgl;
+            renderAdminPanelMalamSabtu();
+        }
+
+        // Render Pengaturan Malam Sabtu pada Panel Admin (Model Tab Tanggal + 3 Opsi Jam)
         function renderAdminPanelMalamSabtu() {
             const container = document.getElementById('panelListMalamSabtu');
             if (!container) return;
 
             const jumatDates = dateList.filter(d => d.dayIndex === 5);
             if (jumatDates.length === 0) {
-                container.innerHTML = `<div class="bg-white/80 border border-amber-200 rounded-xl p-3 text-center text-xs text-amber-800 italic col-span-full">Tidak ada tanggal Malam Sabtu (Jumat) pada file data yang aktif saat ini.</div>`;
+                container.innerHTML = `<div class="bg-white/80 border border-amber-200 rounded-xl p-3 text-center text-xs text-amber-800 italic">Tidak ada tanggal Malam Sabtu (Jumat) pada data aktif saat ini.</div>`;
                 return;
             }
 
-            let cardsHtml = '';
-            jumatDates.forEach((d, idx) => {
+            if (!activeMalamSabtuDate || !jumatDates.some(d => d.displayDate === activeMalamSabtuDate)) {
+                activeMalamSabtuDate = jumatDates[jumatDates.length - 1].displayDate;
+            }
+
+            // 1. Tab Navigasi Tanggal Jumat Malam
+            let tabsHtml = `<div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">`;
+            jumatDates.forEach((d) => {
+                const isSelected = (d.displayDate === activeMalamSabtuDate);
                 const curSetting = getMalamSabtuSetting(d.displayDate);
-                const isPel1 = curSetting === 'pel1';
-                cardsHtml += `
-                    <div class="bg-white/95 border border-amber-300 rounded-xl p-2.5 shadow-2xs flex flex-col justify-between gap-2">
-                        <div class="flex items-start justify-between gap-1.5">
+                const settingLabel = curSetting === 'pel1' ? 'Jam 1' : (curSetting === 'pel2' ? 'Jam 2' : 'Jam 3');
+                
+                const btnClass = isSelected
+                    ? 'bg-amber-600 text-white shadow-md border-amber-600 font-extrabold'
+                    : 'bg-white text-slate-700 hover:bg-amber-100/70 border-slate-300 font-semibold';
+                const badgeClass = isSelected
+                    ? 'bg-amber-800 text-white'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300';
+
+                tabsHtml += `
+                    <button type="button" onclick="setTabMalamSabtuAktif('${d.displayDate}')"
+                        class="px-3.5 py-2 rounded-xl text-xs border transition flex items-center gap-2 shrink-0 cursor-pointer ${btnClass}">
+                        <span>Jumat, ${d.displayDate}</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${badgeClass}">${settingLabel}</span>
+                    </button>
+                `;
+            });
+            tabsHtml += `</div>`;
+
+            // 2. Konten Pilihan 3 Jam untuk Tanggal Terpilih
+            const activeSetting = getMalamSabtuSetting(activeMalamSabtuDate);
+
+            const options = [
+                {
+                    key: 'pel1',
+                    title: 'Jam 1 (Sesi Awal)',
+                    jam: '17:31 - 19:20 (s.d 20:00)',
+                    asrama: 'Asrama mengambil Jam 1',
+                    mdnu: 'MDNU: Pel 2 & Pel 3 Aktif'
+                },
+                {
+                    key: 'pel2',
+                    title: 'Jam 2 (Sesi Tengah)',
+                    jam: '19:21 - 20:10 (s.d 21:00)',
+                    asrama: 'Asrama mengambil Jam 2',
+                    mdnu: 'MDNU: Pel 1 & Pel 3 Aktif'
+                },
+                {
+                    key: 'pel3',
+                    title: 'Jam 3 (Sesi Akhir)',
+                    jam: '20:11 - 22:30',
+                    asrama: 'Asrama mengambil Jam 3',
+                    mdnu: 'MDNU: Pel 1 & Pel 2 Aktif'
+                }
+            ];
+
+            let optionsHtml = `
+                <div class="bg-white/95 border-2 border-amber-300/80 rounded-2xl p-4 sm:p-5 shadow-sm space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-100 pb-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-xl bg-amber-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">📅</span>
                             <div>
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-md bg-amber-500 text-white font-black text-[11px] flex items-center justify-center shrink-0">${idx + 1}</span>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                </div>
-                                <span class="text-[11px] font-mono font-bold text-amber-800 block mt-0.5">Tgl: ${d.displayDate} (Jumat)</span>
+                                <h4 class="font-extrabold text-amber-950 text-sm">Pengaturan Tanggal: <span class="text-amber-800 font-mono">${activeMalamSabtuDate}</span> (Jumat Malam)</h4>
+                                <p class="text-[11px] text-slate-500">Pilih alokasi jam belajar Asrama untuk tanggal terpilih di atas:</p>
                             </div>
-                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isPel1 ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-indigo-100 text-indigo-900 border border-indigo-300'}">
-                                ${isPel1 ? 'Asr: Jam 1' : 'Asr: Jam 2'}
-                            </span>
                         </div>
-                        <p class="text-[10px] text-slate-500 leading-tight">
-                            ${isPel1 ? 'Asrama: Jam 1 (s.d 20:00) | MDNU: Pel 2 & 3' : 'Asrama: Jam 2 (s.d 21:00) | MDNU: Pel 1 & 3'}
-                        </p>
-                        <div class="flex items-center gap-1.5 pt-1 border-t border-slate-100">
-                            <button onclick="ubahSettingMalamSabtuTanggal('${d.displayDate}', 'pel1')" 
-                                class="flex-1 py-1 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 ${isPel1 ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
-                                <span>Jam 1</span>
-                                <span class="text-[9px] opacity-80">(s.d 20:00)</span>
-                            </button>
-                            <button onclick="ubahSettingMalamSabtuTanggal('${d.displayDate}', 'pel2')" 
-                                class="flex-1 py-1 rounded-lg text-[10px] font-bold transition flex items-center justify-center gap-1 ${!isPel1 ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}">
-                                <span>Jam 2</span>
-                                <span class="text-[9px] opacity-80">(s.d 21:00)</span>
-                            </button>
+                        <span class="self-start sm:self-auto text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-amber-600 animate-pulse"></span>
+                            Terpilih: ${activeSetting === 'pel1' ? 'Jam 1' : (activeSetting === 'pel2' ? 'Jam 2' : 'Jam 3')}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+            `;
+
+            options.forEach(opt => {
+                const isSelected = (activeSetting === opt.key);
+                const cardClass = isSelected
+                    ? 'bg-amber-50 border-2 border-amber-500 ring-2 ring-amber-400/30 shadow-md'
+                    : 'bg-slate-50/70 border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40';
+                const checkIcon = isSelected
+                    ? `<span class="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center font-black">✓</span>`
+                    : `<span class="w-5 h-5 rounded-full border border-slate-300 bg-white"></span>`;
+
+                optionsHtml += `
+                    <div onclick="ubahSettingMalamSabtuTanggal('${activeMalamSabtuDate}', '${opt.key}')"
+                        class="p-3.5 rounded-xl cursor-pointer transition flex flex-col justify-between gap-2.5 ${cardClass}">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <span class="font-extrabold text-xs sm:text-sm text-slate-900 block">${opt.title}</span>
+                                <span class="font-mono text-[11px] font-semibold text-amber-800 block mt-0.5">${opt.jam}</span>
+                            </div>
+                            ${checkIcon}
+                        </div>
+                        <div class="space-y-1 pt-2 border-t border-slate-200/60 text-[11px]">
+                            <div class="text-slate-700 font-medium flex items-center gap-1">
+                                <span class="text-amber-600 font-bold">🏠</span> ${opt.asrama}
+                            </div>
+                            <div class="text-emerald-700 font-semibold flex items-center gap-1">
+                                <span class="text-emerald-600 font-bold">📚</span> ${opt.mdnu}
+                            </div>
                         </div>
                     </div>
                 `;
             });
 
-            container.innerHTML = cardsHtml;
+            optionsHtml += `
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = tabsHtml + optionsHtml;
         }
 
                         // ========================================================
@@ -2097,10 +2248,14 @@
                     pel1 = 'LIBUR'; // Dipakai Asrama
                     pel2 = 'A';
                     pel3 = 'A';
-                } else {
+                } else if (setting === 'pel2') {
                     pel1 = 'A';
                     pel2 = 'LIBUR'; // Dipakai Asrama
                     pel3 = 'A';
+                } else if (setting === 'pel3') {
+                    pel1 = 'A';
+                    pel2 = 'A';
+                    pel3 = 'LIBUR'; // Dipakai Asrama
                 }
             }
 
@@ -2720,6 +2875,9 @@
                             } else if (setting === 'pel2' && m >= (19 * 60 + 21) && m <= (21 * 60)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
+                            } else if (setting === 'pel3' && m >= (20 * 60 + 11) && m <= (22 * 60 + 30)) {
+                                asr.malam = 'H';
+                                asr.malam_time = sc.text;
                             }
                         }
                         // 3. Minggu (Malam Senin, day 0): HANYA kelas 1UA (21:00 - 22:30)
@@ -2908,13 +3066,14 @@
                                         class="text-[10px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500 max-w-[90px] truncate">
                                         <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (s.d 20:00)</option>
                                         <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (s.d 21:00)</option>
+                                        <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (20:11-22:30)</option>
                                     </select>
                                 </div>
                             `;
                         } else {
                             malamSabtuSelectorAsrama = `
                                 <div class="mt-0.5 flex flex-col items-center">
-                                    <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 py-0.5 rounded leading-tight">Mlm Sabtu: ${curVal === 'pel1' ? 'Jam 1' : 'Jam 2'}</span>
+                                    <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 py-0.5 rounded leading-tight">Mlm Sabtu: ${curVal === 'pel1' ? 'Jam 1' : (curVal === 'pel2' ? 'Jam 2' : 'Jam 3')}</span>
                                 </div>
                             `;
                         }
@@ -2949,7 +3108,7 @@
                     let malamLabel = "Malam";
                     if (d.dayIndex === 5) {
                         const curVal = getMalamSabtuSetting(d.displayDate);
-                        malamLabel = curVal === 'pel1' ? "Malam (Jam 1)" : "Malam (Jam 2)";
+                        malamLabel = curVal === 'pel1' ? "Malam (Jam 1)" : (curVal === 'pel2' ? "Malam (Jam 2)" : "Malam (Jam 3)");
                     }
 
                     sessList.forEach(sess => {
@@ -3099,7 +3258,7 @@
                     if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
 
                     let malamSabtuSelectorMDNU = '';
-                    if (d.dayIndex === 5 && (sessList.includes('pel1') || sessList.includes('pel2'))) {
+                    if (d.dayIndex === 5 && (sessList.includes('pel1') || sessList.includes('pel2') || sessList.includes('pel3'))) {
                         const curVal = getMalamSabtuSetting(d.displayDate);
                         if (isModeAdmin) {
                             malamSabtuSelectorMDNU = `
@@ -3107,15 +3266,16 @@
                                     <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 rounded leading-tight mb-0.5">Malam Sabtu</span>
                                     <select onchange="ubahSettingMalamSabtuTanggal('${d.displayDate}', this.value)"
                                         class="text-[10px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500 max-w-[90px] truncate">
-                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (ke Asrama)</option>
-                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (ke Asrama)</option>
+                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (ke Asr)</option>
+                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (ke Asr)</option>
+                                        <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (ke Asr)</option>
                                     </select>
                                 </div>
                             `;
                         } else {
                             malamSabtuSelectorMDNU = `
                                 <div class="mt-0.5 flex flex-col items-center">
-                                    <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 py-0.5 rounded leading-tight">Mlm Sabtu: ${curVal === 'pel1' ? 'Jam 1 Asr' : 'Jam 2 Asr'}</span>
+                                    <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 py-0.5 rounded leading-tight">Mlm Sabtu: ${curVal === 'pel1' ? 'Jam 1 Asr' : (curVal === 'pel2' ? 'Jam 2 Asr' : 'Jam 3 Asr')}</span>
                                 </div>
                             `;
                         }
@@ -3149,12 +3309,15 @@
 
                     let p1Label = "Pel 1";
                     let p2Label = "Pel 2";
+                    let p3Label = "Pel 3";
                     if (d.dayIndex === 5) {
                         const curVal = getMalamSabtuSetting(d.displayDate);
                         if (curVal === 'pel1') {
                             p1Label = '<span class="text-rose-700">Pel 1 (Asr)</span>';
-                        } else {
+                        } else if (curVal === 'pel2') {
                             p2Label = '<span class="text-rose-700">Pel 2 (Asr)</span>';
+                        } else if (curVal === 'pel3') {
+                            p3Label = '<span class="text-rose-700">Pel 3 (Asr)</span>';
                         }
                     }
 
@@ -3162,7 +3325,7 @@
                         if (sess === 'sore') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>`;
                         else if (sess === 'pel1') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p1Label}</th>`;
                         else if (sess === 'pel2') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p2Label}</th>`;
-                        else if (sess === 'pel3') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>`;
+                        else if (sess === 'pel3') h2MDNU += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p3Label}</th>`;
                     });
                 });
 
@@ -4407,7 +4570,88 @@
             </form>
         </div>
     </div>
-        <!-- ======================================================== -->
+    <!-- ======================================================== -->
+    <!-- MODAL 5: KUNCI / FREEZE DATA ABSENSI (ADMIN ONLY) -->
+    <!-- ======================================================== -->
+    <div id="modalFreezeData"
+        class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
+        <div
+            class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
+            
+            <div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mt-2 mb-1 sm:hidden shrink-0"></div>
+
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-slate-200 bg-cyan-50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-cyan-600/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-cyan-950">Pengaturan Kunci Data (Freeze)</h3>
+                        <p class="text-xs text-cyan-800">Proteksi data masa lalu agar tidak tertimpa saat tarik mesin</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalFreezeData()"
+                    class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 overflow-y-auto space-y-4 text-xs">
+                <div id="freezeCurrentStatusText" class="p-3 bg-cyan-50/70 border border-cyan-200 rounded-xl text-cyan-950 font-medium leading-relaxed">
+                    Memuat status kunci data...
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="font-bold text-slate-800 block text-xs">Gembok Data Sampai Tanggal:</label>
+                    <input type="date" id="inputFreezeUntilDate"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-cyan-500 font-mono text-sm">
+                    <p class="text-[11px] text-slate-500">Semua rekaman scan pada atau sebelum tanggal ini akan digembok dan diabaikan oleh penarik mesin.</p>
+                </div>
+
+                <!-- Tombol Preset Kilat -->
+                <div class="space-y-1.5 pt-1">
+                    <span class="font-bold text-slate-700 block text-[11px]">Pilihan Cepat (Preset):</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="setPresetFreeze('2026-09-30')"
+                            class="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] border border-slate-300 transition text-center cursor-pointer">
+                            🔒 s.d 30 Sep 2026
+                        </button>
+                        <button type="button" onclick="setPresetFreeze('2026-10-31')"
+                            class="px-2.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] border border-slate-300 transition text-center cursor-pointer">
+                            🔒 s.d 31 Okt 2026
+                        </button>
+                        <button type="button" onclick="setPresetFreeze('')"
+                            class="px-2.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 font-bold text-[11px] border border-rose-200 transition text-center cursor-pointer">
+                            🔓 Buka Semua
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5">
+                <button type="button" onclick="tutupModalFreezeData()"
+                    class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="simpanFreezeData()"
+                    class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/30 transition flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Simpan Kunci Data</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
     <!-- MODAL 4: HAPUS / RESET DATA ABSENSI (ADMIN ONLY) -->
     <!-- ======================================================== -->
     <div id="modalHapusData"
