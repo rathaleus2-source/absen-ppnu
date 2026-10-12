@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Sistem Rekap Absensi PPNU - Format Matriks Mendatar (Asrama & MDNU)</title>
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1110,8 +1113,11 @@
             specialLiburMDNU = data.specialLiburMDNU || {};
             manualIzinData = data.manualIzinData || {};
             if (data.hideEmptyLiburColumns !== undefined) {
-                hideEmptyLiburColumns = (data.hideEmptyLiburColumns !== false);
+                hideEmptyLiburColumns = (data.hideEmptyLiburColumns === true);
+            } else {
+                hideEmptyLiburColumns = true;
             }
+            try { localStorage.setItem('ppnu_hide_empty_libur', hideEmptyLiburColumns ? 'true' : 'false'); } catch (e) {}
             updateToggleHideLiburUI();
 
             if (santriList.length > 0 && dateList.length > 0) {
