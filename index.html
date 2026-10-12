@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Sistem Rekap Absensi PPNU - Format Matriks Mendatar (Asrama & MDNU)</title>
+    <title>Sistem Presensi Santri PPNU - Asrama & MDNU Putra</title>
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -396,8 +396,7 @@
                     <code class="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono text-xs">.xls</code>,
                     atau <code
                         class="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono text-xs">.csv</code>).
-                    Hasil akan otomatis diubah menjadi <strong>tabel mendatar</strong>: 1 santri per baris, dan tanggal
-                    beserta hari tersusun urut dari awal hingga akhir ke samping kanan.
+                    Sistem akan otomatis merekap seluruh log scan presensi santri sesuai jadwal resmi Asrama dan MDNU.
                 </p>
             </div>
 
@@ -526,7 +525,7 @@
                 class="inline-block animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full">
             </div>
             <h3 class="text-lg font-bold text-slate-900">Sedang Memproses Data...</h3>
-            <p class="text-sm text-slate-500">Menyusun matriks absensi mendatar per santri...</p>
+            <p class="text-sm text-slate-500">Menyiapkan data presensi santri...</p>
         </div>
 
         <!-- Results Section (Visible after processing) -->
@@ -549,8 +548,11 @@
                         <p id="statDateRange" class="text-sm font-bold text-white mt-1">-</p>
                     </div>
                     <div>
-                        <p class="text-xs text-slate-400 font-medium">Format Output</p>
-                        <p class="text-sm font-bold text-amber-300 mt-1">Matriks Mendatar</p>
+                        <p class="text-xs text-slate-400 font-medium">Status Sinkronisasi</p>
+                        <p class="text-sm font-bold text-emerald-400 mt-1 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"></span>
+                            Cloud Realtime
+                        </p>
                     </div>
                 </div>
 
@@ -660,19 +662,19 @@
                     <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
                         <button id="tabBtnAsrama" onclick="gantiTab('asrama')"
                             class="px-4 py-2 rounded-xl text-sm font-bold bg-emerald-600 text-white shadow-sm flex items-center gap-2 transition">
-                            <span>🏠 Asrama Putra (Mendatar)</span>
+                            <span>🏠 Asrama Putra</span>
                             <span id="badgeCountAsrama"
                                 class="bg-emerald-800 text-white text-[11px] px-2 py-0.5 rounded-full">0 Santri</span>
                         </button>
                         <button id="tabBtnMDNU" onclick="gantiTab('mdnu')"
                             class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2 transition">
-                            <span>📚 MDNU Putra (Mendatar)</span>
+                            <span>📚 MDNU Putra</span>
                             <span id="badgeCountMDNU"
                                 class="bg-slate-300 text-slate-800 text-[11px] px-2 py-0.5 rounded-full">0 Santri</span>
                         </button>
                         <button id="tabBtnRekapitulasi" onclick="gantiTab('rekapitulasi')"
                             class="px-4 py-2 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center gap-2 transition">
-                            <span>Rekapitulasi Santri</span>
+                            <span>📊 Rekapitulasi Santri</span>
                             <span id="badgeCountRekap"
                                 class="bg-indigo-100 text-indigo-800 text-[11px] px-2 py-0.5 rounded-full font-bold">Semua
                                 Tanggal</span>
@@ -832,9 +834,16 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        <p>Aplikasi Rekap Absensi Mandiri PPNU &bull; Format Matriks Mendatar &bull; Siap di-deploy ke Netlify Drop /
-            GitHub Pages</p>
+    <footer class="bg-white border-t border-slate-200 py-6 text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div>
+                <p class="font-bold text-slate-700 text-sm">Pondok Pesantren Nahdlatul Ulama (PPNU)</p>
+                <p class="text-slate-400 mt-0.5">Sistem Manajemen Presensi Terpadu &bull; Asrama & MDNU Putra</p>
+            </div>
+            <div class="bg-slate-50 border border-slate-200/80 rounded-xl px-4 py-2 text-slate-600 font-medium italic text-center shadow-xs">
+                &ldquo;Menuntut ilmu adalah ibadah, istiqamah dan disiplin adalah kunci keberkahan.&rdquo;
+            </div>
+        </div>
     </footer>
 
     <!-- SCRIPT LOGIKA REKAP OTOMATIS -->
@@ -2822,7 +2831,7 @@
             });
 
             document.getElementById('labelJumlahData').innerText =
-                `Menampilkan ${filteredSantri.length.toLocaleString('id-ID')} santri (${dateList.length} tanggal mendatar)`;
+                `Menampilkan ${filteredSantri.length.toLocaleString('id-ID')} santri (${dateList.length} hari kegiatan)`;
 
             renderTableAsrama(filteredSantri);
             renderTableMDNU(filteredSantri);
@@ -3625,7 +3634,7 @@
             }
 
             navigator.clipboard.writeText(tsv).then(() => {
-                alert("✅ Berhasil disalin dengan rekap (H, A, I, JP, %) dalam format matriks mendatar! Buka Google Sheets/Excel, lalu tekan Ctrl + V.");
+                alert("✅ Berhasil disalin ke clipboard! Buka Google Sheets atau Excel, lalu tekan Ctrl + V.");
             }).catch(err => {
                 alert("Gagal menyalin: " + err);
             });
