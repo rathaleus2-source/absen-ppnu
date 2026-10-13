@@ -472,8 +472,7 @@
                             <ul class="space-y-1 list-disc list-inside text-slate-700">
                                 <li><strong>Sore (14:00 - 17:30):</strong>
                                     <div class="pl-4">
-                                        - Sabtu: <span class="text-indigo-700 font-bold">Hanya Kelas 2UA</span><br>
-                                        - Minggu: <span class="text-indigo-700 font-bold">Hanya Kelas 1UA</span><br>
+                                        - Sabtu &amp; Minggu: <span class="text-indigo-700 font-bold">Hanya Kelas 1UA</span><br>
                                         - Kamis: <span class="text-indigo-700 font-bold">Hanya Kelas 2WA</span><br>
                                         - Hari/kelas lainnya &rarr; <span class="text-slate-500 font-bold">LIBUR</span>
                                     </div>
@@ -643,8 +642,7 @@
                             Absen Sore MDNU (14.00 - 17.30):
                         </span>
                         <span class="text-slate-700 block">
-                            Sabtu (<strong class="text-indigo-700">2UA</strong>) &bull; Minggu (<strong
-                                class="text-indigo-700">1UA</strong>) &bull; Kamis (<strong
+                            Sabtu &amp; Minggu (<strong class="text-indigo-700">1UA</strong>) &bull; Kamis (<strong
                                 class="text-indigo-700">2WA</strong>)
                         </span>
                     </div>
@@ -2211,7 +2209,7 @@
         }
 
         // Aturan Default Jadwal MDNU per Santri & Hari:
-        // - Sore (14:00 - 17:30): Hanya Sabtu untuk 2UA, Minggu untuk 1UA, Kamis untuk 2WA. Hari/kelas lain: LIBUR.
+        // - Sore (14:00 - 17:30): Hanya Sabtu & Minggu untuk 1UA, Kamis untuk 2WA. Hari/kelas lain: LIBUR.
         // - Malam Pelajaran:
         //   * Kamis (4): LIBUR semua (Malam Jumat)
         //   * Jumat (5, Malam Sabtu): 2 jam untuk MDNU. Jam yang dipakai Asrama menjadi LIBUR.
@@ -2227,8 +2225,7 @@
 
             // Cek Sore
             let sore = 'LIBUR';
-            if (day === 6 && is2UA) sore = 'A';
-            else if (day === 0 && is1UA) sore = 'A';
+            if ((day === 6 || day === 0) && is1UA) sore = 'A';
             else if (day === 4 && is2WA) sore = 'A';
 
             // Cek Malam Pelajaran
