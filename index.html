@@ -452,7 +452,7 @@
                         <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
                             <span class="font-bold text-emerald-800 block mb-1">JADWAL ASRAMA PUTRA:</span>
                             <ul class="space-y-1 list-disc list-inside text-slate-700">
-                                <li><strong>Subuh:</strong> 04:00 - 06:00 (Libur: Jumat & Minggu &rarr; <span
+                                <li><strong>Subuh:</strong> 04:00 - 07:00 (Libur: Jumat & Minggu &rarr; <span
                                         class="text-slate-500 font-bold">LIBUR</span>)</li>
                                 <li><strong>Malam Khusus:</strong>
                                     <div class="pl-4">
@@ -2185,7 +2185,7 @@
         }
 
         // Aturan Default Jadwal Asrama per Santri & Hari:
-        // - Subuh: 04:00 - 06:00 (Libur Jumat & Minggu)
+        // - Subuh: 04:00 - 07:00 (Libur Jumat & Minggu)
         // - Malam Jumat (Kamis, 4): Aktif semua santri (18:00 - 23:00)
         // - Malam Sabtu (Jumat, 5): 1 Jam dialokasikan sesuai panel admin ('pel1' / 'pel2')
         // - Malam Senin (Minggu, 0): HANYA kelas 1UA (21:00 - 22:30), kelas lain LIBUR
@@ -2860,8 +2860,8 @@
                 for (const sc of scans) {
                     const m = sc.mins;
 
-                    // Asrama Subuh: 04:00 - 06:00
-                    if (asr.subuh === 'A' && m >= 4 * 60 && m <= 6 * 60) {
+                    // Asrama Subuh: 04:00 - 07:00
+                    if (asr.subuh === 'A' && m >= 4 * 60 && m <= 7 * 60) {
                         asr.subuh = 'H';
                         asr.subuh_time = sc.text;
                     }
