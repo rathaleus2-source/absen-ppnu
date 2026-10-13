@@ -2854,7 +2854,8 @@
             if (val === 'I' || val === 'IZIN') {
                 const hint = isModeAdmin ? " (Klik untuk ganti: I -> H -> A)" : "";
                 const detail = permissionDetailsMap[`${pin}__${tgl}__${sesi}__${tab}`];
-                const detailText = detail ? ` - ${detail.alasan} (ACC: ${detail.pemberiIzin || detail.pemberi || '-'})` : '';
+                const durasiInfo = (detail && detail.durasi) ? ` [${detail.durasi}]` : '';
+                const detailText = detail ? ` - ${detail.alasan}${durasiInfo} (ACC: ${detail.pemberiIzin || detail.pemberi || '-'})` : '';
                 return `<span ${clickAttr} 
                     class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none shadow-2xs font-bold" 
                     title="Status: IZIN${detailText}${hint}">I</span>`;
@@ -4711,6 +4712,59 @@
             return `${y}-${m}-${d}`;
         }
 
+        // Menghitung rentang tanggal izin secara cerdas (1 hari, 2 hari, 3 hari, cuti, seminggu, dll)
+        function hitungRentangTanggalIzin(rawMulai, rawSampai, rawDurasiHari) {
+            const sDt = parseDMYDate(rawMulai);
+            if (!sDt) return null;
+
+            let eDt = parseDMYDate(rawSampai);
+            const durasiStr = String(rawDurasiHari || '').toLowerCase().trim();
+
+            // Cek jika izin hanya jam tertentu (bukan multi hari)
+            const isJamOnly = durasiStr.includes('jam') && !durasiStr.includes('hari') && !durasiStr.includes('malam');
+            if (isJamOnly) {
+                return { start: sDt, end: new Date(sDt), isJamOnly: true };
+            }
+
+            // Ekstrak angka durasi hari
+            let hariCount = 1;
+            if (durasiStr.includes('minggu') || durasiStr.includes('seminggu')) {
+                hariCount = 7;
+            } else if (durasiStr.includes('satu')) {
+                hariCount = 1;
+            } else if (durasiStr.includes('dua')) {
+                hariCount = 2;
+            } else if (durasiStr.includes('tiga')) {
+                hariCount = 3;
+            } else if (durasiStr.includes('empat')) {
+                hariCount = 4;
+            } else if (durasiStr.includes('lima')) {
+                hariCount = 5;
+            } else {
+                const matchAngka = durasiStr.match(/\d+/);
+                if (matchAngka) {
+                    const n = parseInt(matchAngka[0], 10);
+                    if (n >= 1 && n <= 60) hariCount = n;
+                }
+            }
+
+            if (!eDt || isNaN(eDt.getTime())) {
+                eDt = new Date(sDt);
+                eDt.setDate(eDt.getDate() + (hariCount - 1));
+            } else {
+                const diffDays = Math.round((eDt.getTime() - sDt.getTime()) / (1000 * 3600 * 24)) + 1;
+                if (hariCount > diffDays) {
+                    eDt = new Date(sDt);
+                    eDt.setDate(eDt.getDate() + (hariCount - 1));
+                }
+            }
+
+            if (sDt > eDt) {
+                return { start: eDt, end: sDt, isJamOnly: false };
+            }
+            return { start: sDt, end: eDt, isJamOnly: false };
+        }
+
         async function prosesSinkronIzinGoogleForm(isManual = true) {
             if (isSyncingIzinForm) return;
             isSyncingIzinForm = true;
@@ -4746,17 +4800,23 @@
                     if (!santri) continue;
 
                     const pin = santri.pin;
-                    const startDt = parseDMYDate(r[9]);
-                    const endDt = parseDMYDate(r[10]) || startDt;
-                    if (!startDt || !endDt) continue;
+                    const rentang = hitungRentangTanggalIzin(r[9], r[10], r[8]);
+                    if (!rentang) continue;
 
-                    let sDt = startDt <= endDt ? startDt : endDt;
-                    let eDt = startDt <= endDt ? endDt : startDt;
+                    const sDt = rentang.start;
+                    const eDt = rentang.end;
 
+                    const durasiHariText = (r[8] || '1 hari').trim();
                     const sesiStr = (r[11] || '').toLowerCase();
                     const alasan = (r[12] || 'Izin Resmi').trim();
                     const pemberi = (r[1] || '-').trim();
                     const noIzin = (r[13] || '-').trim();
+
+                    // Izin seharian penuh (Full Day): jika multi hari, kolom sesi kosong/semua, atau izin pulang/cuti/sakit
+                    const isMultiHari = (eDt.getTime() > sDt.getTime());
+                    const isFullDay = isMultiHari || sesiStr === '' || sesiStr.includes('semua') || sesiStr.includes('penuh') ||
+                                      alasan.toLowerCase().includes('pulang') || alasan.toLowerCase().includes('cuti') ||
+                                      alasan.toLowerCase().includes('sakit') || alasan.toLowerCase().includes('keluarga');
 
                     let curDt = new Date(sDt);
                     while (curDt <= eDt) {
@@ -4769,8 +4829,8 @@
 
                         const isoTgl = formatISODate(curDt);
 
-                        // 1. Asrama Subuh jika ada 'pagi' atau izin mencakup penuh
-                        const isPagi = sesiStr.includes('pagi') || sesiStr === '';
+                        // 1. Asrama Subuh jika ada 'pagi' / 'subuh' atau izin mencakup penuh
+                        const isPagi = isFullDay || sesiStr.includes('pagi') || sesiStr.includes('subuh');
                         if (isPagi) {
                             if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
                             if (!asramaMatrix[pin][isoTgl]) asramaMatrix[pin][isoTgl] = { subuh: 'A', malam: 'A', subuh_time: '', malam_time: '' };
@@ -4782,13 +4842,30 @@
                             } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
                                 asramaMatrix[pin][isoTgl].subuh = 'I';
                                 asramaMatrix[pin][isoTgl].subuh_time = '';
-                                permissionDetailsMap[`${pin}__${isoTgl}__subuh__asrama`] = { alasan, pemberiIzin: pemberi, noIzin };
+                                permissionDetailsMap[`${pin}__${isoTgl}__subuh__asrama`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
                                 countConvertedToIzin++;
                             }
                         }
 
-                        // 2. MDNU Sore jika ada 'sore' atau izin mencakup penuh
-                        const isSore = sesiStr.includes('sore') || sesiStr === '';
+                        // 2. Asrama Malam jika izin mencakup malam / multi hari / pulang
+                        const isMalamAsrama = isFullDay || sesiStr.includes('malam') || (sesiStr.includes('ke-1') && sesiStr.includes('ke-2') && sesiStr.includes('ke-3'));
+                        if (isMalamAsrama) {
+                            if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
+                            if (!asramaMatrix[pin][isoTgl]) asramaMatrix[pin][isoTgl] = { subuh: 'A', malam: 'A', subuh_time: '', malam_time: '' };
+
+                            const curStat = asramaMatrix[pin][isoTgl].malam || 'A';
+                            if (curStat === 'H' || asramaMatrix[pin][isoTgl].malam_time) {
+                                countKeptHadir++;
+                            } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
+                                asramaMatrix[pin][isoTgl].malam = 'I';
+                                asramaMatrix[pin][isoTgl].malam_time = '';
+                                permissionDetailsMap[`${pin}__${isoTgl}__malam__asrama`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
+                                countConvertedToIzin++;
+                            }
+                        }
+
+                        // 3. MDNU Sore jika ada 'sore' atau izin mencakup penuh
+                        const isSore = isFullDay || sesiStr.includes('sore');
                         if (isSore) {
                             if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
                             if (!mdnuMatrix[pin][isoTgl]) mdnuMatrix[pin][isoTgl] = { sore: 'A', pel1: 'A', pel2: 'A', pel3: 'A' };
@@ -4799,14 +4876,14 @@
                             } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
                                 mdnuMatrix[pin][isoTgl].sore = 'I';
                                 mdnuMatrix[pin][isoTgl].sore_time = '';
-                                permissionDetailsMap[`${pin}__${isoTgl}__sore__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin };
+                                permissionDetailsMap[`${pin}__${isoTgl}__sore__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
                                 countConvertedToIzin++;
                             }
                         }
 
-                        // 3. MDNU Pel 1, 2, 3
+                        // 4. MDNU Pel 1, 2, 3
                         for (let pIdx = 1; pIdx <= 3; pIdx++) {
-                            const matchPel = sesiStr.includes(`ke-${pIdx}`) || sesiStr.includes(`ke ${pIdx}`) || sesiStr === '';
+                            const matchPel = isFullDay || sesiStr.includes(`ke-${pIdx}`) || sesiStr.includes(`ke ${pIdx}`);
                             if (matchPel) {
                                 const sKey = `pel${pIdx}`;
                                 if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
@@ -4818,7 +4895,7 @@
                                 } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
                                     mdnuMatrix[pin][isoTgl][sKey] = 'I';
                                     mdnuMatrix[pin][isoTgl][`${sKey}_time`] = '';
-                                    permissionDetailsMap[`${pin}__${isoTgl}__${sKey}__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin };
+                                    permissionDetailsMap[`${pin}__${isoTgl}__${sKey}__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
                                     countConvertedToIzin++;
                                 }
                             }
@@ -4828,7 +4905,8 @@
                             pin: pin,
                             nama: santri.nama,
                             tgl: isoTgl,
-                            sesi: sesiStr || 'Penuh',
+                            sesi: isFullDay ? 'Penuh (Semua Sesi)' : (sesiStr || 'Penuh'),
+                            durasi: durasiHariText,
                             alasan: alasan,
                             pemberi: pemberi,
                             noIzin: noIzin
@@ -4897,7 +4975,7 @@
                             <div class="py-2 flex items-center justify-between gap-2">
                                 <div>
                                     <span class="font-bold text-slate-800">[${item.pin}] ${item.nama}</span>
-                                    <span class="text-[10px] text-slate-500 block">Tgl: ${item.tgl} | Sesi: ${item.sesi.toUpperCase()}</span>
+                                    <span class="text-[10px] text-slate-500 block">Tgl: ${item.tgl} <b class="text-amber-800">(${item.durasi || '1 hari'})</b> | Sesi: ${item.sesi.toUpperCase()}</span>
                                 </div>
                                 <div class="text-right shrink-0">
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">${item.alasan}</span>
