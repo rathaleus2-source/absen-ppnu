@@ -750,13 +750,20 @@
                     <!-- Quick Filters: Search -->
                     <div class="relative flex-1 sm:w-64">
                         <input type="text" id="filterSearch" placeholder="Cari PIN atau Nama Santri..."
-                            oninput="terapkanFilter()"
-                            class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white">
-                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor"
+                            oninput="handleSearchInput(this.value)"
+                            autocomplete="off"
+                            spellcheck="false"
+                            class="w-full pl-9 pr-8 py-2 bg-white text-slate-900 placeholder-slate-400 font-semibold border border-slate-300 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
+                        <button id="btnClearSearch" type="button" onclick="clearSearch()" class="hidden absolute right-2.5 top-2.5 text-slate-400 hover:text-rose-600 transition focus:outline-none" title="Hapus Pencarian">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
@@ -3012,7 +3019,33 @@
             renderEvaluasi();
             if (isAdmin) simpanKeCloud();
         }
-        // Filter & Render Tabel Matriks
+        // ========================================================
+        // SEARCH DEBOUNCING & ULTRA-RESPONSIVE FILTERING (ZERO LAG)
+        // ========================================================
+        let searchDebounceTimeout = null;
+        function handleSearchInput(val) {
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) {
+                btnClear.classList.toggle('hidden', !val || val.length === 0);
+            }
+            clearTimeout(searchDebounceTimeout);
+            searchDebounceTimeout = setTimeout(() => {
+                terapkanFilter();
+            }, 120);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('filterSearch');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) btnClear.classList.add('hidden');
+            terapkanFilter();
+        }
+
+        // Filter & Render Tabel Matriks (Smart Rendering: Hanya render tab yang sedang aktif untuk performa maksimal)
         function terapkanFilter() {
             const query = (document.getElementById('filterSearch').value || '').toLowerCase().trim();
 
@@ -3020,12 +3053,24 @@
                 return !query || s.nama.toLowerCase().includes(query) || s.pin.toLowerCase().includes(query);
             });
 
-            document.getElementById('labelJumlahData').innerText =
-                `Menampilkan ${filteredSantri.length.toLocaleString('id-ID')} santri (${dateList.length} hari kegiatan)`;
+            const lbl = document.getElementById('labelJumlahData');
+            if (lbl) {
+                lbl.innerText = `Menampilkan ${filteredSantri.length.toLocaleString('id-ID')} santri (${dateList.length} hari kegiatan)`;
+            }
 
-            renderTableAsrama(filteredSantri);
-            renderTableMDNU(filteredSantri);
-            renderRekapitulasiSantri(filteredSantri);
+            if (currentViewMode === 'cards') {
+                renderCardView(filteredSantri);
+                return;
+            }
+
+            // Di mode matrix, hanya render tab yang sedang aktif untuk kecepatan maksimal (Zero Lag!)
+            if (activeTab === 'asrama') {
+                renderTableAsrama(filteredSantri);
+            } else if (activeTab === 'mdnu') {
+                renderTableMDNU(filteredSantri);
+            } else if (activeTab === 'rekapitulasi') {
+                renderRekapitulasiSantri(filteredSantri);
+            }
         }
 
         // ATURAN REVISI 3: Render Tabel Asrama beserta Kolom Rekap (H, A, I, JP, % dan Merah jika >= 15%)
@@ -3973,6 +4018,7 @@
                 if (activeTab === 'mdnu' && viewMDNU) viewMDNU.classList.remove('hidden');
                 if (activeTab === 'rekapitulasi' && viewRekap) viewRekap.classList.remove('hidden');
                 if (flNav && dateList.length > 0) flNav.classList.remove('hidden');
+                terapkanFilter();
             }
         }
 
@@ -4455,7 +4501,9 @@
                 <div class="relative w-full sm:flex-1">
                     <input type="text" id="modalSantriSearch" placeholder="Cari PIN atau Nama santri..."
                         oninput="renderModalKelolaSantriList()"
-                        class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                        autocomplete="off"
+                        spellcheck="false"
+                        class="w-full pl-8 pr-3 py-1.5 bg-white text-slate-900 placeholder-slate-400 font-semibold border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
                     <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
