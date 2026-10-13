@@ -460,8 +460,7 @@
                                 <li><strong>Malam Khusus:</strong>
                                     <div class="pl-4">
                                         - Malam Jumat (Kamis): 18:00 - 23:00 (Semua Santri)<br>
-                                        - Malam Sabtu (Jumat): 1 Jam Khusus Asrama (Jam 1: 17:31-20:00 / Jam 2:
-                                        19:21-21:00 longgar s.d jam keluar)<br>
+                                        - Malam Sabtu (Jumat): 1 Jam Khusus Asrama (Jam 1: 18:30-19:30 / Jam 2: 19:40-20:59 / Jam 3: 21:00-22:30)<br>
                                         - Malam Senin (Minggu): <span class="text-emerald-700 font-bold">Hanya Kelas
                                             1UA</span> (21:00 - 22:30). Kelas lainnya &rarr; <span
                                             class="text-rose-600 font-bold">LIBUR</span><br>
@@ -486,9 +485,9 @@
                                         (Semua Pel 1, 2, 3)<br>
                                         - Malam Sabtu (Jumat): 2 Jam untuk MDNU (sesuai jam yang tidak dipakai
                                         Asrama)<br>
-                                        - Pel 1 (18:50): 17:31 - 19:20<br>
-                                        - Pel 2 (19:40): 19:21 - 20:10<br>
-                                        - Pel 3 (20:30): 20:11 - 22:30
+                                        - Pel 1: 18:30 - 19:30<br>
+                                        - Pel 2: 19:40 - 20:59<br>
+                                        - Pel 3: 21:00 - 22:30
                                     </div>
                                 </li>
                             </ul>
@@ -1597,21 +1596,21 @@
                 {
                     key: 'pel1',
                     title: 'Jam 1 (Sesi Awal)',
-                    jam: '17:31 - 19:20 (s.d 20:00)',
+                    jam: '18:30 - 19:30',
                     asrama: 'Asrama mengambil Jam 1',
                     mdnu: 'MDNU: Pel 2 & Pel 3 Aktif'
                 },
                 {
                     key: 'pel2',
                     title: 'Jam 2 (Sesi Tengah)',
-                    jam: '19:21 - 20:10 (s.d 21:00)',
+                    jam: '19:40 - 20:59',
                     asrama: 'Asrama mengambil Jam 2',
                     mdnu: 'MDNU: Pel 1 & Pel 3 Aktif'
                 },
                 {
                     key: 'pel3',
                     title: 'Jam 3 (Sesi Akhir)',
-                    jam: '20:11 - 22:30',
+                    jam: '21:00 - 22:30',
                     asrama: 'Asrama mengambil Jam 3',
                     mdnu: 'MDNU: Pel 1 & Pel 2 Aktif'
                 }
@@ -2959,13 +2958,13 @@
                         // 2. Jumat (Malam Sabtu, day 5): 1 jam khusus Asrama sesuai setting tanggal ini
                         else if (day === 5) {
                             const setting = getMalamSabtuSetting(tglKey);
-                            if (setting === 'pel1' && m >= (17 * 60 + 31) && m <= (20 * 60)) {
+                            if (setting === 'pel1' && m >= (18 * 60 + 30) && m <= (19 * 60 + 30)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
-                            } else if (setting === 'pel2' && m >= (19 * 60 + 21) && m <= (21 * 60)) {
+                            } else if (setting === 'pel2' && m >= (19 * 60 + 40) && m <= (20 * 60 + 59)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
-                            } else if (setting === 'pel3' && m >= (20 * 60 + 11) && m <= (22 * 60 + 30)) {
+                            } else if (setting === 'pel3' && m >= (21 * 60) && m <= (22 * 60 + 30)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
                             }
@@ -2984,15 +2983,15 @@
                     }
 
                     // MDNU Malam Pelajaran:
-                    if (mdn.pel1 === 'A' && m >= (17 * 60 + 31) && m <= (19 * 60 + 20)) {
+                    if (mdn.pel1 === 'A' && m >= (18 * 60 + 30) && m <= (19 * 60 + 30)) {
                         mdn.pel1 = 'H';
                         mdn.pel1_time = sc.text;
                     }
-                    else if (mdn.pel2 === 'A' && m >= (19 * 60 + 21) && m <= (20 * 60 + 10)) {
+                    else if (mdn.pel2 === 'A' && m >= (19 * 60 + 40) && m <= (20 * 60 + 59)) {
                         mdn.pel2 = 'H';
                         mdn.pel2_time = sc.text;
                     }
-                    else if (mdn.pel3 === 'A' && m >= (20 * 60 + 11) && m <= (22 * 60 + 30)) {
+                    else if (mdn.pel3 === 'A' && m >= (21 * 60) && m <= (22 * 60 + 30)) {
                         mdn.pel3 = 'H';
                         mdn.pel3_time = sc.text;
                     }
@@ -3192,9 +3191,9 @@
                                     <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 rounded leading-tight mb-0.5">Malam Sabtu</span>
                                     <select onchange="ubahSettingMalamSabtuTanggal('${d.displayDate}', this.value)"
                                         class="text-[10px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500 max-w-[90px] truncate">
-                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (s.d 20:00)</option>
-                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (s.d 21:00)</option>
-                                        <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (20:11-22:30)</option>
+                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:30)</option>
+                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40-20:59)</option>
+                                        <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (21:00-22:30)</option>
                                     </select>
                                 </div>
                             `;
@@ -3919,7 +3918,7 @@
                 // Header 2: Sesi MDNU
                 tsv += "\t\tH\tA\tI\tJP\t%";
                 dateList.forEach(() => {
-                    tsv += "\tSore\tPel 1 (18:50)\tPel 2 (19:40)\tPel 3 (20:30)";
+                    tsv += "\tSore\tPel 1 (18:30)\tPel 2 (19:40)\tPel 3 (21:00)";
                 });
                 tsv += "\n";
 
