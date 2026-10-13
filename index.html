@@ -2779,13 +2779,19 @@
                 idxScanStart = Math.max(idxPIN, idxNama, idxTanggal) + 1;
             }
 
-            santriList = [];
-            dateList = [];
-            asramaMatrix = {};
-            mdnuMatrix = {};
-
+            // SMART MERGE: Pertahankan data santri dan tanggal yang sudah ada agar bulan lampau tidak hilang
             const santriMap = new Map(); // pin -> { pin, nama }
+            (santriList || []).forEach(s => {
+                if (s && s.pin) santriMap.set(s.pin, s);
+            });
+
             const dateMap = new Map();   // displayDate -> dateObj
+            (dateList || []).forEach(d => {
+                if (d && d.displayDate) dateMap.set(d.displayDate, d);
+            });
+
+            if (!asramaMatrix) asramaMatrix = {};
+            if (!mdnuMatrix) mdnuMatrix = {};
 
             // 1. Ekstrak Semua Data & Keranjang Waktu
             for (let i = 1; i < rows.length; i++) {
@@ -2818,6 +2824,25 @@
                 const day = dateObj.dayIndex;
                 const is1UA = pin.toUpperCase().startsWith('1UA');
 
+                // Inisialisasi Matriks Asrama jika belum ada
+                if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
+                if (!asramaMatrix[pin][tglKey]) {
+                    asramaMatrix[pin][tglKey] = getAsramaDefault(pin, day, tglKey);
+                }
+
+                // Inisialisasi Matriks MDNU jika belum ada
+                if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
+                if (!mdnuMatrix[pin][tglKey]) {
+                    mdnuMatrix[pin][tglKey] = getMDNUDefault(pin, day, tglKey);
+                }
+
+                // PROTEKSI KUNCI DATA (FREEZE):
+                // Jika tanggal berada pada atau sebelum batas gembok (misal s.d 30 Sep 2026),
+                // abaikan pembacaan scan baru agar data masa lalu tidak pernah tertimpa / rusak!
+                if (frozenUntilDate && tglKey <= frozenUntilDate) {
+                    continue;
+                }
+
                 // Ambil scan
                 const scans = [];
                 for (let j = idxScanStart; j < row.length; j++) {
@@ -2830,18 +2855,6 @@
                     }
                 }
                 scans.sort((a, b) => a.mins - b.mins);
-
-                // Inisialisasi Matriks Asrama jika belum ada
-                if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
-                if (!asramaMatrix[pin][tglKey]) {
-                    asramaMatrix[pin][tglKey] = getAsramaDefault(pin, day, tglKey);
-                }
-
-                // Inisialisasi Matriks MDNU jika belum ada
-                if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
-                if (!mdnuMatrix[pin][tglKey]) {
-                    mdnuMatrix[pin][tglKey] = getMDNUDefault(pin, day, tglKey);
-                }
 
                 let asr = asramaMatrix[pin][tglKey];
                 let mdn = mdnuMatrix[pin][tglKey];
