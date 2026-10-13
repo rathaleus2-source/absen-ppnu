@@ -1282,6 +1282,32 @@
             }, 400);
         }
 
+        // ========================================================
+        // SINKRONISASI PARSIAL INSTAN (TARGETED REALTIME UPDATE)
+        // Kecepatan < 100ms: Hanya kirim sel yang berubah, BUKAN 1.8 MB!
+        // ========================================================
+        function simpanPerubahanSelKeCloud(cleanPin, tgl, sesi, tab, next, timeVal) {
+            simpanKeLocalStorage();
+            if (!fbDb) return;
+
+            updateCloudSyncStatus('saving', 'Menyimpan...');
+            const matrixName = (tab === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
+            const updates = {};
+            updates[`absensi_ppnu/${matrixName}/${cleanPin}/${tgl}/${sesi}`] = next;
+            updates[`absensi_ppnu/${matrixName}/${cleanPin}/${tgl}/${sesi}_time`] = timeVal || '';
+            updates[`absensi_ppnu/manualCellOverrides/${cleanPin}__${tgl}__${sesi}__${tab}`] = next;
+            updates['absensi_ppnu/meta/lastUpdated'] = new Date().toISOString();
+
+            fbDb.ref().update(updates)
+                .then(() => {
+                    updateCloudSyncStatus('synced', 'Tersimpan');
+                })
+                .catch((err) => {
+                    console.error("Gagal sinkronisasi parsial, fallback ke full save:", err);
+                    simpanKeCloud();
+                });
+        }
+
         // State Aplikasi: Data Tersimpan dalam Bentuk Matriks
         // santriList: [{ pin, nama }]
         // dateList: [{ rawDate, displayDate, namaHari, dayIndex, timestamp }]
@@ -2693,7 +2719,12 @@
 
             terapkanFilter();
             renderEvaluasi();
-            if (isAdmin) simpanKeCloud();
+            if (isAdmin) {
+                const timeVal = (tab === 'asrama')
+                    ? (sesi === 'subuh' ? (mat[cleanPin][tgl].subuh_time || '') : (mat[cleanPin][tgl].malam_time || ''))
+                    : (mat[cleanPin][tgl][`${sesi}_time`] || '');
+                simpanPerubahanSelKeCloud(cleanPin, tgl, sesi, tab, next, timeVal);
+            }
             tampilkanToast(`✅ ${cleanPin} (${tgl} - ${sesi.toUpperCase()}): Diubah menjadi ${next === 'I' ? 'IZIN' : (next === 'H' ? 'HADIR' : 'ALPHA')}`);
         }
 
@@ -3273,7 +3304,15 @@
                 `;
             });
 
+            const oldScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            const oldScrollLeft = oldScrollBox ? oldScrollBox.scrollLeft : 0;
+            const oldScrollTop = oldScrollBox ? oldScrollBox.scrollTop : 0;
             viewContainer.innerHTML = htmlFull;
+            const newScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            if (newScrollBox) {
+                newScrollBox.scrollLeft = oldScrollLeft;
+                newScrollBox.scrollTop = oldScrollTop;
+            }
         }
 
                 function renderTableMDNU(santriArr) {
@@ -3482,7 +3521,15 @@
                 `;
             });
 
+            const oldScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            const oldScrollLeft = oldScrollBox ? oldScrollBox.scrollLeft : 0;
+            const oldScrollTop = oldScrollBox ? oldScrollBox.scrollTop : 0;
             viewContainer.innerHTML = htmlFull;
+            const newScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            if (newScrollBox) {
+                newScrollBox.scrollLeft = oldScrollLeft;
+                newScrollBox.scrollTop = oldScrollTop;
+            }
         }
 
         // Tab Navigation
