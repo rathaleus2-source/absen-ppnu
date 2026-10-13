@@ -1008,10 +1008,9 @@
         function getAdminPassword() {
             return localStorage.getItem("ppnu_admin_password") || DEFAULT_ADMIN_PASSWORD;
         }
-        // Selalu mulai dalam mode publik saat halaman pertama kali dibuka
-        let isAdmin = false;
-        let currentInterface = 'publik';
-        sessionStorage.removeItem("ppnu_admin_logged");
+        // Pertahankan sesi Admin jika sebelumnya sudah login di tab ini
+        let isAdmin = sessionStorage.getItem("ppnu_admin_logged") === "true";
+        let currentInterface = isAdmin ? 'admin' : 'publik';
 
         function setInterface(target) {
             if (target === 'admin' && !isAdmin) {
@@ -2641,10 +2640,26 @@
                 bukaModalLoginAdmin();
                 return;
             }
+            const cleanPin = String(pin || '').trim().toUpperCase();
             const mat = (tab === 'asrama') ? asramaMatrix : mdnuMatrix;
-            if (!mat[pin] || !mat[pin][tgl]) return;
-            const cur = mat[pin][tgl][sesi];
-            if (cur === 'LIBUR') return;
+            if (!mat[cleanPin]) mat[cleanPin] = {};
+            if (!mat[cleanPin][tgl]) {
+                const dateObj = (dateList || []).find(d => d.displayDate === tgl);
+                const dayIdx = dateObj ? dateObj.dayIndex : 1;
+                mat[cleanPin][tgl] = (tab === 'asrama') 
+                    ? getAsramaDefault(cleanPin, dayIdx, tgl) 
+                    : getMDNUDefault(cleanPin, dayIdx, tgl);
+            }
+
+            const dateObj = (dateList || []).find(d => d.displayDate === tgl);
+            const dayIdx = dateObj ? dateObj.dayIndex : 1;
+            const curCell = (tab === 'asrama') ? getAsramaCell(cleanPin, dayIdx, tgl) : getMDNUCell(cleanPin, dayIdx, tgl);
+            const cur = curCell[sesi];
+
+            if (cur === 'LIBUR') {
+                tampilkanToast("Sesi ini adalah hari libur resmi (tidak dapat diubah).");
+                return;
+            }
 
             let next = 'A';
             if (cur === 'A' || cur === '-' || !cur) {
@@ -2655,13 +2670,24 @@
                 next = 'A';
             }
 
-            mat[pin][tgl][sesi] = next;
-            const key = `${pin}__${tgl}__${sesi}__${tab}`;
+            mat[cleanPin][tgl][sesi] = next;
+            const key = `${cleanPin}__${tgl}__${sesi}__${tab}`;
             manualCellOverrides[key] = next;
+
+            // Jika diubah menjadi Alpha atau Izin, bersihkan jam scan
+            if (next === 'A' || next === 'I') {
+                if (tab === 'asrama') {
+                    if (sesi === 'subuh') mat[cleanPin][tgl].subuh_time = '';
+                    else if (sesi === 'malam') mat[cleanPin][tgl].malam_time = '';
+                } else {
+                    mat[cleanPin][tgl][`${sesi}_time`] = '';
+                }
+            }
 
             terapkanFilter();
             renderEvaluasi();
             if (isAdmin) simpanKeCloud();
+            tampilkanToast(`✅ ${cleanPin} (${tgl} - ${sesi.toUpperCase()}): Diubah menjadi ${next === 'I' ? 'IZIN' : (next === 'H' ? 'HADIR' : 'ALPHA')}`);
         }
 
                 // Format Badge Tampilan Cell Standar Presisi (H, A, I, K, LIBUR, -)
@@ -2676,10 +2702,8 @@
                 return `<span class="badge-cell bg-indigo-100 text-indigo-900 border border-indigo-300 select-none shadow-2xs" title="Dispensasi: KKN / Tugas Pondok">K</span>`;
             }
             const isModeAdmin = (currentInterface === 'admin' && isAdmin);
-            const clickAttr = isModeAdmin
-                ? `onclick="cycleStatusCell('${pin}', '${tgl}', '${sesi}', '${tab}')"`
-                : ``;
-            const cursorClass = isModeAdmin ? "cursor-pointer hover:opacity-80 active:scale-95" : "cursor-default";
+            const clickAttr = `onclick="cycleStatusCell('${pin}', '${tgl}', '${sesi}', '${tab}')"`;
+            const cursorClass = "cursor-pointer hover:opacity-80 active:scale-95";
 
             if (val === 'I' || val === 'IZIN') {
                 const hint = isModeAdmin ? " (Klik untuk ganti: I -> H -> A)" : "";
@@ -4104,13 +4128,13 @@
                                         <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
                                         <div class="flex items-center gap-1">
                                             ${isAsrama ? `
-                                                <span class="badge-cell text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
-                                                <span class="badge-cell text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'subuh', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'malam', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
                                             ` : `
-                                                <span class="badge-cell text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
-                                                <span class="badge-cell text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
-                                                <span class="badge-cell text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3}</span>
-                                                <span class="badge-cell text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'sore', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel1', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel2', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel3', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4}</span>
                                             `}
                                         </div>
                                     </div>
