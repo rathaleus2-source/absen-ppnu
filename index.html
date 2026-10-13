@@ -532,6 +532,101 @@
         <!-- Results Section (Visible after processing) -->
         <div id="resultsWrapper" class="hidden space-y-6">
 
+            <!-- Widget Ringkasan Cerdas Hari Ini (Live Dashboard Card) -->
+            <div id="widgetLiveToday"
+                class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-5 sm:p-6 shadow-xl border border-indigo-500/30 transition-all duration-300">
+                <!-- Ambient Glow Background -->
+                <div class="absolute -right-16 -top-16 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-56 h-56 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <!-- Kiri: Waktu, Tanggal & Status Sesi Cerdas Realtime -->
+                    <div class="space-y-3 flex-1">
+                        <div class="flex items-center gap-2.5 flex-wrap">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold tracking-wide">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                LIVE MONITOR
+                            </span>
+                            <span id="liveWidgetTodayDate" class="text-xs sm:text-sm font-bold text-slate-300">
+                                Memuat Tanggal...
+                            </span>
+                            <span class="text-slate-600">•</span>
+                            <span id="liveWidgetDigitalClock" class="font-mono text-xs sm:text-sm font-extrabold text-emerald-400 bg-black/40 px-2.5 py-0.5 rounded-lg border border-emerald-500/20 shadow-inner">
+                                --:--:-- WIB
+                            </span>
+                        </div>
+
+                        <!-- Sesi Status Hero -->
+                        <div class="flex items-start sm:items-center gap-3">
+                            <div id="liveWidgetSessionIcon"
+                                class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-emerald-500/30 shrink-0">
+                                📖
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h3 id="liveWidgetSessionTitle" class="text-base sm:text-lg font-black text-white tracking-tight">
+                                        Memeriksa Jadwal Sesi...
+                                    </h3>
+                                    <span id="liveWidgetSessionBadge"
+                                        class="text-[11px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-200 border border-emerald-400/40">
+                                        Otomatis
+                                    </span>
+                                </div>
+                                <p id="liveWidgetSessionDesc" class="text-xs text-slate-300 font-medium mt-0.5">
+                                    Sinkronisasi data kehadiran dan jadwal santri PPNU Putra.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kanan: Quick Stats Hadir, Izin, Alpha Hari Ini & Tombol Lompat -->
+                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 backdrop-blur-md">
+                        <!-- Mini Stats Grid -->
+                        <div class="grid grid-cols-3 gap-2.5 text-center min-w-[230px]">
+                            <div class="p-2.5 rounded-lg bg-emerald-950/50 border border-emerald-500/30 shadow-2xs">
+                                <span class="text-[10px] text-emerald-300 font-bold uppercase tracking-wider block">Hadir (H)</span>
+                                <span id="liveStatHadirToday" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono">0</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-amber-950/50 border border-amber-500/30 shadow-2xs">
+                                <span class="text-[10px] text-amber-300 font-bold uppercase tracking-wider block">Izin (I)</span>
+                                <span id="liveStatIzinToday" class="text-xl sm:text-2xl font-black text-amber-400 font-mono">0</span>
+                            </div>
+                            <div class="p-2.5 rounded-lg bg-rose-950/50 border border-rose-500/30 shadow-2xs">
+                                <span class="text-[10px] text-rose-300 font-bold uppercase tracking-wider block">Alpha (A)</span>
+                                <span id="liveStatAlphaToday" class="text-xl sm:text-2xl font-black text-rose-400 font-mono">0</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress & Quick Jump -->
+                        <div class="flex flex-col justify-between gap-2.5 sm:border-l sm:border-slate-800 sm:pl-4">
+                            <div>
+                                <div class="flex items-center justify-between text-[11px] font-bold text-slate-300 mb-1">
+                                    <span id="liveStatLabelKategori">Kehadiran (Aktif):</span>
+                                    <span id="liveStatPersenToday" class="text-emerald-400 font-mono font-black">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+                                    <div id="liveStatProgressBarToday" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <select id="liveWidgetPilihTanggal" onchange="gantiTanggalMonitorWidget(this.value)"
+                                    class="bg-slate-900 text-slate-200 border border-slate-700 text-xs font-bold rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[150px] truncate"
+                                    title="Pilih tanggal yang ingin dipantau">
+                                    <!-- Diisi otomatis oleh JavaScript -->
+                                </select>
+                                <button onclick="lompatKeKolomTanggalWidget()"
+                                    class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-sm whitespace-nowrap cursor-pointer active:scale-95"
+                                    title="Lompat dan sorot kolom tanggal ini di tabel">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                                    <span>Lihat Tabel</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Stats Bar & Quick Export -->
             <div
                 class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-6 shadow-xl border border-slate-700 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -3117,6 +3212,10 @@
             } else if (activeTab === 'rekapitulasi') {
                 renderRekapitulasiSantri(filteredSantri);
             }
+
+            if (typeof renderLiveTodayWidget === 'function') {
+                renderLiveTodayWidget();
+            }
         }
 
         // ATURAN REVISI 3: Render Tabel Asrama beserta Kolom Rekap (H, A, I, JP, % dan Merah jika >= 15%)
@@ -4821,6 +4920,412 @@
                 prosesSinkronIzinGoogleForm(false);
             }
         }, 2500);
+
+        // ========================================================
+        // FITUR: WIDGET RINGKASAN CERDAS HARI INI (LIVE DASHBOARD CARD)
+        // ========================================================
+        let widgetSelectedDate = null;
+        let liveClockIntervalId = null;
+
+        function getTodayISODate() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = String(now.getMonth() + 1).padStart(2, '0');
+            const d = String(now.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        // Evaluasi jadwal sesi cerdas real-time berdasarkan jam dan hari saat ini
+        function evaluasiStatusSesiCerdas() {
+            const now = new Date();
+            const jam = now.getHours();
+            const menit = now.getMinutes();
+            const totalMenit = jam * 60 + menit;
+            const day = now.getDay(); // 0: Minggu, 1: Senin, ..., 5: Jumat, 6: Sabtu
+
+            // 1. Dini hari / Subuh (04:00 - 07:00 WIB)
+            if (totalMenit >= 4 * 60 && totalMenit <= 7 * 60) {
+                if (day === 5 || day === 0) {
+                    return {
+                        icon: '🕌',
+                        title: 'Subuh: Hari Libur Asrama',
+                        badge: 'Libur Resmi',
+                        badgeClass: 'bg-slate-700 text-slate-300 border-slate-600',
+                        desc: 'Jumat & Minggu jadwal Subuh santri libur.'
+                    };
+                }
+                return {
+                    icon: '🕌',
+                    title: 'Sesi Asrama Subuh (04:00 - 07:00 WIB)',
+                    badge: '🟢 Sedang Berlangsung',
+                    badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
+                    desc: 'Presensi kajian Subuh santri aktif.'
+                };
+            }
+
+            // 2. Pagi - Siang (07:01 - 13:59 WIB)
+            if (totalMenit > 7 * 60 && totalMenit < 14 * 60) {
+                const sisaMenit = (14 * 60) - totalMenit;
+                const jamTunggu = Math.floor(sisaMenit / 60);
+                const menitTunggu = sisaMenit % 60;
+                const waktuTeks = jamTunggu > 0 ? `${jamTunggu} jam ${menitTunggu} mnt` : `${menitTunggu} menit`;
+
+                let targetSesi = 'Sore (14:00 WIB)';
+                let keterangan = 'Kegiatan pagi santri. Sesi presensi berikutnya: Sore.';
+                if (day !== 6 && day !== 0 && day !== 4) {
+                    targetSesi = 'Pel 1 (18:30 WIB)';
+                    keterangan = 'Siang hari. Sesi MDNU malam dimulai pukul 18:30 WIB.';
+                }
+
+                return {
+                    icon: '☀️',
+                    title: `Menuju Sesi: ${targetSesi}`,
+                    badge: `⏳ Sisa ~${waktuTeks}`,
+                    badgeClass: 'bg-amber-500/30 text-amber-200 border-amber-400/40',
+                    desc: keterangan
+                };
+            }
+
+            // 3. Sore (14:00 - 17:30 WIB)
+            if (totalMenit >= 14 * 60 && totalMenit <= (17 * 60 + 30)) {
+                if (day === 6 || day === 0) {
+                    return {
+                        icon: '📚',
+                        title: 'Sesi Sore MDNU (14:00 - 17:30 WIB)',
+                        badge: '🟢 Khusus Kelas 1UA',
+                        badgeClass: 'bg-indigo-500/30 text-indigo-200 border-indigo-400/40',
+                        desc: 'Sabtu & Minggu khusus jadwal sore kelas 1UA.'
+                    };
+                } else if (day === 4) {
+                    return {
+                        icon: '📚',
+                        title: 'Sesi Sore MDNU (14:00 - 17:30 WIB)',
+                        badge: '🟢 Khusus Kelas 2WA',
+                        badgeClass: 'bg-indigo-500/30 text-indigo-200 border-indigo-400/40',
+                        desc: 'Hari Kamis khusus jadwal sore kelas 2WA.'
+                    };
+                } else {
+                    return {
+                        icon: '☕',
+                        title: 'Sore: Bebas KBM MDNU',
+                        badge: 'Istirahat Sore',
+                        badgeClass: 'bg-slate-700 text-slate-300 border-slate-600',
+                        desc: 'Sesi MDNU Pelajaran 1 akan dimulai pukul 18:30 WIB.'
+                    };
+                }
+            }
+
+            // 4. Menjelang Maghrib & Persiapan Malam (17:31 - 18:29 WIB)
+            if (totalMenit > (17 * 60 + 30) && totalMenit < (18 * 60 + 30)) {
+                if (day === 4) {
+                    return {
+                        icon: '🕌',
+                        title: 'Persiapan Asrama Malam Jumat (18:00 - 23:00 WIB)',
+                        badge: '🟢 Malam Jumat Aktif',
+                        badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40',
+                        desc: 'Seluruh santri berkegiatan di Asrama. MDNU libur.'
+                    };
+                }
+                const sisa = (18 * 60 + 30) - totalMenit;
+                return {
+                    icon: '🕌',
+                    title: 'Persiapan Sesi Pel 1 (18:30 WIB)',
+                    badge: `⏳ Sisa ${sisa} Menit`,
+                    badgeClass: 'bg-amber-500/30 text-amber-200 border-amber-400/40 animate-pulse',
+                    desc: 'Santri bersiap mengikuti KBM MDNU Pelajaran 1.'
+                };
+            }
+
+            // 5. Malam Pel 1 (18:30 - 19:30 WIB)
+            if (totalMenit >= (18 * 60 + 30) && totalMenit <= (19 * 60 + 30)) {
+                if (day === 4) {
+                    return {
+                        icon: '🕌',
+                        title: 'Asrama Malam Jumat (18:00 - 23:00 WIB)',
+                        badge: '🟢 Berlangsung',
+                        badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40',
+                        desc: 'Kajian & kegiatan Asrama Malam Jumat seluruh santri.'
+                    };
+                }
+                return {
+                    icon: '📖',
+                    title: 'Sesi Pelajaran 1 (18:30 - 19:30 WIB)',
+                    badge: '🟢 Sedang Berlangsung',
+                    badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
+                    desc: 'KBM MDNU Pelajaran 1 sedang berlangsung.'
+                };
+            }
+
+            // 6. Jeda Pelajaran 1 ke Pelajaran 2 (19:31 - 19:39 WIB)
+            if (totalMenit > (19 * 60 + 30) && totalMenit < (19 * 60 + 40)) {
+                const sisa = (19 * 60 + 40) - totalMenit;
+                return {
+                    icon: '⏳',
+                    title: 'Jeda Pelajaran (Pel 2 Mulai 19:40 WIB)',
+                    badge: `⏳ Sisa ${sisa} Menit`,
+                    badgeClass: 'bg-teal-500/30 text-teal-200 border-teal-400/40',
+                    desc: 'Pergantian jam mengajar ustadz ke Pelajaran 2.'
+                };
+            }
+
+            // 7. Malam Pel 2 (19:40 - 20:59 WIB)
+            if (totalMenit >= (19 * 60 + 40) && totalMenit <= (20 * 60 + 59)) {
+                if (day === 4) {
+                    return {
+                        icon: '🕌',
+                        title: 'Asrama Malam Jumat (18:00 - 23:00 WIB)',
+                        badge: '🟢 Berlangsung',
+                        badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40',
+                        desc: 'Kegiatan Asrama Malam Jumat.'
+                    };
+                }
+                return {
+                    icon: '📖',
+                    title: 'Sesi Pelajaran 2 (19:40 - 20:59 WIB)',
+                    badge: '🟢 Sedang Berlangsung',
+                    badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
+                    desc: 'KBM MDNU Pelajaran 2 sedang berlangsung.'
+                };
+            }
+
+            // 8. Malam Pel 3 (21:00 - 22:30 WIB)
+            if (totalMenit >= (21 * 60) && totalMenit <= (22 * 60 + 30)) {
+                if (day === 4) {
+                    return {
+                        icon: '🕌',
+                        title: 'Asrama Malam Jumat (18:00 - 23:00 WIB)',
+                        badge: '🟢 Berlangsung',
+                        badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40',
+                        desc: 'Kegiatan Asrama Malam Jumat.'
+                    };
+                } else if (day === 0) {
+                    return {
+                        icon: '🌙',
+                        title: 'Pel 3 MDNU & Malam Asrama 1UA (21:00 - 22:30 WIB)',
+                        badge: '🟢 Sesi Akhir',
+                        badgeClass: 'bg-indigo-500/30 text-indigo-200 border-indigo-400/40',
+                        desc: 'Pelajaran 3 MDNU dan Sesi Malam Asrama khusus 1UA.'
+                    };
+                }
+                return {
+                    icon: '📖',
+                    title: 'Sesi Pelajaran 3 (21:00 - 22:30 WIB)',
+                    badge: '🟢 Sedang Berlangsung',
+                    badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
+                    desc: 'KBM MDNU Pelajaran 3 (Sesi malam terakhir).'
+                };
+            }
+
+            // 9. Larut malam / Istirahat
+            return {
+                icon: '🌙',
+                title: 'Kegiatan Hari Ini Telah Selesai',
+                badge: 'Istirahat Santri',
+                badgeClass: 'bg-slate-700 text-slate-300 border-slate-600',
+                desc: 'Jam istirahat santri. Sesi presensi berikutnya: Subuh (04:00 WIB).'
+            };
+        }
+
+        // Update tampilan Widget Ringkasan Cerdas Hari Ini
+        function renderLiveTodayWidget() {
+            const widgetEl = document.getElementById('widgetLiveToday');
+            if (!widgetEl) return;
+
+            const now = new Date();
+            const todayISO = getTodayISODate();
+
+            // 1. Digital Clock & Tanggal
+            const clockEl = document.getElementById('liveWidgetDigitalClock');
+            if (clockEl) {
+                const h = String(now.getHours()).padStart(2, '0');
+                const m = String(now.getMinutes()).padStart(2, '0');
+                const s = String(now.getSeconds()).padStart(2, '0');
+                clockEl.innerText = `${h}:${m}:${s} WIB`;
+            }
+
+            const daysIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const monthsIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            const tglStringIndo = `${daysIndo[now.getDay()]}, ${now.getDate()} ${monthsIndo[now.getMonth()]} ${now.getFullYear()}`;
+
+            const dateLabelEl = document.getElementById('liveWidgetTodayDate');
+            if (dateLabelEl) dateLabelEl.innerText = tglStringIndo;
+
+            // 2. Evaluasi Sesi Realtime
+            const evalSesi = evaluasiStatusSesiCerdas();
+            const iconEl = document.getElementById('liveWidgetSessionIcon');
+            if (iconEl) iconEl.innerText = evalSesi.icon;
+
+            const titleEl = document.getElementById('liveWidgetSessionTitle');
+            if (titleEl) titleEl.innerText = evalSesi.title;
+
+            const badgeEl = document.getElementById('liveWidgetSessionBadge');
+            if (badgeEl) {
+                badgeEl.innerText = evalSesi.badge;
+                badgeEl.className = `text-[11px] font-extrabold px-2 py-0.5 rounded-full border ${evalSesi.badgeClass}`;
+            }
+
+            const descEl = document.getElementById('liveWidgetSessionDesc');
+            if (descEl) descEl.innerText = evalSesi.desc;
+
+            // 3. Tentukan tanggal yang dipantau di statistik
+            if (!dateList || dateList.length === 0) {
+                return; // Belum ada data
+            }
+
+            // Jika widgetSelectedDate belum diset, utamakan tanggal hari ini jika ada di data,
+            // jika tidak ada, gunakan tanggal terbaru (terakhir di dateList)
+            if (!widgetSelectedDate) {
+                const existsToday = dateList.some(d => d.displayDate === todayISO);
+                if (existsToday) {
+                    widgetSelectedDate = todayISO;
+                } else {
+                    widgetSelectedDate = dateList[dateList.length - 1].displayDate;
+                }
+            }
+
+            // Isi / update dropdown pilihan tanggal jika opsi berbeda
+            const selectEl = document.getElementById('liveWidgetPilihTanggal');
+            if (selectEl) {
+                const currentVal = widgetSelectedDate;
+                if (selectEl.children.length !== dateList.length) {
+                    let optHtml = '';
+                    // Tampilkan urutan mundur (terbaru di atas)
+                    for (let i = dateList.length - 1; i >= 0; i--) {
+                        const d = dateList[i];
+                        const isTdy = (d.displayDate === todayISO);
+                        const labelTgl = isTdy ? `⭐ Hari Ini (${d.displayDate})` : `${d.namaHari}, ${d.displayDate}`;
+                        optHtml += `<option value="${d.displayDate}" ${d.displayDate === currentVal ? 'selected' : ''}>${labelTgl}</option>`;
+                    }
+                    selectEl.innerHTML = optHtml;
+                } else if (selectEl.value !== currentVal) {
+                    selectEl.value = currentVal;
+                }
+            }
+
+            // 4. Hitung Statistik Hadir, Izin, Alpha untuk widgetSelectedDate
+            const targetDateObj = dateList.find(d => d.displayDate === widgetSelectedDate);
+            if (!targetDateObj) return;
+
+            const tgl = targetDateObj.displayDate;
+            const dayIdx = targetDateObj.dayIndex;
+
+            // Tentukan kategori tab mana yang sedang aktif untuk penyesuaian label
+            const labelKatEl = document.getElementById('liveStatLabelKategori');
+            let modeTab = (activeTab === 'asrama') ? 'asrama' : (activeTab === 'mdnu' ? 'mdnu' : 'gabungan');
+            if (labelKatEl) {
+                if (modeTab === 'asrama') labelKatEl.innerText = 'Kehadiran Asrama:';
+                else if (modeTab === 'mdnu') labelKatEl.innerText = 'Kehadiran MDNU:';
+                else labelKatEl.innerText = 'Kehadiran Aktif:';
+            }
+
+            let statH = 0;
+            let statI = 0;
+            let statA = 0;
+
+            (santriList || []).forEach(s => {
+                const pin = s.pin;
+
+                // 1. Cek Asrama
+                if (modeTab === 'asrama' || modeTab === 'gabungan') {
+                    if (!hiddenSantriAsrama[pin]) {
+                        const cellAsr = getAsramaCell(pin, dayIdx, tgl);
+                        ['subuh', 'malam'].forEach(sesi => {
+                            const v = cellAsr[sesi];
+                            if (v === 'H') statH++;
+                            else if (v === 'I' || v === 'IZIN') statI++;
+                            else if (v === 'A') statA++;
+                        });
+                    }
+                }
+
+                // 2. Cek MDNU
+                if (modeTab === 'mdnu' || modeTab === 'gabungan') {
+                    if (!hiddenSantriMDNU[pin]) {
+                        const cellMdn = getMDNUCell(pin, dayIdx, tgl);
+                        ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
+                            const v = cellMdn[sesi];
+                            if (v === 'H') statH++;
+                            else if (v === 'I' || v === 'IZIN') statI++;
+                            else if (v === 'A') statA++;
+                        });
+                    }
+                }
+            });
+
+            const totalSesi = statH + statI + statA;
+            const persen = totalSesi > 0 ? ((statH / totalSesi) * 100).toFixed(1) : '0';
+
+            const elH = document.getElementById('liveStatHadirToday');
+            if (elH) elH.innerText = statH.toLocaleString('id-ID');
+
+            const elI = document.getElementById('liveStatIzinToday');
+            if (elI) elI.innerText = statI.toLocaleString('id-ID');
+
+            const elA = document.getElementById('liveStatAlphaToday');
+            if (elA) elA.innerText = statA.toLocaleString('id-ID');
+
+            const elPct = document.getElementById('liveStatPersenToday');
+            if (elPct) elPct.innerText = `${persen}%`;
+
+            const elProg = document.getElementById('liveStatProgressBarToday');
+            if (elProg) {
+                elProg.style.width = `${Math.min(100, Math.max(0, persen))}%`;
+            }
+        }
+
+        function gantiTanggalMonitorWidget(tglVal) {
+            widgetSelectedDate = tglVal;
+            renderLiveTodayWidget();
+        }
+
+        // Lompat dan sorot kolom tanggal yang dipilih di tabel
+        function lompatKeKolomTanggalWidget() {
+            if (!widgetSelectedDate) return;
+            const targetTgl = widgetSelectedDate;
+
+            // Pastikan tab aktif adalah matriks
+            if (currentViewMode === 'cards') {
+                toggleViewMode('matrix');
+            }
+
+            // Cari elemen header atau sel tanggal di container aktif
+            const containerId = (activeTab === 'asrama') ? 'tableContainerAsrama' : 'tableContainerMDNU';
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Cari kolom header yang memiliki teks atau dataset tanggal ini
+            const headers = container.querySelectorAll('th');
+            let foundHeader = null;
+            headers.forEach(th => {
+                if (th.innerText && th.innerText.includes(targetTgl)) {
+                    foundHeader = th;
+                }
+            });
+
+            if (foundHeader) {
+                foundHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                // Animasi highlight
+                foundHeader.classList.add('ring-4', 'ring-emerald-400', 'bg-amber-100');
+                setTimeout(() => {
+                    foundHeader.classList.remove('ring-4', 'ring-emerald-400', 'bg-amber-100');
+                }, 2000);
+                tampilkanToast(`🎯 Menyorot tanggal: ${targetTgl}`);
+            } else {
+                tampilkanToast(`Tanggal ${targetTgl} terpilih.`);
+            }
+        }
+
+        // Inisialisasi Timer Realtime Clock Widget
+        function initLiveTodayWidgetTimer() {
+            if (liveClockIntervalId) clearInterval(liveClockIntervalId);
+            liveClockIntervalId = setInterval(() => {
+                renderLiveTodayWidget();
+            }, 1000);
+            renderLiveTodayWidget();
+        }
+
+        // Jalankan timer saat script dimuat
+        initLiveTodayWidgetTimer();
     </script>
         <!-- ======================================================== -->
     <!-- MODAL 1: KELOLA STATUS SANTRI (MUKIM, LAJU & BOYONG) -->
