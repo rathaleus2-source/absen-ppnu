@@ -4828,73 +4828,83 @@
                         }
 
                         const isoTgl = formatISODate(curDt);
+                        const dayIdx = curDt.getDay();
 
-                        // 1. Asrama Subuh jika ada 'pagi' / 'subuh' atau izin mencakup penuh
-                        const isPagi = isFullDay || sesiStr.includes('pagi') || sesiStr.includes('subuh');
-                        if (isPagi) {
+                        // 1. Asrama (Subuh & Malam)
+                        // Syarat:
+                        // - Santri bukan santri Laju (santri laju tidak ada asrama)
+                        // - Sesi jadwal asrama AKTIF (bukan LIBUR Jumat/Minggu/Libur Khusus)
+                        // - Santri belum hadir fisik (H)
+                        // - Status saat ini adalah Alpha (A atau -)
+                        const isSantriLaju = !!hiddenSantriAsrama[pin];
+                        const defAsr = getAsramaDefault(pin, dayIdx, isoTgl);
+
+                        if (!isSantriLaju) {
                             if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
-                            if (!asramaMatrix[pin][isoTgl]) asramaMatrix[pin][isoTgl] = { subuh: 'A', malam: 'A', subuh_time: '', malam_time: '' };
+                            if (!asramaMatrix[pin][isoTgl]) {
+                                asramaMatrix[pin][isoTgl] = Object.assign({}, defAsr);
+                            }
 
-                            const curStat = asramaMatrix[pin][isoTgl].subuh || 'A';
-                            // ATURAN 2: HADIR FISIK MENANG
-                            if (curStat === 'H' || asramaMatrix[pin][isoTgl].subuh_time) {
-                                countKeptHadir++;
-                            } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
-                                asramaMatrix[pin][isoTgl].subuh = 'I';
-                                asramaMatrix[pin][isoTgl].subuh_time = '';
-                                permissionDetailsMap[`${pin}__${isoTgl}__subuh__asrama`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
-                                countConvertedToIzin++;
+                            const curAsr = asramaMatrix[pin][isoTgl];
+
+                            // 1a. Asrama Subuh
+                            const isPagi = isFullDay || sesiStr.includes('pagi') || sesiStr.includes('subuh');
+                            if (isPagi && curAsr.subuh !== 'LIBUR' && curAsr.subuh !== 'BELUM') {
+                                if (curAsr.subuh === 'H' || curAsr.subuh_time) {
+                                    countKeptHadir++;
+                                } else if (curAsr.subuh === 'A' || curAsr.subuh === '-' || curAsr.subuh === 'I') {
+                                    curAsr.subuh = 'I';
+                                    curAsr.subuh_time = '';
+                                    permissionDetailsMap[`${pin}__${isoTgl}__subuh__asrama`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
+                                    countConvertedToIzin++;
+                                }
+                            }
+
+                            // 1b. Asrama Malam
+                            const isMalamAsrama = isFullDay || sesiStr.includes('malam') || (sesiStr.includes('ke-1') && sesiStr.includes('ke-2') && sesiStr.includes('ke-3'));
+                            if (isMalamAsrama && curAsr.malam !== 'LIBUR' && curAsr.malam !== 'BELUM') {
+                                if (curAsr.malam === 'H' || curAsr.malam_time) {
+                                    countKeptHadir++;
+                                } else if (curAsr.malam === 'A' || curAsr.malam === '-' || curAsr.malam === 'I') {
+                                    curAsr.malam = 'I';
+                                    curAsr.malam_time = '';
+                                    permissionDetailsMap[`${pin}__${isoTgl}__malam__asrama`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
+                                    countConvertedToIzin++;
+                                }
                             }
                         }
 
-                        // 2. Asrama Malam jika izin mencakup malam / multi hari / pulang
-                        const isMalamAsrama = isFullDay || sesiStr.includes('malam') || (sesiStr.includes('ke-1') && sesiStr.includes('ke-2') && sesiStr.includes('ke-3'));
-                        if (isMalamAsrama) {
-                            if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
-                            if (!asramaMatrix[pin][isoTgl]) asramaMatrix[pin][isoTgl] = { subuh: 'A', malam: 'A', subuh_time: '', malam_time: '' };
-
-                            const curStat = asramaMatrix[pin][isoTgl].malam || 'A';
-                            if (curStat === 'H' || asramaMatrix[pin][isoTgl].malam_time) {
-                                countKeptHadir++;
-                            } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
-                                asramaMatrix[pin][isoTgl].malam = 'I';
-                                asramaMatrix[pin][isoTgl].malam_time = '';
-                                permissionDetailsMap[`${pin}__${isoTgl}__malam__asrama`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
-                                countConvertedToIzin++;
-                            }
+                        // 2. MDNU (Sore, Pel 1, Pel 2, Pel 3)
+                        const defMdn = getMDNUDefault(pin, dayIdx, isoTgl);
+                        if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
+                        if (!mdnuMatrix[pin][isoTgl]) {
+                            mdnuMatrix[pin][isoTgl] = Object.assign({}, defMdn);
                         }
+                        const curMdn = mdnuMatrix[pin][isoTgl];
 
-                        // 3. MDNU Sore jika ada 'sore' atau izin mencakup penuh
+                        // 2a. MDNU Sore
                         const isSore = isFullDay || sesiStr.includes('sore');
-                        if (isSore) {
-                            if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
-                            if (!mdnuMatrix[pin][isoTgl]) mdnuMatrix[pin][isoTgl] = { sore: 'A', pel1: 'A', pel2: 'A', pel3: 'A' };
-
-                            const curStat = mdnuMatrix[pin][isoTgl].sore || 'A';
-                            if (curStat === 'H' || mdnuMatrix[pin][isoTgl].sore_time) {
+                        if (isSore && curMdn.sore !== 'LIBUR' && curMdn.sore !== 'BELUM') {
+                            if (curMdn.sore === 'H' || curMdn.sore_time) {
                                 countKeptHadir++;
-                            } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
-                                mdnuMatrix[pin][isoTgl].sore = 'I';
-                                mdnuMatrix[pin][isoTgl].sore_time = '';
+                            } else if (curMdn.sore === 'A' || curMdn.sore === '-' || curMdn.sore === 'I') {
+                                curMdn.sore = 'I';
+                                curMdn.sore_time = '';
                                 permissionDetailsMap[`${pin}__${isoTgl}__sore__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
                                 countConvertedToIzin++;
                             }
                         }
 
-                        // 4. MDNU Pel 1, 2, 3
+                        // 2b. MDNU Pel 1, 2, 3
                         for (let pIdx = 1; pIdx <= 3; pIdx++) {
                             const matchPel = isFullDay || sesiStr.includes(`ke-${pIdx}`) || sesiStr.includes(`ke ${pIdx}`);
-                            if (matchPel) {
-                                const sKey = `pel${pIdx}`;
-                                if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
-                                if (!mdnuMatrix[pin][isoTgl]) mdnuMatrix[pin][isoTgl] = { sore: 'A', pel1: 'A', pel2: 'A', pel3: 'A' };
-
-                                const curStat = mdnuMatrix[pin][isoTgl][sKey] || 'A';
-                                if (curStat === 'H' || mdnuMatrix[pin][isoTgl][`${sKey}_time`]) {
+                            const sKey = `pel${pIdx}`;
+                            if (matchPel && curMdn[sKey] !== 'LIBUR' && curMdn[sKey] !== 'BELUM') {
+                                if (curMdn[sKey] === 'H' || curMdn[`${sKey}_time`]) {
                                     countKeptHadir++;
-                                } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
-                                    mdnuMatrix[pin][isoTgl][sKey] = 'I';
-                                    mdnuMatrix[pin][isoTgl][`${sKey}_time`] = '';
+                                } else if (curMdn[sKey] === 'A' || curMdn[sKey] === '-' || curMdn[sKey] === 'I') {
+                                    curMdn[sKey] = 'I';
+                                    curMdn[`${sKey}_time`] = '';
                                     permissionDetailsMap[`${pin}__${isoTgl}__${sKey}__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin, durasi: durasiHariText };
                                     countConvertedToIzin++;
                                 }
