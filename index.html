@@ -40,7 +40,7 @@
             --col-nama-w: 210px;
             --col-stat-w: 46px;
             --col-pct-w: 56px;
-            --col-sesi-w: 50px;
+            --col-sesi-w: 54px;
             --cell-h: 38px;
             --cell-font: 12px;
             --cell-badge-w: 28px;
@@ -70,7 +70,7 @@
                 --col-nama-w: 136px;
                 --col-stat-w: 38px;
                 --col-pct-w: 46px;
-                --col-sesi-w: 40px;
+                --col-sesi-w: 46px;
                 --cell-h: 36px;
                 --cell-font: 11px;
                 --cell-badge-w: 26px;
@@ -258,13 +258,16 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: var(--cell-badge-w);
+            min-width: var(--cell-badge-w);
+            padding: 0 2.5px;
             height: var(--cell-badge-h);
             border-radius: 4px;
-            font-size: calc(var(--cell-font) - 1px);
+            font-size: calc(var(--cell-font) - 1.5px);
             font-weight: 800;
             user-select: none;
             transition: transform 0.1s ease;
+            white-space: nowrap;
+            letter-spacing: -0.25px;
         }
         .badge-cell:active {
             transform: scale(0.92);
@@ -2690,12 +2693,14 @@
                     class="badge-cell bg-rose-100 text-rose-800 border border-rose-300 ${cursorClass} select-none shadow-2xs" 
                     title="Status: ALPHA${hint}">A</span>`;
             }
-            // Hadir (H)
+            // Hadir (H) -> Tampilkan Jam Scan (misal 05:46) jika ada log scan
             const scanInfo = time ? `Scan: ${time} | ` : '';
             const hint = isModeAdmin ? " (Klik untuk ganti: H -> A -> I)" : "";
+            const displayHadir = (time && time.length >= 4) ? time.substring(0, 5) : 'H';
+            const monoClass = (time && time.length >= 4) ? 'font-mono' : '';
             return `<span ${clickAttr} 
-                class="badge-cell bg-emerald-100 text-emerald-800 border border-emerald-300 ${cursorClass} select-none shadow-2xs" 
-                title="${scanInfo}Status: HADIR${hint}">H</span>`;
+                class="badge-cell bg-emerald-100 text-emerald-800 border border-emerald-300 ${cursorClass} select-none shadow-2xs ${monoClass}" 
+                title="${scanInfo}Status: HADIR${hint}">${displayHadir}</span>`;
         }
 
         // Handler Pembacaan File Excel dengan Fitur Append & Merge (Multi-Bulan)
@@ -3842,9 +3847,10 @@
                 exportSantriAsr.forEach(s => {
                     const stat = hitungStatistikSantri(s.pin, 'asrama', datesInMonth);
                     const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
+                    const fmtCell = (val, time) => (val === 'H' && time && time.length >= 4) ? time.substring(0, 5) : val;
                     datesInMonth.forEach(d => {
                         const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
-                        row.push(item.subuh, item.malam);
+                        row.push(fmtCell(item.subuh, item.subuh_time), fmtCell(item.malam, item.malam_time));
                     });
                     aoaAsrama.push(row);
                 });
@@ -3875,9 +3881,10 @@
                 exportSantriMdn.forEach(s => {
                     const stat = hitungStatistikSantri(s.pin, 'mdnu', datesInMonth);
                     const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
+                    const fmtCell = (val, time) => (val === 'H' && time && time.length >= 4) ? time.substring(0, 5) : val;
                     datesInMonth.forEach(d => {
                         const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
-                        row.push(item.sore, item.pel1, item.pel2, item.pel3);
+                        row.push(fmtCell(item.sore, item.sore_time), fmtCell(item.pel1, item.pel1_time), fmtCell(item.pel2, item.pel2_time), fmtCell(item.pel3, item.pel3_time));
                     });
                     aoaMDNU.push(row);
                 });
@@ -4014,7 +4021,7 @@
                         if (cell.malam === 'H') h++; else if (cell.malam === 'A') a++; else if (cell.malam === 'I') i++;
                         if (cell.malam !== 'LIBUR' && cell.malam !== '-') jp++;
 
-                        dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam });
+                        dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam, t1: cell.subuh_time, t2: cell.malam_time });
                     } else if (isMDNU) {
                         const cell = getMDNUCell(pin, d.dayIndex, tgl);
                         ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
@@ -4022,7 +4029,7 @@
                             if (val === 'H') h++; else if (val === 'A') a++; else if (val === 'I') i++;
                             if (val !== 'LIBUR' && val !== '-') jp++;
                         });
-                        dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3 });
+                        dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3, t1: cell.sore_time, t2: cell.pel1_time, t3: cell.pel2_time, t4: cell.pel3_time });
                     } else {
                         const cAsr = getAsramaCell(pin, d.dayIndex, tgl);
                         const cMdn = getMDNUCell(pin, d.dayIndex, tgl);
@@ -4097,13 +4104,13 @@
                                         <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
                                         <div class="flex items-center gap-1">
                                             ${isAsrama ? `
-                                                <span class="badge-cell text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1}</span>
-                                                <span class="badge-cell text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2}</span>
+                                                <span class="badge-cell text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
+                                                <span class="badge-cell text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
                                             ` : `
-                                                <span class="badge-cell text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1}</span>
-                                                <span class="badge-cell text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2}</span>
-                                                <span class="badge-cell text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3}</span>
-                                                <span class="badge-cell text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4}</span>
+                                                <span class="badge-cell text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
+                                                <span class="badge-cell text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
+                                                <span class="badge-cell text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3}</span>
+                                                <span class="badge-cell text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4}</span>
                                             `}
                                         </div>
                                     </div>
