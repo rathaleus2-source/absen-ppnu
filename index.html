@@ -2824,24 +2824,21 @@
                 const day = dateObj.dayIndex;
                 const is1UA = pin.toUpperCase().startsWith('1UA');
 
-                // Inisialisasi Matriks Asrama jika belum ada
+                // Inisialisasi objek santri jika belum ada
                 if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
-                if (!asramaMatrix[pin][tglKey]) {
-                    asramaMatrix[pin][tglKey] = getAsramaDefault(pin, day, tglKey);
-                }
-
-                // Inisialisasi Matriks MDNU jika belum ada
                 if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
-                if (!mdnuMatrix[pin][tglKey]) {
-                    mdnuMatrix[pin][tglKey] = getMDNUDefault(pin, day, tglKey);
-                }
 
                 // PROTEKSI KUNCI DATA (FREEZE):
                 // Jika tanggal berada pada atau sebelum batas gembok (misal s.d 30 Sep 2026),
-                // abaikan pembacaan scan baru agar data masa lalu tidak pernah tertimpa / rusak!
+                // JANGAN PERNAH menyentuh data masa lalu agar tetap aman dan tidak rusak!
                 if (frozenUntilDate && tglKey <= frozenUntilDate) {
                     continue;
                 }
+
+                // Untuk tanggal aktif yang tidak digembok:
+                // Siapkan jadwal default sesi hari ini sebelum membaca log scan baru
+                asramaMatrix[pin][tglKey] = getAsramaDefault(pin, day, tglKey);
+                mdnuMatrix[pin][tglKey] = getMDNUDefault(pin, day, tglKey);
 
                 // Ambil scan
                 const scans = [];
