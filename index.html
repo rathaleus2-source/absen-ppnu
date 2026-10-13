@@ -722,6 +722,17 @@
                             <span id="badgeFreezeStatus"
                                 class="bg-cyan-200 text-cyan-950 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold">s.d 30 Sep</span>
                         </button>
+                        <button id="btnTarikIzinForm" onclick="bukaModalIzinForm()"
+                            class="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
+                            title="Tarik data izin santri dari Google Form (Otomatis kenali Alpha menjadi Izin, amankan data freeze)">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Tarik Izin (Google Form)</span>
+                            <span id="badgeIzinFormCount"
+                                class="bg-purple-200 text-purple-950 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold">Form</span>
+                        </button>
                         <button onclick="bukaModalHapusData()"
                             class="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
                             title="Hapus data absensi per tanggal, per bulan, atau reset semua data">
@@ -1136,6 +1147,7 @@
             specialLiburAsrama = data.specialLiburAsrama || {};
             specialLiburMDNU = data.specialLiburMDNU || {};
             manualIzinData = data.manualIzinData || {};
+            permissionDetailsMap = data.permissionDetailsMap || {};
             frozenUntilDate = data.frozenUntilDate || '2026-09-30';
             updateFreezeUI();
             if (data.hideEmptyLiburColumns !== undefined) {
@@ -1204,6 +1216,7 @@
                     specialLiburAsrama: specialLiburAsrama,
                     specialLiburMDNU: specialLiburMDNU,
                     manualIzinData: manualIzinData,
+                    permissionDetailsMap: permissionDetailsMap,
                     hideEmptyLiburColumns: hideEmptyLiburColumns,
                     frozenUntilDate: frozenUntilDate
                 };
@@ -1262,6 +1275,7 @@
                     specialLiburAsrama: specialLiburAsrama,
                     specialLiburMDNU: specialLiburMDNU,
                     manualIzinData: manualIzinData,
+                    permissionDetailsMap: permissionDetailsMap,
                     hideEmptyLiburColumns: hideEmptyLiburColumns,
                     frozenUntilDate: frozenUntilDate
                 };
@@ -2745,9 +2759,11 @@
 
             if (val === 'I' || val === 'IZIN') {
                 const hint = isModeAdmin ? " (Klik untuk ganti: I -> H -> A)" : "";
+                const detail = permissionDetailsMap[`${pin}__${tgl}__${sesi}__${tab}`];
+                const detailText = detail ? ` - ${detail.alasan} (ACC: ${detail.pemberiIzin || detail.pemberi || '-'})` : '';
                 return `<span ${clickAttr} 
-                    class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none shadow-2xs" 
-                    title="Status: IZIN${hint}">I</span>`;
+                    class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none shadow-2xs font-bold" 
+                    title="Status: IZIN${detailText}${hint}">I</span>`;
             }
             if (val === 'A' || val === '-' || !val) {
                 const hint = isModeAdmin ? " (Klik untuk ganti: A -> I -> H)" : "";
@@ -4485,6 +4501,327 @@
             tutupModalHapusData();
             tampilkanToast("Seluruh data absensi telah berhasil di-reset bersih dari sistem dan Cloud!");
         }
+
+        // ========================================================
+        // FITUR SINKRONISASI PERIZINAN SANTRI (GOOGLE FORM)
+        // Sumber: https://bit.ly/Nomorizinsantri
+        // Aturan: Amankan Data Freeze (<= 2026-09-30), Hadir Fisik Menang, Alpha Jadi Izin
+        // ========================================================
+        const GOOGLE_FORM_CSV_URL = "https://docs.google.com/spreadsheets/d/1720e8LpBYtopySA85FW0wOJTTrI5sx4I9l1EAbBg7BM/export?format=csv&gid=729863469";
+        let autoSyncIzinForm = (localStorage.getItem('ppnu_auto_sync_izin') === 'true');
+        let isSyncingIzinForm = false;
+
+        function bukaModalIzinForm() {
+            if (!isAdmin) {
+                bukaModalLoginAdmin();
+                return;
+            }
+            const m = document.getElementById('modalIzinGoogleForm');
+            if (m) m.classList.remove('hidden');
+            const chk = document.getElementById('chkAutoSyncIzin');
+            if (chk) chk.checked = autoSyncIzinForm;
+        }
+
+        function tutupModalIzinForm() {
+            const m = document.getElementById('modalIzinGoogleForm');
+            if (m) m.classList.add('hidden');
+        }
+
+        function toggleAutoSyncIzin() {
+            const chk = document.getElementById('chkAutoSyncIzin');
+            autoSyncIzinForm = chk ? chk.checked : false;
+            try { localStorage.setItem('ppnu_auto_sync_izin', autoSyncIzinForm ? 'true' : 'false'); } catch (e) {}
+            tampilkanToast(`Auto-sync izin Google Form: ${autoSyncIzinForm ? 'Diaktifkan' : 'Dinonaktifkan'}`);
+        }
+
+        function parseCSV(text) {
+            const lines = [];
+            let row = [];
+            let inQuotes = false;
+            let curVal = '';
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const next = text[i + 1];
+                if (char === '"') {
+                    if (inQuotes && next === '"') {
+                        curVal += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(curVal.trim());
+                    curVal = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (char === '\r' && next === '\n') i++;
+                    row.push(curVal.trim());
+                    if (row.length > 1 || (row.length === 1 && row[0] !== '')) lines.push(row);
+                    row = [];
+                    curVal = '';
+                } else {
+                    curVal += char;
+                }
+            }
+            if (curVal || row.length > 0) {
+                row.push(curVal.trim());
+                lines.push(row);
+            }
+            return lines;
+        }
+
+        function normalizeSantriName(str) {
+            return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/kh/g, 'h');
+        }
+
+        function findSantriByName(namaForm) {
+            if (!namaForm) return null;
+            const norm = normalizeSantriName(namaForm);
+            let found = santriList.find(s => normalizeSantriName(s.nama) === norm);
+            if (found) return found;
+            found = santriList.find(s => {
+                const sn = normalizeSantriName(s.nama);
+                return sn.includes(norm) || norm.includes(sn);
+            });
+            return found || null;
+        }
+
+        function parseDMYDate(str) {
+            if (!str) return null;
+            const clean = str.trim().split(' ')[0];
+            const parts = clean.split(/[\/\-]/);
+            if (parts.length === 3) {
+                let d, m, y;
+                if (parts[0].length === 4) {
+                    y = parseInt(parts[0], 10);
+                    m = parseInt(parts[1], 10) - 1;
+                    d = parseInt(parts[2], 10);
+                } else {
+                    d = parseInt(parts[0], 10);
+                    m = parseInt(parts[1], 10) - 1;
+                    y = parseInt(parts[2], 10);
+                }
+                const dt = new Date(y, m, d);
+                if (!isNaN(dt.getTime())) return dt;
+            }
+            return null;
+        }
+
+        function formatISODate(dt) {
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, '0');
+            const d = String(dt.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        async function prosesSinkronIzinGoogleForm(isManual = true) {
+            if (isSyncingIzinForm) return;
+            isSyncingIzinForm = true;
+
+            const statusEl = document.getElementById('statusIzinFormSync');
+            const btnProses = document.getElementById('btnProsesSinkronIzin');
+            if (btnProses) btnProses.disabled = true;
+            if (statusEl) statusEl.innerHTML = `<span class="text-purple-600 font-bold animate-pulse">⏳ Sedang mengunduh data perizinan Google Form...</span>`;
+
+            try {
+                const response = await fetch(GOOGLE_FORM_CSV_URL);
+                if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                const csvText = await response.text();
+                const rows = parseCSV(csvText);
+
+                if (!rows || rows.length < 2) {
+                    alert("Data Google Form kosong atau tidak dapat diakses.");
+                    return;
+                }
+
+                const freezeDt = parseDMYDate(frozenUntilDate || '2026-09-30');
+                let countSkippedFrozen = 0;
+                let countKeptHadir = 0;
+                let countConvertedToIzin = 0;
+                let matchedList = [];
+
+                for (let i = 1; i < rows.length; i++) {
+                    const r = rows[i];
+                    const namaRaw = (r[3] || r[4] || r[5] || r[6] || r[7] || '').trim();
+                    if (!namaRaw) continue;
+
+                    const santri = findSantriByName(namaRaw);
+                    if (!santri) continue;
+
+                    const pin = santri.pin;
+                    const startDt = parseDMYDate(r[9]);
+                    const endDt = parseDMYDate(r[10]) || startDt;
+                    if (!startDt || !endDt) continue;
+
+                    let sDt = startDt <= endDt ? startDt : endDt;
+                    let eDt = startDt <= endDt ? endDt : startDt;
+
+                    const sesiStr = (r[11] || '').toLowerCase();
+                    const alasan = (r[12] || 'Izin Resmi').trim();
+                    const pemberi = (r[1] || '-').trim();
+                    const noIzin = (r[13] || '-').trim();
+
+                    let curDt = new Date(sDt);
+                    while (curDt <= eDt) {
+                        // ATURAN 1: GEMBOK DATA MASA LALU (FREEZE <= 2026-09-30)
+                        if (freezeDt && curDt <= freezeDt) {
+                            countSkippedFrozen++;
+                            curDt.setDate(curDt.getDate() + 1);
+                            continue;
+                        }
+
+                        const isoTgl = formatISODate(curDt);
+
+                        // 1. Asrama Subuh jika ada 'pagi' atau izin mencakup penuh
+                        const isPagi = sesiStr.includes('pagi') || sesiStr === '';
+                        if (isPagi) {
+                            if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
+                            if (!asramaMatrix[pin][isoTgl]) asramaMatrix[pin][isoTgl] = { subuh: 'A', malam: 'A', subuh_time: '', malam_time: '' };
+
+                            const curStat = asramaMatrix[pin][isoTgl].subuh || 'A';
+                            // ATURAN 2: HADIR FISIK MENANG
+                            if (curStat === 'H' || asramaMatrix[pin][isoTgl].subuh_time) {
+                                countKeptHadir++;
+                            } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
+                                asramaMatrix[pin][isoTgl].subuh = 'I';
+                                asramaMatrix[pin][isoTgl].subuh_time = '';
+                                permissionDetailsMap[`${pin}__${isoTgl}__subuh__asrama`] = { alasan, pemberiIzin: pemberi, noIzin };
+                                countConvertedToIzin++;
+                            }
+                        }
+
+                        // 2. MDNU Sore jika ada 'sore' atau izin mencakup penuh
+                        const isSore = sesiStr.includes('sore') || sesiStr === '';
+                        if (isSore) {
+                            if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
+                            if (!mdnuMatrix[pin][isoTgl]) mdnuMatrix[pin][isoTgl] = { sore: 'A', pel1: 'A', pel2: 'A', pel3: 'A' };
+
+                            const curStat = mdnuMatrix[pin][isoTgl].sore || 'A';
+                            if (curStat === 'H' || mdnuMatrix[pin][isoTgl].sore_time) {
+                                countKeptHadir++;
+                            } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
+                                mdnuMatrix[pin][isoTgl].sore = 'I';
+                                mdnuMatrix[pin][isoTgl].sore_time = '';
+                                permissionDetailsMap[`${pin}__${isoTgl}__sore__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin };
+                                countConvertedToIzin++;
+                            }
+                        }
+
+                        // 3. MDNU Pel 1, 2, 3
+                        for (let pIdx = 1; pIdx <= 3; pIdx++) {
+                            const matchPel = sesiStr.includes(`ke-${pIdx}`) || sesiStr.includes(`ke ${pIdx}`) || sesiStr === '';
+                            if (matchPel) {
+                                const sKey = `pel${pIdx}`;
+                                if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
+                                if (!mdnuMatrix[pin][isoTgl]) mdnuMatrix[pin][isoTgl] = { sore: 'A', pel1: 'A', pel2: 'A', pel3: 'A' };
+
+                                const curStat = mdnuMatrix[pin][isoTgl][sKey] || 'A';
+                                if (curStat === 'H' || mdnuMatrix[pin][isoTgl][`${sKey}_time`]) {
+                                    countKeptHadir++;
+                                } else if (curStat === 'A' || curStat === '-' || curStat === 'I') {
+                                    mdnuMatrix[pin][isoTgl][sKey] = 'I';
+                                    mdnuMatrix[pin][isoTgl][`${sKey}_time`] = '';
+                                    permissionDetailsMap[`${pin}__${isoTgl}__${sKey}__mdnu`] = { alasan, pemberiIzin: pemberi, noIzin };
+                                    countConvertedToIzin++;
+                                }
+                            }
+                        }
+
+                        matchedList.push({
+                            pin: pin,
+                            nama: santri.nama,
+                            tgl: isoTgl,
+                            sesi: sesiStr || 'Penuh',
+                            alasan: alasan,
+                            pemberi: pemberi,
+                            noIzin: noIzin
+                        });
+
+                        curDt.setDate(curDt.getDate() + 1);
+                    }
+                }
+
+                // Perbarui Tampilan & Simpan ke Cloud
+                terapkanFilter();
+                renderEvaluasi();
+                if (isAdmin) simpanKeCloud();
+
+                const badge = document.getElementById('badgeIzinFormCount');
+                if (badge) badge.innerText = `${countConvertedToIzin} Diubah`;
+
+                tampilkanToast(`✅ Sinkronisasi Google Form Sukses! ${countConvertedToIzin} sesi Alpha dikenali menjadi IZIN. Data masa lalu (s.d ${frozenUntilDate}) aman.`);
+
+                renderRingkasanModalIzin(countConvertedToIzin, countKeptHadir, countSkippedFrozen, matchedList);
+
+            } catch (err) {
+                console.error("Gagal sinkronisasi Google Form:", err);
+                tampilkanToast(`⚠️ Gagal mengambil data Google Form: ${err.message}`);
+                if (statusEl) statusEl.innerHTML = `<span class="text-rose-600 font-bold">Gagal mengunduh: ${err.message}</span>`;
+            } finally {
+                isSyncingIzinForm = false;
+                if (btnProses) btnProses.disabled = false;
+            }
+        }
+
+        function renderRingkasanModalIzin(converted, keptHadir, skippedFrozen, matchedList) {
+            const statusEl = document.getElementById('statusIzinFormSync');
+            if (statusEl) {
+                statusEl.innerHTML = `
+                    <div class="text-emerald-700 font-bold flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        <span>Berhasil menyinkronkan data perizinan Google Form!</span>
+                    </div>
+                `;
+            }
+
+            const pSummary = document.getElementById('previewIzinFormSummary');
+            if (pSummary) pSummary.classList.remove('hidden');
+
+            const sConv = document.getElementById('statIzinConverted');
+            if (sConv) sConv.innerText = converted;
+
+            const sHadir = document.getElementById('statIzinKeptHadir');
+            if (sHadir) sHadir.innerText = keptHadir;
+
+            const sFreeze = document.getElementById('statIzinSkippedFrozen');
+            if (sFreeze) sFreeze.innerText = skippedFrozen;
+
+            const lblTotal = document.getElementById('labelTotalIzinBulanIni');
+            if (lblTotal) lblTotal.innerText = `${matchedList.length} Sesi Terdeteksi`;
+
+            const listEl = document.getElementById('listIzinBulanAktif');
+            if (listEl) {
+                if (matchedList.length === 0) {
+                    listEl.innerHTML = `<div class="p-3 text-center text-slate-400 italic">Tidak ada izin santri yang cocok untuk periode aktif.</div>`;
+                } else {
+                    let html = '';
+                    matchedList.slice(0, 30).forEach(item => {
+                        html += `
+                            <div class="py-2 flex items-center justify-between gap-2">
+                                <div>
+                                    <span class="font-bold text-slate-800">[${item.pin}] ${item.nama}</span>
+                                    <span class="text-[10px] text-slate-500 block">Tgl: ${item.tgl} | Sesi: ${item.sesi.toUpperCase()}</span>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">${item.alasan}</span>
+                                    <span class="text-[10px] text-slate-400 block">ACC: ${item.pemberi}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    if (matchedList.length > 30) {
+                        html += `<div class="py-1 text-center text-[10px] text-slate-400 font-semibold italic">+ ${matchedList.length - 30} data izin lainnya</div>`;
+                    }
+                    listEl.innerHTML = html;
+                }
+            }
+        }
+
+        // Auto-sync Google Form jika toggle diaktifkan
+        setTimeout(() => {
+            if (autoSyncIzinForm && santriList.length > 0 && dateList.length > 0) {
+                prosesSinkronIzinGoogleForm(false);
+            }
+        }, 2500);
     </script>
         <!-- ======================================================== -->
     <!-- MODAL 1: KELOLA STATUS SANTRI (MUKIM, LAJU & BOYONG) -->
@@ -4913,6 +5250,102 @@
                 <button type="button" onclick="tutupModalHapusData()"
                     class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition">
                     Batal / Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: SINKRONISASI PERIZINAN SANTRI (GOOGLE FORM) -->
+    <div id="modalIzinGoogleForm" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[92vh] overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="p-4 sm:px-6 py-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 border-b border-purple-200 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-purple-600/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-purple-950">Sinkronisasi Izin Santri (Google Form)</h3>
+                        <p class="text-xs text-purple-800">Tarik perizinan resmi dari form &amp; kenali status Alpha secara presisi</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalIzinForm()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                <!-- Info Aturan Proteksi & Gembok -->
+                <div class="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-950 space-y-1.5">
+                    <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                        <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <span>Aturan Ketat &amp; Perlindungan Data:</span>
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-[11px] text-amber-900">
+                        <li><b>Data Gembok Aman:</b> Tanggal masa lalu (s.d 30 September 2026) <b>TIDAK AKAN DISENTUH</b> atau diubah.</li>
+                        <li><b>Hadir Fisik Menang:</b> Santri yang terdeteksi scan mesin / hadir tetap berstatus <b>Hadir (H)</b>.</li>
+                        <li><b>Kenali Alpha Sah:</b> Hanya sesi yang berstatus <b>Alpha (A)</b> pada tanggal izin aktif yang diubah menjadi <b>Izin (I)</b>.</li>
+                        <li><b>Sumber Data:</b> Terhubung langsung ke spreadsheet <i>Perizinan Santri Nurul Ummah TA 2026-2027</i>.</li>
+                    </ul>
+                </div>
+
+                <!-- Toggle Auto-Sync Setting -->
+                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                    <div>
+                        <span class="block text-xs font-bold text-slate-800">Sinkronisasi Otomatis saat Buka Web</span>
+                        <span class="block text-[11px] text-slate-500">Periksa dan kenali izin baru dari Google Form setiap kali portal absensi dibuka</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="chkAutoSyncIzin" onchange="toggleAutoSyncIzin()" class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                </div>
+
+                <!-- Status Hasil Sinkronisasi -->
+                <div id="statusIzinFormSync" class="text-xs p-3 bg-slate-50 rounded-xl border border-slate-200 text-slate-600">
+                    Klik tombol di bawah untuk menarik dan menerapkan perizinan terbaru dari Google Form.
+                </div>
+
+                <!-- Preview Grid Ringkasan -->
+                <div id="previewIzinFormSummary" class="hidden grid grid-cols-3 gap-2.5 text-center text-xs">
+                    <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                        <span class="block text-[10px] text-emerald-700 font-semibold uppercase">Alpha Jadi Izin</span>
+                        <span id="statIzinConverted" class="text-base font-black text-emerald-950 font-mono">0</span>
+                    </div>
+                    <div class="p-2.5 bg-blue-50 border border-blue-200 rounded-xl">
+                        <span class="block text-[10px] text-blue-700 font-semibold uppercase">Hadir Dipertahankan</span>
+                        <span id="statIzinKeptHadir" class="text-base font-black text-blue-950 font-mono">0</span>
+                    </div>
+                    <div class="p-2.5 bg-slate-100 border border-slate-200 rounded-xl">
+                        <span class="block text-[10px] text-slate-600 font-semibold uppercase">Freeze Terlindungi</span>
+                        <span id="statIzinSkippedFrozen" class="text-base font-black text-slate-800 font-mono">0</span>
+                    </div>
+                </div>
+
+                <!-- Daftar Santri Izin Bulan Berjalan -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs font-bold text-slate-800">
+                        <span>Daftar Izin Terdeteksi di Bulan Berjalan:</span>
+                        <span id="labelTotalIzinBulanIni" class="text-[11px] text-purple-700 font-mono">0 Data</span>
+                    </div>
+                    <div id="listIzinBulanAktif" class="max-h-48 overflow-y-auto bg-slate-50 border border-slate-200 rounded-xl p-2.5 divide-y divide-slate-200 text-[11px]">
+                        <div class="p-3 text-center text-slate-400 italic">Belum ada sinkronisasi yang dijalankan.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
+                <button type="button" onclick="tutupModalIzinForm()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition">
+                    Tutup
+                </button>
+                <button type="button" id="btnProsesSinkronIzin" onclick="prosesSinkronIzinGoogleForm(true)"
+                    class="px-5 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold flex items-center gap-2 shadow-md shadow-purple-700/30 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    <span>Tarik &amp; Terapkan Perizinan Sekarang</span>
                 </button>
             </div>
         </div>
