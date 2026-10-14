@@ -1641,14 +1641,41 @@
                     const defMdn = getMDNUDefault(pin, day, tglKey);
                     const curMdn = mdnuMatrix[pin][tglKey] || {};
                     ['sore', 'pel1', 'pel2', 'pel3'].forEach(sName => {
+                        const hasIzin = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tglKey}__${sName}__mdnu`] !== undefined);
+                        const ovr = (manualCellOverrides && manualCellOverrides[`${pin}__${tglKey}__${sName}__mdnu`]);
+
                         if (defMdn[sName] === 'LIBUR') {
                             curMdn[sName] = 'LIBUR';
                         } else if (curMdn[sName] === 'LIBUR') {
                             // Sesi ini sekarang aktif, buang status LIBUR basi!
-                            curMdn[sName] = curMdn[`${sName}_time`] ? 'H' : 'A';
+                            if (ovr !== undefined) {
+                                curMdn[sName] = ovr;
+                            } else if (hasIzin) {
+                                curMdn[sName] = 'I';
+                            } else {
+                                curMdn[sName] = curMdn[`${sName}_time`] ? 'H' : 'A';
+                            }
                         }
                     });
                     mdnuMatrix[pin][tglKey] = curMdn;
+
+                    // Asrama Malam
+                    const defAsr = getAsramaDefault(pin, day, tglKey);
+                    const curAsr = asramaMatrix[pin][tglKey] || {};
+                    const hasIzinAsr = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tglKey}__malam__asrama`] !== undefined);
+                    const ovrAsr = (manualCellOverrides && manualCellOverrides[`${pin}__${tglKey}__malam__asrama`]);
+                    if (defAsr.malam === 'LIBUR') {
+                        curAsr.malam = 'LIBUR';
+                    } else if (curAsr.malam === 'LIBUR') {
+                        if (ovrAsr !== undefined) {
+                            curAsr.malam = ovrAsr;
+                        } else if (hasIzinAsr) {
+                            curAsr.malam = 'I';
+                        } else {
+                            curAsr.malam = curAsr.malam_time ? 'H' : 'A';
+                        }
+                    }
+                    asramaMatrix[pin][tglKey] = curAsr;
                 });
                 renderAdminPanelMalamSabtu();
                 terapkanFilter();
@@ -2499,13 +2526,20 @@
                 ? manualCellOverrides[`${pin}__${tgl}__malam__asrama`] 
                 : undefined;
 
+            const hasIzinSubuh = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__subuh__asrama`] !== undefined);
+            const hasIzinMalam = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__malam__asrama`] !== undefined);
+
             let subuh = defItem.subuh;
             if (defItem.subuh === 'LIBUR') {
                 subuh = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
             } else if (ovrSubuh !== undefined) {
                 subuh = ovrSubuh;
+            } else if (hasIzinSubuh && !raw.subuh_time) {
+                subuh = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== 'LIBUR') {
                 subuh = raw.subuh;
+            } else if (hasIzinSubuh) {
+                subuh = 'I';
             } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
                 subuh = 'BELUM_MULAI';
             } else {
@@ -2517,8 +2551,12 @@
                 malam = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
             } else if (ovrMalam !== undefined) {
                 malam = ovrMalam;
+            } else if (hasIzinMalam && !raw.malam_time) {
+                malam = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== 'LIBUR') {
                 malam = raw.malam;
+            } else if (hasIzinMalam) {
+                malam = 'I';
             } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
                 malam = 'BELUM_MULAI';
             } else {
@@ -2548,13 +2586,18 @@
                 const ovr = (manualCellOverrides && manualCellOverrides[`${pin}__${tgl}__${sesi}__mdnu`] !== undefined)
                     ? manualCellOverrides[`${pin}__${tgl}__${sesi}__mdnu`]
                     : undefined;
+                const hasIzin = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__${sesi}__mdnu`] !== undefined);
 
                 if (defItem[sesi] === 'LIBUR') {
                     res[sesi] = 'LIBUR'; // Putihkan total jika jadwal resmi sesi ini LIBUR!
                 } else if (ovr !== undefined) {
                     res[sesi] = ovr;
+                } else if (hasIzin && !res[`${sesi}_time`]) {
+                    res[sesi] = 'I'; // Ada surat izin resmi -> WAJIB IZIN
                 } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== 'LIBUR') {
                     res[sesi] = raw[sesi];
+                } else if (hasIzin) {
+                    res[sesi] = 'I';
                 } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
                     res[sesi] = 'BELUM_MULAI';
                 } else {
@@ -3209,6 +3252,23 @@
                     const mat = (tb === 'asrama') ? asramaMatrix : mdnuMatrix;
                     if (mat[p] && mat[p][t] && mat[p][t][s] && mat[p][t][s] !== 'LIBUR') {
                         mat[p][t][s] = manualCellOverrides[key];
+                    }
+                }
+            }
+
+            // Pulihkan permissionDetailsMap jika ada (agar izin surat resmi tidak tertimpa Alpha saat olah data)
+            for (const key in permissionDetailsMap) {
+                const parts = key.split('__');
+                if (parts.length === 4) {
+                    const [p, t, s, tb] = parts;
+                    const mat = (tb === 'asrama') ? asramaMatrix : mdnuMatrix;
+                    if (mat[p] && mat[p][t] && mat[p][t][s] && mat[p][t][s] !== 'LIBUR') {
+                        const timeVal = (tb === 'asrama')
+                            ? (s === 'subuh' ? mat[p][t].subuh_time : mat[p][t].malam_time)
+                            : mat[p][t][`${s}_time`];
+                        if (!timeVal && (!manualCellOverrides || manualCellOverrides[key] === undefined)) {
+                            mat[p][t][s] = 'I';
+                        }
                     }
                 }
             }
