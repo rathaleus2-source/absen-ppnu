@@ -2472,8 +2472,8 @@
                     // Sore batas akhir / cutoff pukul 17:30 WIB
                     return curMinutes < (17 * 60 + 30);
                 } else if (sesi === 'pel1') {
-                    // Pel 1 batas akhir / cutoff pukul 19:30 WIB
-                    return curMinutes < (19 * 60 + 30);
+                    // Pel 1 batas akhir / cutoff pukul 19:40 WIB (19:39:59)
+                    return curMinutes < (19 * 60 + 40);
                 } else if (sesi === 'pel2') {
                     // Pel 2 batas akhir / cutoff pukul 21:00 WIB
                     return curMinutes < 21 * 60;
@@ -2496,7 +2496,7 @@
                 else { startMin = 18 * 60 + 30; cutoffMin = 23 * 60; startText = '18:30'; cutoffText = '23:00'; }
             } else {
                 if (sesi === 'sore') { startMin = 14 * 60; cutoffMin = 17 * 60 + 30; startText = '14:00'; cutoffText = '17:30'; }
-                else if (sesi === 'pel1') { startMin = 18 * 60 + 30; cutoffMin = 19 * 60 + 30; startText = '18:30'; cutoffText = '19:30'; }
+                else if (sesi === 'pel1') { startMin = 18 * 60 + 30; cutoffMin = 19 * 60 + 40; startText = '18:30'; cutoffText = '19:40'; }
                 else if (sesi === 'pel2') { startMin = 19 * 60 + 40; cutoffMin = 21 * 60; startText = '19:40'; cutoffText = '21:00'; }
                 else if (sesi === 'pel3') { startMin = 21 * 60; cutoffMin = 22 * 60 + 30; startText = '21:00'; cutoffText = '22:30'; }
             }
@@ -3204,10 +3204,10 @@
                         // 2. Jumat (Malam Sabtu, day 5): 1 jam khusus Asrama sesuai setting tanggal ini
                         else if (day === 5) {
                             const setting = getMalamSabtuSetting(tglKey);
-                            if (setting === 'pel1' && m >= (18 * 60 + 30) && m <= (19 * 60 + 30)) {
+                            if (setting === 'pel1' && m >= (18 * 60 + 30) && m < (19 * 60 + 40)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
-                            } else if (setting === 'pel2' && m > (19 * 60 + 30) && m <= (20 * 60 + 59)) {
+                            } else if (setting === 'pel2' && m >= (19 * 60 + 40) && m < (21 * 60)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
                             } else if (setting === 'pel3' && m >= (21 * 60) && m <= (22 * 60 + 30)) {
@@ -3229,11 +3229,11 @@
                     }
 
                     // MDNU Malam Pelajaran:
-                    if (mdn.pel1 === 'A' && m >= (18 * 60 + 30) && m <= (19 * 60 + 30)) {
+                    if (mdn.pel1 === 'A' && m >= (18 * 60 + 30) && m < (19 * 60 + 40)) {
                         mdn.pel1 = 'H';
                         mdn.pel1_time = sc.text;
                     }
-                    else if (mdn.pel2 === 'A' && m > (19 * 60 + 30) && m <= (20 * 60 + 59)) {
+                    else if (mdn.pel2 === 'A' && m >= (19 * 60 + 40) && m < (21 * 60)) {
                         mdn.pel2 = 'H';
                         mdn.pel2_time = sc.text;
                     }
