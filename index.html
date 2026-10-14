@@ -5053,17 +5053,19 @@
 
             // 2. Pagi - Siang (07:01 - 13:59 WIB)
             if (totalMenit > 7 * 60 && totalMenit < 14 * 60) {
-                const sisaMenit = (14 * 60) - totalMenit;
-                const jamTunggu = Math.floor(sisaMenit / 60);
-                const menitTunggu = sisaMenit % 60;
-                const waktuTeks = jamTunggu > 0 ? `${jamTunggu} jam ${menitTunggu} mnt` : `${menitTunggu} menit`;
-
+                let targetMenit = 14 * 60;
                 let targetSesi = 'Sore (14:00 WIB)';
                 let keterangan = 'Kegiatan pagi santri. Sesi presensi berikutnya: Sore.';
                 if (day !== 6 && day !== 0 && day !== 4) {
+                    targetMenit = 18 * 60 + 30;
                     targetSesi = 'Pel 1 (18:30 WIB)';
                     keterangan = 'Siang hari. Sesi MDNU malam dimulai pukul 18:30 WIB.';
                 }
+
+                const sisaMenit = targetMenit - totalMenit;
+                const jamTunggu = Math.floor(sisaMenit / 60);
+                const menitTunggu = sisaMenit % 60;
+                const waktuTeks = jamTunggu > 0 ? `${jamTunggu} jam ${menitTunggu} mnt` : `${menitTunggu} menit`;
 
                 return {
                     icon: '☀️',
