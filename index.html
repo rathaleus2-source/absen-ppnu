@@ -5476,7 +5476,7 @@
             // 3. Pastikan bulan tanggal target aktif terpilih di filter bulan
             const targetMonthKey = targetTgl.substring(0, 7); // Format: 'YYYY-MM'
             if (selectedMonthKey !== targetMonthKey && selectedMonthKey !== 'all') {
-                pilihFilterBulan(targetMonthKey);
+                ubahFilterBulan(targetMonthKey);
             }
 
             // 4. Cari kontainer tabel aktif (viewAsrama atau viewMDNU)
