@@ -460,7 +460,7 @@
                                 <li><strong>Malam Khusus:</strong>
                                     <div class="pl-4">
                                         - Malam Jumat (Kamis): 18:00 - 23:00 (Semua Santri)<br>
-                                        - Malam Sabtu (Jumat): 1 Jam Khusus Asrama (Jam 1: 18:30-19:30 / Jam 2: 19:40-20:59 / Jam 3: 21:00-22:30)<br>
+                                        - Malam Sabtu (Jumat): 1 Jam Khusus Asrama (Jam 1: 18:30-19:39 / Jam 2: 19:40-20:59 / Jam 3: 21:00-22:30)<br>
                                         - Malam Senin (Minggu): <span class="text-emerald-700 font-bold">Hanya Kelas
                                             1UA</span> (21:00 - 22:30). Kelas lainnya &rarr; <span
                                             class="text-rose-600 font-bold">LIBUR</span><br>
@@ -485,7 +485,7 @@
                                         (Semua Pel 1, 2, 3)<br>
                                         - Malam Sabtu (Jumat): 2 Jam untuk MDNU (sesuai jam yang tidak dipakai
                                         Asrama)<br>
-                                        - Pel 1: 18:30 - 19:30<br>
+                                        - Pel 1: 18:30 - 19:39<br>
                                         - Pel 2: 19:40 - 20:59<br>
                                         - Pel 3: 21:00 - 22:30
                                     </div>
@@ -1736,7 +1736,7 @@
                 {
                     key: 'pel1',
                     title: 'Jam 1 (Sesi Awal)',
-                    jam: '18:30 - 19:30',
+                    jam: '18:30 - 19:39',
                     asrama: 'Asrama mengambil Jam 1',
                     mdnu: 'MDNU: Pel 2 & Pel 3 Aktif'
                 },
@@ -3469,7 +3469,7 @@
                                     <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 rounded leading-tight mb-0.5">Malam Sabtu</span>
                                     <select onchange="ubahSettingMalamSabtuTanggal('${d.displayDate}', this.value)"
                                         class="text-[10px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500 max-w-[90px] truncate">
-                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:30)</option>
+                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:39)</option>
                                         <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40-20:59)</option>
                                         <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (21:00-22:30)</option>
                                     </select>
@@ -5305,8 +5305,8 @@
                 };
             }
 
-            // 5. Malam Pel 1 (18:30 - 19:30 WIB)
-            if (totalMenit >= (18 * 60 + 30) && totalMenit <= (19 * 60 + 30)) {
+            // 5. Malam Pel 1 (18:30 - 19:39 WIB)
+            if (totalMenit >= (18 * 60 + 30) && totalMenit < (19 * 60 + 40)) {
                 if (day === 4) {
                     return {
                         icon: '🕌',
@@ -5318,22 +5318,10 @@
                 }
                 return {
                     icon: '📖',
-                    title: 'Sesi Pelajaran 1 (18:30 - 19:30 WIB)',
+                    title: 'Sesi Pelajaran 1 (18:30 - 19:39 WIB)',
                     badge: '🟢 Sedang Berlangsung',
                     badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
                     desc: 'KBM MDNU Pelajaran 1 sedang berlangsung.'
-                };
-            }
-
-            // 6. Jeda Pelajaran 1 ke Pelajaran 2 (19:31 - 19:39 WIB)
-            if (totalMenit > (19 * 60 + 30) && totalMenit < (19 * 60 + 40)) {
-                const sisa = (19 * 60 + 40) - totalMenit;
-                return {
-                    icon: '⏳',
-                    title: 'Jeda Pelajaran (Pel 2 Mulai 19:40 WIB)',
-                    badge: `⏳ Sisa ${sisa} Menit`,
-                    badgeClass: 'bg-teal-500/30 text-teal-200 border-teal-400/40',
-                    desc: 'Pergantian jam mengajar ustadz ke Pelajaran 2.'
                 };
             }
 
