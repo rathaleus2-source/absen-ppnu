@@ -2500,10 +2500,10 @@
                 : undefined;
 
             let subuh = defItem.subuh;
-            if (ovrSubuh !== undefined) {
+            if (defItem.subuh === 'LIBUR') {
+                subuh = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
+            } else if (ovrSubuh !== undefined) {
                 subuh = ovrSubuh;
-            } else if (defItem.subuh === 'LIBUR') {
-                subuh = 'LIBUR'; // Putihkan total!
             } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== 'LIBUR') {
                 subuh = raw.subuh;
             } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
@@ -2513,10 +2513,10 @@
             }
 
             let malam = defItem.malam;
-            if (ovrMalam !== undefined) {
+            if (defItem.malam === 'LIBUR') {
+                malam = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
+            } else if (ovrMalam !== undefined) {
                 malam = ovrMalam;
-            } else if (defItem.malam === 'LIBUR') {
-                malam = 'LIBUR'; // Putihkan total!
             } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== 'LIBUR') {
                 malam = raw.malam;
             } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
@@ -2549,10 +2549,10 @@
                     ? manualCellOverrides[`${pin}__${tgl}__${sesi}__mdnu`]
                     : undefined;
 
-                if (ovr !== undefined) {
+                if (defItem[sesi] === 'LIBUR') {
+                    res[sesi] = 'LIBUR'; // Putihkan total jika jadwal resmi sesi ini LIBUR!
+                } else if (ovr !== undefined) {
                     res[sesi] = ovr;
-                } else if (defItem[sesi] === 'LIBUR') {
-                    res[sesi] = 'LIBUR'; // Putihkan total!
                 } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== 'LIBUR') {
                     res[sesi] = raw[sesi];
                 } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
@@ -3164,7 +3164,7 @@
                             if (setting === 'pel1' && m >= (18 * 60 + 30) && m <= (19 * 60 + 30)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
-                            } else if (setting === 'pel2' && m >= (19 * 60 + 40) && m <= (20 * 60 + 59)) {
+                            } else if (setting === 'pel2' && m > (19 * 60 + 30) && m <= (20 * 60 + 59)) {
                                 asr.malam = 'H';
                                 asr.malam_time = sc.text;
                             } else if (setting === 'pel3' && m >= (21 * 60) && m <= (22 * 60 + 30)) {
@@ -3190,7 +3190,7 @@
                         mdn.pel1 = 'H';
                         mdn.pel1_time = sc.text;
                     }
-                    else if (mdn.pel2 === 'A' && m >= (19 * 60 + 40) && m <= (20 * 60 + 59)) {
+                    else if (mdn.pel2 === 'A' && m > (19 * 60 + 30) && m <= (20 * 60 + 59)) {
                         mdn.pel2 = 'H';
                         mdn.pel2_time = sc.text;
                     }
