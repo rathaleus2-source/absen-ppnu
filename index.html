@@ -4905,7 +4905,8 @@
                     const isMultiHari = (eDt.getTime() > sDt.getTime());
                     const isFullDay = isMultiHari || sesiStr === '' || sesiStr.includes('semua') || sesiStr.includes('penuh') ||
                                       alasan.toLowerCase().includes('pulang') || alasan.toLowerCase().includes('cuti') ||
-                                      alasan.toLowerCase().includes('sakit') || alasan.toLowerCase().includes('keluarga');
+                                      alasan.toLowerCase().includes('sakit') || alasan.toLowerCase().includes('keluarga') ||
+                                      durasiHariText.toLowerCase().includes('malam');
 
                     let curDt = new Date(sDt);
                     while (curDt <= eDt) {
