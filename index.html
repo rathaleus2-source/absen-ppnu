@@ -1374,7 +1374,7 @@
                     frozenUntilDate: frozenUntilDate
                 };
 
-                fbDb.ref('absensi_ppnu').set(payload)
+                fbDb.ref('absensi_ppnu').update(payload)
                     .then(() => {
                         console.log("Data absensi berhasil disinkronkan ke Firebase Cloud!");
                         updateCloudSyncStatus('synced', 'Tersimpan di Cloud');
