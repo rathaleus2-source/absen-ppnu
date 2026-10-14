@@ -3414,7 +3414,7 @@
 
                     const bgHeaderAsr = specialLiburAsrama[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-emerald-100");
 
-                    h1Asrama += `<th colspan="${sessList.length}" class="${bgHeaderAsr} py-1.5 px-1">
+                    h1Asrama += `<th colspan="${sessList.length}" data-date="${d.displayDate}" class="${bgHeaderAsr} py-1.5 px-1">
                         <span class="block text-xs font-black text-emerald-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-emerald-800 font-semibold">${d.displayDate}</span>
                         ${malamSabtuSelectorAsrama}
@@ -3624,7 +3624,7 @@
 
                     const bgHeaderMdn = specialLiburMDNU[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-indigo-100");
 
-                    h1MDNU += `<th colspan="${sessList.length}" class="${bgHeaderMdn} py-1.5 px-1">
+                    h1MDNU += `<th colspan="${sessList.length}" data-date="${d.displayDate}" class="${bgHeaderMdn} py-1.5 px-1">
                         <span class="block text-xs font-black text-indigo-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-indigo-800 font-semibold">${d.displayDate}</span>
                         ${malamSabtuSelectorMDNU}
@@ -5463,36 +5463,54 @@
             if (!widgetSelectedDate) return;
             const targetTgl = widgetSelectedDate;
 
-            // Pastikan tab aktif adalah matriks
+            // 1. Jika di tab rekapitulasi, alihkan ke asrama terlebih dahulu
+            if (activeTab === 'rekapitulasi') {
+                switchTab('asrama');
+            }
+
+            // 2. Pastikan tampilan adalah mode matriks spreadsheet
             if (currentViewMode === 'cards') {
                 toggleViewMode('matrix');
             }
 
-            // Cari elemen header atau sel tanggal di container aktif
-            const containerId = (activeTab === 'asrama') ? 'tableContainerAsrama' : 'tableContainerMDNU';
-            const container = document.getElementById(containerId);
+            // 3. Pastikan bulan tanggal target aktif terpilih di filter bulan
+            const targetMonthKey = targetTgl.substring(0, 7); // Format: 'YYYY-MM'
+            if (selectedMonthKey !== targetMonthKey && selectedMonthKey !== 'all') {
+                pilihFilterBulan(targetMonthKey);
+            }
+
+            // 4. Cari kontainer tabel aktif (viewAsrama atau viewMDNU)
+            const container = (activeTab === 'asrama') ? document.getElementById('viewAsrama') : document.getElementById('viewMDNU');
             if (!container) return;
 
-            // Cari kolom header yang memiliki teks atau dataset tanggal ini
-            const headers = container.querySelectorAll('th');
-            let foundHeader = null;
-            headers.forEach(th => {
-                if (th.innerText && th.innerText.includes(targetTgl)) {
-                    foundHeader = th;
-                }
-            });
+            // 5. Scroll halaman vertikal agar area tabel terlihat di layar
+            container.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            if (foundHeader) {
-                foundHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                // Animasi highlight
-                foundHeader.classList.add('ring-4', 'ring-emerald-400', 'bg-amber-100');
-                setTimeout(() => {
-                    foundHeader.classList.remove('ring-4', 'ring-emerald-400', 'bg-amber-100');
-                }, 2000);
-                tampilkanToast(`🎯 Menyorot tanggal: ${targetTgl}`);
-            } else {
-                tampilkanToast(`Tanggal ${targetTgl} terpilih.`);
-            }
+            // 6. Cari kolom header yang memiliki data-date atau teks tanggal target
+            setTimeout(() => {
+                let foundHeader = container.querySelector(`th[data-date="${targetTgl}"]`);
+                if (!foundHeader) {
+                    const headers = container.querySelectorAll('th');
+                    headers.forEach(th => {
+                        if (th.innerText && th.innerText.includes(targetTgl)) {
+                            foundHeader = th;
+                        }
+                    });
+                }
+
+                if (foundHeader) {
+                    // Gulir horizontal kontainer tabel ke posisi kolom tanggal tersebut
+                    foundHeader.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    // Animasi sorot kuning-emas
+                    foundHeader.classList.add('ring-4', 'ring-emerald-400', 'bg-amber-300');
+                    setTimeout(() => {
+                        foundHeader.classList.remove('ring-4', 'ring-emerald-400', 'bg-amber-300');
+                    }, 2500);
+                    tampilkanToast(`🎯 Menyorot kolom tanggal: ${targetTgl}`);
+                } else {
+                    tampilkanToast(`Tanggal ${targetTgl} terpilih.`);
+                }
+            }, 300);
         }
 
         // Inisialisasi Timer Realtime Clock Widget
