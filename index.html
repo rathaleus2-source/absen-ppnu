@@ -2402,6 +2402,56 @@
             return { sore, pel1, pel2, pel3, sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
         }
 
+        // Helper Cerdas: Deteksi apakah sesi jadwal belum dimulai (Opsi A)
+        // Mencegah status langsung divonis Alpha merah sebelum jam kegiatan tiba
+        function isSesiBelumMulai(tgl, sesi, tab) {
+            const todayISO = getTodayISODate();
+            if (tgl > todayISO) return true; // Tanggal masa depan pasti belum mulai
+            if (tgl < todayISO) return false; // Tanggal masa lalu sudah selesai
+
+            // Tanggal HARI INI: cek jam sekarang vs jam mulai sesi
+            const now = new Date();
+            const curMinutes = now.getHours() * 60 + now.getMinutes();
+
+            if (tab === 'asrama') {
+                if (sesi === 'subuh') {
+                    // Subuh mulai 04:00 (batas toleransi scan pagi)
+                    return curMinutes < 4 * 60;
+                } else if (sesi === 'malam') {
+                    // Asrama malam mulai 18:30 (atau 21:00 untuk 1UA hari Ahad)
+                    const day = now.getDay();
+                    const startMin = (day === 0) ? 21 * 60 : 18 * 60 + 30;
+                    return curMinutes < startMin;
+                }
+            } else if (tab === 'mdnu') {
+                if (sesi === 'sore') {
+                    // Sore mulai 14:00
+                    return curMinutes < 14 * 60;
+                } else if (sesi === 'pel1') {
+                    // Pel 1 mulai 18:30
+                    return curMinutes < (18 * 60 + 30);
+                } else if (sesi === 'pel2') {
+                    // Pel 2 mulai 19:40
+                    return curMinutes < (19 * 60 + 40);
+                } else if (sesi === 'pel3') {
+                    // Pel 3 mulai 21:00
+                    return curMinutes < 21 * 60;
+                }
+            }
+            return false;
+        }
+
+        function getSesiStartTimeText(sesi, tab) {
+            if (tab === 'asrama') {
+                return sesi === 'subuh' ? '04:00' : '18:30';
+            }
+            if (sesi === 'sore') return '14:00';
+            if (sesi === 'pel1') return '18:30';
+            if (sesi === 'pel2') return '19:40';
+            if (sesi === 'pel3') return '21:00';
+            return '';
+        }
+
         // Helper Single-Source-of-Truth untuk Resolusi Cell Asrama & MDNU
         // ATURAN MUTLAK PONDOK:
         // Jika jadwal resmi suatu sesi adalah 'LIBUR' (misal: Subuh Jumat/Minggu, atau hari libur khusus),
@@ -2423,8 +2473,12 @@
                 subuh = ovrSubuh;
             } else if (defItem.subuh === 'LIBUR') {
                 subuh = 'LIBUR'; // Putihkan total!
+            } else if (raw.subuh !== undefined && raw.subuh !== '-') {
+                subuh = raw.subuh;
+            } else if (isSesiBelumMulai(tgl, 'subuh', 'asrama')) {
+                subuh = 'BELUM_MULAI';
             } else {
-                subuh = (raw.subuh !== undefined && raw.subuh !== '-') ? raw.subuh : defItem.subuh;
+                subuh = defItem.subuh;
             }
 
             let malam = defItem.malam;
@@ -2432,8 +2486,12 @@
                 malam = ovrMalam;
             } else if (defItem.malam === 'LIBUR') {
                 malam = 'LIBUR'; // Putihkan total!
+            } else if (raw.malam !== undefined && raw.malam !== '-') {
+                malam = raw.malam;
+            } else if (isSesiBelumMulai(tgl, 'malam', 'asrama')) {
+                malam = 'BELUM_MULAI';
             } else {
-                malam = (raw.malam !== undefined && raw.malam !== '-') ? raw.malam : defItem.malam;
+                malam = defItem.malam;
             }
 
             return {
@@ -2464,8 +2522,12 @@
                     res[sesi] = ovr;
                 } else if (defItem[sesi] === 'LIBUR') {
                     res[sesi] = 'LIBUR'; // Putihkan total!
+                } else if (raw[sesi] !== undefined && raw[sesi] !== '-') {
+                    res[sesi] = raw[sesi];
+                } else if (isSesiBelumMulai(tgl, sesi, 'mdnu')) {
+                    res[sesi] = 'BELUM_MULAI';
                 } else {
-                    res[sesi] = (raw[sesi] !== undefined && raw[sesi] !== '-') ? raw[sesi] : defItem[sesi];
+                    res[sesi] = defItem[sesi];
                 }
             });
 
@@ -2539,7 +2601,7 @@
                 if (tab === 'asrama') {
                     const item = getAsramaCell(pin, d.dayIndex, tgl);
                     // Sesi Subuh
-                    if (item.subuh !== 'LIBUR' && item.subuh !== 'BELUM' && item.subuh !== 'NONAKTIF') {
+                    if (item.subuh !== 'LIBUR' && item.subuh !== 'BELUM' && item.subuh !== 'NONAKTIF' && item.subuh !== 'BELUM_MULAI') {
                         if (item.subuh === 'K' || item.subuh === 'KKN') {
                             cellKkn++; // Dispensasi KKN: tidak dihitung Alpha, tidak menambah beban JP
                         } else {
@@ -2554,7 +2616,7 @@
                         }
                     }
                     // Sesi Malam
-                    if (item.malam !== 'LIBUR' && item.malam !== 'BELUM' && item.malam !== 'NONAKTIF') {
+                    if (item.malam !== 'LIBUR' && item.malam !== 'BELUM' && item.malam !== 'NONAKTIF' && item.malam !== 'BELUM_MULAI') {
                         if (item.malam === 'K' || item.malam === 'KKN') {
                             cellKkn++; // Dispensasi KKN
                         } else {
@@ -2573,7 +2635,7 @@
                     const item = getMDNUCell(pin, d.dayIndex, tgl);
                     ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
                         const val = item[sesi];
-                        if (val !== 'LIBUR' && val !== 'BELUM' && val !== 'NONAKTIF') {
+                        if (val !== 'LIBUR' && val !== 'BELUM' && val !== 'NONAKTIF' && val !== 'BELUM_MULAI') {
                             if (val === 'K' || val === 'KKN') {
                                 cellKkn++; // Dispensasi KKN
                             } else {
@@ -2802,13 +2864,15 @@
                 return;
             }
 
-            let next = 'A';
-            if (cur === 'A' || cur === '-' || !cur) {
-                next = 'I';
-            } else if (cur === 'I' || cur === 'IZIN') {
+            let next = 'H';
+            if (cur === 'BELUM_MULAI' || cur === '-' || !cur) {
                 next = 'H';
             } else if (cur === 'H') {
+                next = 'I';
+            } else if (cur === 'I' || cur === 'IZIN') {
                 next = 'A';
+            } else if (cur === 'A') {
+                next = 'H';
             }
 
             mat[cleanPin][tgl][sesi] = next;
@@ -2850,6 +2914,15 @@
             const isModeAdmin = (currentInterface === 'admin' && isAdmin);
             const clickAttr = `onclick="cycleStatusCell('${pin}', '${tgl}', '${sesi}', '${tab}')"`;
             const cursorClass = "cursor-pointer hover:opacity-80 active:scale-95";
+
+            if (val === 'BELUM_MULAI') {
+                const startTimeText = getSesiStartTimeText(sesi, tab);
+                const titleText = `Sesi Belum Dimulai (Mulai ${startTimeText} WIB)`;
+                const hint = isModeAdmin ? " (Admin: Klik untuk set Hadir/Izin lebih awal)" : "";
+                return `<span ${clickAttr} 
+                    class="badge-cell text-slate-400 bg-slate-100/90 border border-slate-200 ${cursorClass} select-none font-mono" 
+                    title="${titleText}${hint}">-</span>`;
+            }
 
             if (val === 'I' || val === 'IZIN') {
                 const hint = isModeAdmin ? " (Klik untuk ganti: I -> H -> A)" : "";
@@ -3269,7 +3342,7 @@
                             return activePinsAsr.some(pin => {
                                 const row = getAsramaCell(pin, d.dayIndex, d.displayDate);
                                 const v = row[sess];
-                                return v === 'H' || v === 'A' || v === 'I' || v === 'S';
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S' || v === 'BELUM_MULAI';
                             });
                         });
                     }
@@ -3479,7 +3552,7 @@
                             return activePinsMDN.some(pin => {
                                 const row = getMDNUCell(pin, d.dayIndex, d.displayDate);
                                 const v = row[sess];
-                                return v === 'H' || v === 'A' || v === 'I' || v === 'S';
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S' || v === 'BELUM_MULAI';
                             });
                         });
                     }
@@ -4248,10 +4321,10 @@
                     if (isAsrama) {
                         const cell = getAsramaCell(pin, d.dayIndex, tgl);
                         if (cell.subuh === 'H') h++; else if (cell.subuh === 'A') a++; else if (cell.subuh === 'I') i++;
-                        if (cell.subuh !== 'LIBUR' && cell.subuh !== '-') jp++;
+                        if (cell.subuh !== 'LIBUR' && cell.subuh !== '-' && cell.subuh !== 'BELUM' && cell.subuh !== 'BELUM_MULAI') jp++;
 
                         if (cell.malam === 'H') h++; else if (cell.malam === 'A') a++; else if (cell.malam === 'I') i++;
-                        if (cell.malam !== 'LIBUR' && cell.malam !== '-') jp++;
+                        if (cell.malam !== 'LIBUR' && cell.malam !== '-' && cell.malam !== 'BELUM' && cell.malam !== 'BELUM_MULAI') jp++;
 
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam, t1: cell.subuh_time, t2: cell.malam_time });
                     } else if (isMDNU) {
@@ -4259,7 +4332,7 @@
                         ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
                             const val = cell[sesi];
                             if (val === 'H') h++; else if (val === 'A') a++; else if (val === 'I') i++;
-                            if (val !== 'LIBUR' && val !== '-') jp++;
+                            if (val !== 'LIBUR' && val !== '-' && val !== 'BELUM' && val !== 'BELUM_MULAI') jp++;
                         });
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3, t1: cell.sore_time, t2: cell.pel1_time, t3: cell.pel2_time, t4: cell.pel3_time });
                     } else {
@@ -4267,7 +4340,7 @@
                         const cMdn = getMDNUCell(pin, d.dayIndex, tgl);
                         [cAsr.subuh, cAsr.malam, cMdn.sore, cMdn.pel1, cMdn.pel2, cMdn.pel3].forEach(v => {
                             if (v === 'H') h++; else if (v === 'A') a++; else if (v === 'I') i++;
-                            if (v !== 'LIBUR' && v !== '-') jp++;
+                            if (v !== 'LIBUR' && v !== '-' && v !== 'BELUM' && v !== 'BELUM_MULAI') jp++;
                         });
                     }
                 });
@@ -4336,13 +4409,13 @@
                                         <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
                                         <div class="flex items-center gap-1">
                                             ${isAsrama ? `
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'subuh', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'malam', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'subuh', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'malam', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
                                             ` : `
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'sore', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel1', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel2', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel3', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'sore', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel1', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel2', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'BELUM_MULAI' ? '-' : (d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3)}</span>
+                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel3', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'BELUM_MULAI' ? '-' : (d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4)}</span>
                                             `}
                                         </div>
                                     </div>
