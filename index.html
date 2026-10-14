@@ -1631,8 +1631,26 @@
             if (rawUploadedRows && rawUploadedRows.length > 0) {
                 olahDataUtama(rawUploadedRows);
             } else {
+                // Perbarui matrix secara konsisten untuk tglKey agar tidak ada data stale
+                const dObj = dateList.find(d => d.displayDate === tglKey);
+                const day = dObj ? dObj.dayIndex : 5;
+                santriList.forEach(s => {
+                    const pin = s.pin;
+                    if (!mdnuMatrix[pin]) mdnuMatrix[pin] = {};
+                    if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
+                    const defMdn = getMDNUDefault(pin, day, tglKey);
+                    const curMdn = mdnuMatrix[pin][tglKey] || {};
+                    ['sore', 'pel1', 'pel2', 'pel3'].forEach(sName => {
+                        if (defMdn[sName] === 'LIBUR') {
+                            curMdn[sName] = 'LIBUR';
+                        } else if (curMdn[sName] === 'LIBUR') {
+                            // Sesi ini sekarang aktif, buang status LIBUR basi!
+                            curMdn[sName] = curMdn[`${sName}_time`] ? 'H' : 'A';
+                        }
+                    });
+                    mdnuMatrix[pin][tglKey] = curMdn;
+                });
                 renderAdminPanelMalamSabtu();
-
                 terapkanFilter();
             }
             if (isAdmin) simpanKeCloud();
@@ -2486,7 +2504,7 @@
                 subuh = ovrSubuh;
             } else if (defItem.subuh === 'LIBUR') {
                 subuh = 'LIBUR'; // Putihkan total!
-            } else if (raw.subuh !== undefined && raw.subuh !== '-') {
+            } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== 'LIBUR') {
                 subuh = raw.subuh;
             } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
                 subuh = 'BELUM_MULAI';
@@ -2499,7 +2517,7 @@
                 malam = ovrMalam;
             } else if (defItem.malam === 'LIBUR') {
                 malam = 'LIBUR'; // Putihkan total!
-            } else if (raw.malam !== undefined && raw.malam !== '-') {
+            } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== 'LIBUR') {
                 malam = raw.malam;
             } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
                 malam = 'BELUM_MULAI';
@@ -2535,7 +2553,7 @@
                     res[sesi] = ovr;
                 } else if (defItem[sesi] === 'LIBUR') {
                     res[sesi] = 'LIBUR'; // Putihkan total!
-                } else if (raw[sesi] !== undefined && raw[sesi] !== '-') {
+                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== 'LIBUR') {
                     res[sesi] = raw[sesi];
                 } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
                     res[sesi] = 'BELUM_MULAI';
@@ -3218,8 +3236,19 @@
                     }
                     if (!mdnuMatrix[pin][tgl]) {
                         mdnuMatrix[pin][tgl] = getMDNUDefault(pin, day, tgl);
+                    } else if (!frozenUntilDate || tgl > frozenUntilDate) {
+                        // SINKRONISASI JADWAL RESMI: Jika ada sesi yang di jadwal default-nya LIBUR atau sebaliknya, selaraskan!
+                        const defMdn = getMDNUDefault(pin, day, tgl);
+                        const curMdn = mdnuMatrix[pin][tgl];
+                        ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
+                            if (defMdn[sesi] === 'LIBUR') {
+                                curMdn[sesi] = 'LIBUR';
+                            } else if (curMdn[sesi] === 'LIBUR') {
+                                curMdn[sesi] = curMdn[`${sesi}_time`] ? 'H' : 'A';
+                            }
+                        });
                     }
-                                });
+                });
             });
 
             // Terapkan penyesuaian Tanggal Mulai Masuk Santri & Dispensasi KKN
