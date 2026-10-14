@@ -2682,7 +2682,7 @@
                             jp++;
                             if (item.subuh === 'IZIN' || item.subuh === 'I') {
                                 cellIzin++;
-                            } else if (item.subuh === 'A' || item.subuh === '-' || !item.subuh) {
+                            } else if (item.subuh === 'A' || item.subuh === '-' || !item.subuh || item.subuh === 'T' || item.subuh === 'TANGGUH') {
                                 cellAlpha++;
                             } else {
                                 h++;
@@ -2697,7 +2697,7 @@
                             jp++;
                             if (item.malam === 'IZIN' || item.malam === 'I') {
                                 cellIzin++;
-                            } else if (item.malam === 'A' || item.malam === '-' || !item.malam) {
+                            } else if (item.malam === 'A' || item.malam === '-' || !item.malam || item.malam === 'T' || item.malam === 'TANGGUH') {
                                 cellAlpha++;
                             } else {
                                 h++;
@@ -2716,7 +2716,7 @@
                                 jp++;
                                 if (val === 'IZIN' || val === 'I') {
                                     cellIzin++;
-                                } else if (val === 'A' || val === '-' || !val) {
+                                } else if (val === 'A' || val === '-' || !val || val === 'T' || val === 'TANGGUH') {
                                     cellAlpha++;
                                 } else {
                                     h++;
@@ -2947,6 +2947,8 @@
                 next = 'A';
             } else if (cur === 'A') {
                 next = 'H';
+            } else if (cur === 'T' || cur === 'TANGGUH') {
+                next = 'H';
             }
 
             mat[cleanPin][tgl][sesi] = next;
@@ -3009,6 +3011,14 @@
                 return `<span ${clickAttr} 
                     class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none shadow-2xs font-bold" 
                     title="Status: IZIN${detailText}${hint}">I</span>`;
+            }
+
+            if (val === 'T' || val === 'TANGGUH') {
+                const hint = isModeAdmin ? " (Status: DITANGGUHKAN / TAKZIRAN - Klik untuk ganti: T -> H)" : "";
+                const scanInfo = time ? `Scan: ${time} | ` : '';
+                return `<span ${clickAttr} 
+                    class="badge-cell bg-amber-500 text-white border border-amber-600 ${cursorClass} select-none shadow-2xs font-bold" 
+                    title="${scanInfo}Status: DITANGGUHKAN (Finger tapi tidak ngaji)${hint}">T</span>`;
             }
             if (val === 'A' || val === '-' || !val) {
                 const hint = isModeAdmin ? " (Klik untuk ganti: A -> I -> H)" : "";
@@ -4425,10 +4435,10 @@
                     const tgl = d.displayDate;
                     if (isAsrama) {
                         const cell = getAsramaCell(pin, d.dayIndex, tgl);
-                        if (cell.subuh === 'H') h++; else if (cell.subuh === 'A') a++; else if (cell.subuh === 'I') i++;
+                        if (cell.subuh === 'H') h++; else if (cell.subuh === 'A' || cell.subuh === 'T') a++; else if (cell.subuh === 'I') i++;
                         if (cell.subuh !== 'LIBUR' && cell.subuh !== '-' && cell.subuh !== 'BELUM' && cell.subuh !== 'BELUM_MULAI') jp++;
 
-                        if (cell.malam === 'H') h++; else if (cell.malam === 'A') a++; else if (cell.malam === 'I') i++;
+                        if (cell.malam === 'H') h++; else if (cell.malam === 'A' || cell.malam === 'T') a++; else if (cell.malam === 'I') i++;
                         if (cell.malam !== 'LIBUR' && cell.malam !== '-' && cell.malam !== 'BELUM' && cell.malam !== 'BELUM_MULAI') jp++;
 
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam, t1: cell.subuh_time, t2: cell.malam_time });
@@ -4436,7 +4446,7 @@
                         const cell = getMDNUCell(pin, d.dayIndex, tgl);
                         ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
                             const val = cell[sesi];
-                            if (val === 'H') h++; else if (val === 'A') a++; else if (val === 'I') i++;
+                            if (val === 'H') h++; else if (val === 'A' || val === 'T') a++; else if (val === 'I') i++;
                             if (val !== 'LIBUR' && val !== '-' && val !== 'BELUM' && val !== 'BELUM_MULAI') jp++;
                         });
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3, t1: cell.sore_time, t2: cell.pel1_time, t3: cell.pel2_time, t4: cell.pel3_time });
@@ -4444,7 +4454,7 @@
                         const cAsr = getAsramaCell(pin, d.dayIndex, tgl);
                         const cMdn = getMDNUCell(pin, d.dayIndex, tgl);
                         [cAsr.subuh, cAsr.malam, cMdn.sore, cMdn.pel1, cMdn.pel2, cMdn.pel3].forEach(v => {
-                            if (v === 'H') h++; else if (v === 'A') a++; else if (v === 'I') i++;
+                            if (v === 'H') h++; else if (v === 'A' || v === 'T') a++; else if (v === 'I') i++;
                             if (v !== 'LIBUR' && v !== '-' && v !== 'BELUM' && v !== 'BELUM_MULAI') jp++;
                         });
                     }
@@ -5490,7 +5500,7 @@
                             const v = cellAsr[sesi];
                             if (v === 'H') statH++;
                             else if (v === 'I' || v === 'IZIN') statI++;
-                            else if (v === 'A') statA++;
+                            else if (v === 'A' || v === 'T' || v === 'TANGGUH') statA++;
                         });
                     }
                 }
@@ -5503,7 +5513,7 @@
                             const v = cellMdn[sesi];
                             if (v === 'H') statH++;
                             else if (v === 'I' || v === 'IZIN') statI++;
-                            else if (v === 'A') statA++;
+                            else if (v === 'A' || v === 'T' || v === 'TANGGUH') statA++;
                         });
                     }
                 }
