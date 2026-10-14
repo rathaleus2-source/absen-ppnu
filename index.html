@@ -2402,54 +2402,67 @@
             return { sore, pel1, pel2, pel3, sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
         }
 
-        // Helper Cerdas: Deteksi apakah sesi jadwal belum dimulai (Opsi A)
-        // Mencegah status langsung divonis Alpha merah sebelum jam kegiatan tiba
-        function isSesiBelumMulai(tgl, sesi, tab) {
+        // Helper Cerdas: Deteksi apakah sesi jadwal belum melewati batas akhir jam absen (Cutoff)
+        // Sebelum jam cutoff berakhir: status santri yang belum finger tetap tanda strip (-) netral
+        // Setelah jam cutoff lewat: santri yang tidak finger dan tidak izin baru resmi menjadi Alpha (A)
+        function isSesiBelumLewatBatas(tgl, sesi, tab) {
             const todayISO = getTodayISODate();
-            if (tgl > todayISO) return true; // Tanggal masa depan pasti belum mulai
-            if (tgl < todayISO) return false; // Tanggal masa lalu sudah selesai
+            if (tgl > todayISO) return true; // Tanggal masa depan pasti belum lewat
+            if (tgl < todayISO) return false; // Tanggal masa lalu sudah lewat / selesai
 
-            // Tanggal HARI INI: cek jam sekarang vs jam mulai sesi
+            // Tanggal HARI INI: cek jam sekarang terhadap BATAS AKHIR (CUTOFF) jam absen
             const now = new Date();
             const curMinutes = now.getHours() * 60 + now.getMinutes();
 
             if (tab === 'asrama') {
                 if (sesi === 'subuh') {
-                    // Subuh mulai 04:00 (batas toleransi scan pagi)
-                    return curMinutes < 4 * 60;
+                    // Subuh batas akhir / cutoff pukul 07:00 WIB
+                    return curMinutes < 7 * 60;
                 } else if (sesi === 'malam') {
-                    // Asrama malam mulai 18:30 (atau 21:00 untuk 1UA hari Ahad)
-                    const day = now.getDay();
-                    const startMin = (day === 0) ? 21 * 60 : 18 * 60 + 30;
-                    return curMinutes < startMin;
+                    // Asrama malam batas akhir / cutoff pukul 23:00 WIB
+                    return curMinutes < 23 * 60;
                 }
             } else if (tab === 'mdnu') {
                 if (sesi === 'sore') {
-                    // Sore mulai 14:00
-                    return curMinutes < 14 * 60;
+                    // Sore batas akhir / cutoff pukul 17:30 WIB
+                    return curMinutes < (17 * 60 + 30);
                 } else if (sesi === 'pel1') {
-                    // Pel 1 mulai 18:30
-                    return curMinutes < (18 * 60 + 30);
+                    // Pel 1 batas akhir / cutoff pukul 19:30 WIB
+                    return curMinutes < (19 * 60 + 30);
                 } else if (sesi === 'pel2') {
-                    // Pel 2 mulai 19:40
-                    return curMinutes < (19 * 60 + 40);
-                } else if (sesi === 'pel3') {
-                    // Pel 3 mulai 21:00
+                    // Pel 2 batas akhir / cutoff pukul 21:00 WIB
                     return curMinutes < 21 * 60;
+                } else if (sesi === 'pel3') {
+                    // Pel 3 batas akhir / cutoff pukul 22:30 WIB
+                    return curMinutes < (22 * 60 + 30);
                 }
             }
             return false;
         }
 
-        function getSesiStartTimeText(sesi, tab) {
+        // Ambil info status sesi saat ini: 'belum_mulai' vs 'sedang_berlangsung' vs 'selesai'
+        function getSesiProgressInfo(sesi, tab) {
+            const now = new Date();
+            const curMinutes = now.getHours() * 60 + now.getMinutes();
+
+            let startMin = 0, cutoffMin = 0, startText = '', cutoffText = '';
             if (tab === 'asrama') {
-                return sesi === 'subuh' ? '04:00' : '18:30';
+                if (sesi === 'subuh') { startMin = 4 * 60; cutoffMin = 7 * 60; startText = '04:00'; cutoffText = '07:00'; }
+                else { startMin = 18 * 60 + 30; cutoffMin = 23 * 60; startText = '18:30'; cutoffText = '23:00'; }
+            } else {
+                if (sesi === 'sore') { startMin = 14 * 60; cutoffMin = 17 * 60 + 30; startText = '14:00'; cutoffText = '17:30'; }
+                else if (sesi === 'pel1') { startMin = 18 * 60 + 30; cutoffMin = 19 * 60 + 30; startText = '18:30'; cutoffText = '19:30'; }
+                else if (sesi === 'pel2') { startMin = 19 * 60 + 40; cutoffMin = 21 * 60; startText = '19:40'; cutoffText = '21:00'; }
+                else if (sesi === 'pel3') { startMin = 21 * 60; cutoffMin = 22 * 60 + 30; startText = '21:00'; cutoffText = '22:30'; }
             }
-            if (sesi === 'sore') return '14:00';
-            if (sesi === 'pel1') return '18:30';
-            if (sesi === 'pel2') return '19:40';
-            if (sesi === 'pel3') return '21:00';
-            return '';
+
+            if (curMinutes < startMin) {
+                return { status: 'belum_mulai', text: `Sesi Belum Dimulai (Mulai ${startText} WIB)` };
+            } else if (curMinutes < cutoffMin) {
+                return { status: 'sedang_berlangsung', text: `Sesi Sedang Berlangsung (Batas Absen s.d ${cutoffText} WIB)` };
+            } else {
+                return { status: 'selesai', text: `Sesi Telah Selesai (Batas ${cutoffText} WIB)` };
+            }
         }
 
         // Helper Single-Source-of-Truth untuk Resolusi Cell Asrama & MDNU
@@ -2475,7 +2488,7 @@
                 subuh = 'LIBUR'; // Putihkan total!
             } else if (raw.subuh !== undefined && raw.subuh !== '-') {
                 subuh = raw.subuh;
-            } else if (isSesiBelumMulai(tgl, 'subuh', 'asrama')) {
+            } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
                 subuh = 'BELUM_MULAI';
             } else {
                 subuh = defItem.subuh;
@@ -2488,7 +2501,7 @@
                 malam = 'LIBUR'; // Putihkan total!
             } else if (raw.malam !== undefined && raw.malam !== '-') {
                 malam = raw.malam;
-            } else if (isSesiBelumMulai(tgl, 'malam', 'asrama')) {
+            } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
                 malam = 'BELUM_MULAI';
             } else {
                 malam = defItem.malam;
@@ -2524,7 +2537,7 @@
                     res[sesi] = 'LIBUR'; // Putihkan total!
                 } else if (raw[sesi] !== undefined && raw[sesi] !== '-') {
                     res[sesi] = raw[sesi];
-                } else if (isSesiBelumMulai(tgl, sesi, 'mdnu')) {
+                } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
                     res[sesi] = 'BELUM_MULAI';
                 } else {
                     res[sesi] = defItem[sesi];
@@ -2916,12 +2929,15 @@
             const cursorClass = "cursor-pointer hover:opacity-80 active:scale-95";
 
             if (val === 'BELUM_MULAI') {
-                const startTimeText = getSesiStartTimeText(sesi, tab);
-                const titleText = `Sesi Belum Dimulai (Mulai ${startTimeText} WIB)`;
+                const info = getSesiProgressInfo(sesi, tab);
                 const hint = isModeAdmin ? " (Admin: Klik untuk set Hadir/Izin lebih awal)" : "";
+                const isOngoing = (info.status === 'sedang_berlangsung');
+                const badgeStyle = isOngoing 
+                    ? "bg-amber-50 text-amber-800 border-amber-300 font-bold" 
+                    : "bg-slate-100/90 text-slate-400 border-slate-200";
                 return `<span ${clickAttr} 
-                    class="badge-cell text-slate-400 bg-slate-100/90 border border-slate-200 ${cursorClass} select-none font-mono" 
-                    title="${titleText}${hint}">-</span>`;
+                    class="badge-cell ${badgeStyle} border ${cursorClass} select-none font-mono" 
+                    title="${info.text}${hint}">-</span>`;
             }
 
             if (val === 'I' || val === 'IZIN') {
