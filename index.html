@@ -3204,6 +3204,10 @@
                 tampilkanToast("Sesi ini adalah hari libur resmi (tidak dapat diubah).");
                 return;
             }
+            if (cur === 'LAJU' || (tab === 'asrama' && statusSantriAsrama && statusSantriAsrama[cleanPin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[cleanPin] && tgl >= tglMulaiLajuSantri[cleanPin])) {
+                tampilkanToast("Santri sudah berstatus Laju pada tanggal ini (sesi Asrama tidak dapat diubah).");
+                return;
+            }
 
             let next = 'H';
             if (cur === 'BELUM_MULAI' || cur === '-' || !cur) {
@@ -3666,13 +3670,28 @@
             const isAsrama = (activeTab === 'asrama');
             const isMDNU = (activeTab === 'mdnu');
             const currentHidden = isAsrama ? hiddenSantriAsrama : (isMDNU ? hiddenSantriMDNU : {});
-            const activeFiltered = filteredSantri.filter(s => !currentHidden[s.pin]);
+
+            let currentMonthDates = dateList;
+            if (selectedMonthKey && selectedMonthKey !== 'all') {
+                const mObj = availableMonths.find(m => m.key === selectedMonthKey);
+                if (mObj && mObj.dates && mObj.dates.length > 0) currentMonthDates = mObj.dates;
+            }
+
+            const activeFiltered = filteredSantri.filter(s => {
+                if (currentHidden[s.pin]) return false;
+                if (isAsrama && statusSantriAsrama[s.pin] === 'laju') {
+                    const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
+                    if (!tglLaju) return false;
+                    return currentMonthDates.some(d => d.displayDate < tglLaju);
+                }
+                return true;
+            });
             const hiddenCountInFilter = filteredSantri.length - activeFiltered.length;
 
             const lbl = document.getElementById('labelJumlahData');
             if (lbl) {
                 const hiddenNote = hiddenCountInFilter > 0 ? ` (${hiddenCountInFilter} disembunyikan)` : '';
-                lbl.innerText = `Menampilkan ${activeFiltered.length.toLocaleString('id-ID')} santri aktif${hiddenNote} (${dateList.length} hari kegiatan)`;
+                lbl.innerText = `Menampilkan ${activeFiltered.length.toLocaleString('id-ID')} santri aktif${hiddenNote} (${currentMonthDates.length} hari kegiatan)`;
             }
 
             if (currentViewMode === 'cards') {
@@ -3734,8 +3753,19 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Jam Pelajaran / Total Sesi">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
+                // Filter santri aktif khusus bulan ini di Asrama:
+                // Santri Laju hanya ditampilkan jika di dalam bulan ini terdapat tanggal SEBELUM tanggal ia mulai laju!
+                const activeSantriInMonth = activeSantriArr.filter(s => {
+                    if (statusSantriAsrama[s.pin] === 'laju') {
+                        const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
+                        if (!tglLaju) return false;
+                        return datesInMonth.some(d => d.displayDate < tglLaju);
+                    }
+                    return true;
+                });
+
                 // Peta Sesi Aktif per Tanggal (sembunyikan kolom jika 100% libur tanpa absensi)
-                const activePinsAsr = activeSantriArr.map(s => s.pin);
+                const activePinsAsr = activeSantriInMonth.map(s => s.pin);
                 const activeDateSessionsMapAsr = new Map();
                 datesInMonth.forEach(d => {
                     let sessList = ['subuh', 'malam'];
@@ -3826,7 +3856,10 @@
                 h2Asrama += `</tr>`;
 
                 let tbodyRows = '';
-                activeSantriArr.forEach((s, idx) => {
+                if (activeSantriInMonth.length === 0) {
+                    tbodyRows = `<tr><td colspan="7" class="p-8 text-center text-slate-400 bg-white font-medium">Tidak ada santri mukim aktif pada bulan ${namaBulanLabel}.</td></tr>`;
+                } else {
+                    activeSantriInMonth.forEach((s, idx) => {
                     const stat = hitungStatistikSantri(s.pin, 'asrama', datesInMonth);
                     const isOverLimit = stat.persen >= 15;
                     const cellPercentClass = isOverLimit
@@ -3873,6 +3906,7 @@
 
                     tbodyRows += `</tr>`;
                 });
+                }
 
                 htmlFull += `
                     <div class="mb-8 last:mb-0 space-y-2">
@@ -4543,7 +4577,15 @@
                 });
 
                 const aoaAsrama = [row1Asr, row2Asr];
-                const exportSantriAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]);
+                const exportSantriAsr = santriList.filter(s => {
+                    if (hiddenSantriAsrama[s.pin]) return false;
+                    if (statusSantriAsrama[s.pin] === 'laju') {
+                        const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
+                        if (!tglLaju) return false;
+                        return datesInMonth.some(d => d.displayDate < tglLaju);
+                    }
+                    return true;
+                });
                 exportSantriAsr.forEach(s => {
                     const stat = hitungStatistikSantri(s.pin, 'asrama', datesInMonth);
                     const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
@@ -4732,7 +4774,22 @@
             const isAsrama = (activeTab === 'asrama');
             const isMDNU = (activeTab === 'mdnu');
             const currentHidden = isAsrama ? hiddenSantriAsrama : (isMDNU ? hiddenSantriMDNU : {});
-            const activeSantri = santriArr.filter(s => !currentHidden[s.pin]);
+
+            let currentMonthDates = dateList;
+            if (selectedMonthKey && selectedMonthKey !== 'all') {
+                const mObj = availableMonths.find(m => m.key === selectedMonthKey);
+                if (mObj && mObj.dates && mObj.dates.length > 0) currentMonthDates = mObj.dates;
+            }
+
+            const activeSantri = santriArr.filter(s => {
+                if (currentHidden[s.pin]) return false;
+                if (isAsrama && statusSantriAsrama[s.pin] === 'laju') {
+                    const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
+                    if (!tglLaju) return false;
+                    return currentMonthDates.some(d => d.displayDate < tglLaju);
+                }
+                return true;
+            });
 
             if (activeSantri.length === 0) {
                 container.innerHTML = `
