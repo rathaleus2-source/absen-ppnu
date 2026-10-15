@@ -1596,7 +1596,8 @@
                     permissionDetailsMap: permissionDetailsMap,
                     hideEmptyLiburColumns: hideEmptyLiburColumns,
                     frozenUntilDate: frozenUntilDate,
-                    adminPassword: getAdminPassword()
+                    adminPassword: getAdminPassword(),
+                    dataSantriInduk: dataSantriInduk
                 };
 
                 fbDb.ref('absensi_ppnu').update(payload)
@@ -6180,6 +6181,8 @@
                                 class="px-2 py-1 rounded text-[10px] font-bold ${isLaju ? 'bg-amber-600 text-white' : 'bg-slate-100 hover:bg-amber-50 text-slate-600 border border-slate-200'}">L</button>
                             <button onclick="ubahStatusSantriInduk('${curPin}', 'boyong')" title="Set Boyong"
                                 class="px-2 py-1 rounded text-[10px] font-bold ${isBoyong ? 'bg-rose-600 text-white' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 border border-slate-200'}">B</button>
+                            <button onclick="tautkanPinSantriInduk('${encodeURIComponent(s.nama)}')" title="Tautkan / Edit PIN Mesin Fingerprint"
+                                class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 transition">🔗 PIN</button>
                         </div>
                     `;
                 } else {
@@ -6300,6 +6303,67 @@
             renderMenuDataSantri();
             simpanKeCloud();
             tampilkanToast(`Status santri ${target.nama} berhasil diubah menjadi: ${newStatus.toUpperCase()}`);
+        }
+
+        function tautkanPinSantriInduk(encodedNama) {
+            if (!isAdmin) {
+                alert("Hanya Admin yang dapat menautkan PIN mesin fingerprint santri.");
+                return;
+            }
+            const namaSantri = decodeURIComponent(encodedNama);
+            const target = (dataSantriInduk || []).find(s => s.nama === namaSantri);
+            if (!target) return;
+
+            const defaultVal = (target.pin && target.pin !== '-') ? target.pin : '';
+            const inputPin = prompt(
+                `Hubungkan PIN Mesin Fingerprint untuk:\n"${target.nama}"\n\nMasukkan nomor PIN mesin santri (Contoh: 15, 95):\n(Kosongkan atau ketik "-" untuk membatalkan tautan)`,
+                defaultVal
+            );
+
+            if (inputPin === null) return; // Dibatalkan admin
+
+            const cleanPin = inputPin.trim();
+            if (!cleanPin || cleanPin === '-' || cleanPin === '0') {
+                target.pin = '-';
+                target.terdaftarMesin = false;
+                target.namaMesin = '-';
+                tampilkanToast(`Tautan PIN untuk "${target.nama}" dibatalkan.`);
+            } else {
+                target.pin = cleanPin;
+                target.terdaftarMesin = true;
+                target.namaMesin = target.nama;
+
+                // Pastikan PIN ada di santriList
+                if (santriList && !santriList.some(s => s.pin === cleanPin)) {
+                    santriList.push({
+                        pin: cleanPin,
+                        nama: target.nama,
+                        kamar: target.kamar || '-',
+                        kelas: target.kelas || '-'
+                    });
+                }
+
+                // Terapkan status boyong/laju ke asrama & mdnu
+                const st = (target.status || 'mukim').toLowerCase();
+                if (st === 'boyong') {
+                    statusSantriAsrama[cleanPin] = 'boyong';
+                    statusSantriMDNU[cleanPin] = 'boyong';
+                    hiddenSantriAsrama[cleanPin] = true;
+                    hiddenSantriMDNU[cleanPin] = true;
+                } else if (st === 'laju') {
+                    statusSantriAsrama[cleanPin] = 'laju';
+                    statusSantriMDNU[cleanPin] = 'laju';
+                    hiddenSantriAsrama[cleanPin] = true;
+                    delete hiddenSantriMDNU[cleanPin];
+                }
+
+                tampilkanToast(`✅ Berhasil menautkan PIN ${cleanPin} ke "${target.nama}"!`);
+            }
+
+            if (typeof updateHiddenBadges === 'function') updateHiddenBadges();
+            if (typeof terapkanFilter === 'function') terapkanFilter();
+            renderMenuDataSantri();
+            simpanKeCloud();
         }
     </script>
         <!-- ======================================================== -->
