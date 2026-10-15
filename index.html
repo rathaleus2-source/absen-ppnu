@@ -6175,13 +6175,14 @@
                 let adminActions = '';
                 if (isAdmin) {
                     const curPin = (s.pin && s.pin !== '-') ? s.pin : s.nama;
+                    const encodedPin = encodeURIComponent(curPin);
                     adminActions = `
                         <div class="flex items-center justify-center gap-1">
-                            <button onclick="ubahStatusSantriInduk('${curPin}', 'mukim')" title="Set Mukim"
+                            <button onclick="ubahStatusSantriInduk('${encodedPin}', 'mukim')" title="Set Mukim"
                                 class="px-2 py-1 rounded text-[10px] font-bold ${isMukim ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 border border-slate-200'}">M</button>
-                            <button onclick="ubahStatusSantriInduk('${curPin}', 'laju')" title="Set Laju"
+                            <button onclick="ubahStatusSantriInduk('${encodedPin}', 'laju')" title="Set Laju"
                                 class="px-2 py-1 rounded text-[10px] font-bold ${isLaju ? 'bg-amber-600 text-white' : 'bg-slate-100 hover:bg-amber-50 text-slate-600 border border-slate-200'}">L</button>
-                            <button onclick="ubahStatusSantriInduk('${curPin}', 'boyong')" title="Set Boyong"
+                            <button onclick="ubahStatusSantriInduk('${encodedPin}', 'boyong')" title="Set Boyong"
                                 class="px-2 py-1 rounded text-[10px] font-bold ${isBoyong ? 'bg-rose-600 text-white' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 border border-slate-200'}">B</button>
                             <button onclick="tautkanPinSantriInduk('${encodeURIComponent(s.nama)}')" title="Tautkan / Edit PIN Mesin Fingerprint"
                                 class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 transition">🔗 PIN</button>
@@ -6269,12 +6270,13 @@
             tampilkanToast("📥 Berhasil mengekspor Data Induk Santri ke Excel (.xlsx)!");
         }
 
-        function ubahStatusSantriInduk(pinOrNama, newStatus) {
+        function ubahStatusSantriInduk(encodedPinOrNama, newStatus) {
             if (!isAdmin) {
                 alert("Hanya Admin yang dapat mengubah status santri.");
                 return;
             }
 
+            const pinOrNama = decodeURIComponent(encodedPinOrNama);
             const target = dataSantriInduk.find(s => s.pin === pinOrNama || s.nama === pinOrNama);
             if (!target) return;
 
