@@ -1639,11 +1639,13 @@
             let html = '';
             availableMonths.forEach(m => {
                 const isActive = (selectedMonthKey === m.key);
+                const activeColor = (activeTab === 'mdnu') ? 'bg-indigo-600' : 'bg-emerald-600';
+                const activeBadgeColor = (activeTab === 'mdnu') ? 'bg-indigo-800' : 'bg-emerald-800';
                 html += `
                     <button onclick="ubahFilterBulan('${m.key}')" 
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${isActive ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'}">
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${isActive ? activeColor + ' text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300'}">
                         <span>${m.label}</span>
-                        <span class="text-[10px] ${isActive ? 'bg-emerald-800 text-white' : 'bg-slate-200 text-slate-700'} px-1.5 py-0.2 rounded-full font-mono font-bold">${m.dates.length} hari</span>
+                        <span class="text-[10px] ${isActive ? activeBadgeColor + ' text-white' : 'bg-slate-200 text-slate-700'} px-1.5 py-0.2 rounded-full font-mono font-bold">${m.dates.length} hari</span>
                     </button>
                 `;
             });
@@ -3900,33 +3902,24 @@
             const btnAsrama = document.getElementById('tabBtnAsrama');
             const btnMDNU = document.getElementById('tabBtnMDNU');
             const btnRekap = document.getElementById('tabBtnRekapitulasi') || document.getElementById('tabBtnEvaluasi');
-            const viewAsrama = document.getElementById('viewAsrama');
-            const viewMDNU = document.getElementById('viewMDNU');
-            const viewRekap = document.getElementById('viewRekapitulasi');
             const containerFilterBulan = document.getElementById('containerFilterBulan');
 
             if (btnAsrama) btnAsrama.className = 'px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ' + (tab === 'asrama' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200');
             if (btnMDNU) btnMDNU.className = 'px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ' + (tab === 'mdnu' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200');
             if (btnRekap) btnRekap.className = 'px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 ' + (tab === 'rekapitulasi' ? 'bg-indigo-700 text-white shadow-sm' : 'bg-slate-100 text-slate-700 hover:bg-slate-200');
 
-            if (viewAsrama) viewAsrama.classList.toggle('hidden', tab !== 'asrama');
-            if (viewMDNU) viewMDNU.classList.toggle('hidden', tab !== 'mdnu');
-            if (viewRekap) viewRekap.classList.toggle('hidden', tab !== 'rekapitulasi');
-
             if (containerFilterBulan) {
-                            if (currentViewMode === 'cards') {
-                const q = (document.getElementById('filterSearch').value || '').toLowerCase().trim();
-                const f = santriList.filter(s => !q || s.nama.toLowerCase().includes(q) || s.pin.toLowerCase().includes(q));
-                renderCardView(f);
-            }
-            if (tab === 'rekapitulasi') {
+                if (tab === 'rekapitulasi') {
                     containerFilterBulan.classList.add('hidden');
                 } else if (availableMonths.length > 0) {
                     containerFilterBulan.classList.remove('hidden');
                 }
             }
 
-            terapkanFilter();
+            renderPillsFilterBulan();
+
+            // Selaraskan tampilan (Matriks vs Kartu Santri) dan perbarui highlight tombol secara konsisten sesuai tab
+            setViewMode(currentViewMode);
         }
 
         // Sub-tab untuk Rekapitulasi Santri: 'asrama_semua', 'mdnu_semua', 'analisis'
@@ -4374,14 +4367,6 @@
             // Unduh File
             XLSX.writeFile(wb, "Rekap_Absensi_PPNU_Matriks.xlsx");
         }
-        // Inisialisasi status hak akses UI saat pertama kali dimuat
-        document.addEventListener("DOMContentLoaded", () => {
-            muatDariLocalStorage();
-            updateUIAksesAdmin();
-            initFirebase();
-            setViewMode(currentViewMode);
-        });
-
         // ========================================================
         // RESPONSIVE VIEW ENGINE (AUTO-FIT, CARDS & SCROLL NAV)
         // ========================================================
@@ -4400,7 +4385,9 @@
             const btnMatrix = document.getElementById('btnViewMatrix');
             const btnCards = document.getElementById('btnViewCards');
 
-            const activeBtnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-600 text-white shadow-xs flex items-center gap-1.5';
+            // Warna tombol aktif selaras dengan tab (Asrama: Emerald, MDNU: Indigo, Rekap: Indigo-700)
+            const activeColor = (activeTab === 'mdnu') ? 'bg-indigo-600' : (activeTab === 'rekapitulasi' ? 'bg-indigo-700' : 'bg-emerald-600');
+            const activeBtnClass = `px-3 py-1.5 rounded-lg text-xs font-bold transition ${activeColor} text-white shadow-xs flex items-center gap-1.5`;
             const inactiveBtnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
 
             if (btnMatrix) btnMatrix.className = (mode === 'matrix' ? activeBtnClass : inactiveBtnClass);
@@ -4418,18 +4405,31 @@
                 if (viewRekap) viewRekap.classList.add('hidden');
                 if (viewCardList) viewCardList.classList.remove('hidden');
                 if (flNav) flNav.classList.add('hidden');
-
-                const query = (document.getElementById('filterSearch').value || '').toLowerCase().trim();
-                const filtered = santriList.filter(s => !query || s.nama.toLowerCase().includes(query) || s.pin.toLowerCase().includes(query));
-                renderCardView(filtered);
             } else {
                 if (viewCardList) viewCardList.classList.add('hidden');
-                if (activeTab === 'asrama' && viewAsrama) viewAsrama.classList.remove('hidden');
-                if (activeTab === 'mdnu' && viewMDNU) viewMDNU.classList.remove('hidden');
-                if (activeTab === 'rekapitulasi' && viewRekap) viewRekap.classList.remove('hidden');
-                if (flNav && dateList.length > 0) flNav.classList.remove('hidden');
-                terapkanFilter();
+                if (viewAsrama) viewAsrama.classList.toggle('hidden', activeTab !== 'asrama');
+                if (viewMDNU) viewMDNU.classList.toggle('hidden', activeTab !== 'mdnu');
+                if (viewRekap) viewRekap.classList.toggle('hidden', activeTab !== 'rekapitulasi');
+                if (flNav) {
+                    if (dateList.length > 0) flNav.classList.remove('hidden');
+                    else flNav.classList.add('hidden');
+                }
             }
+            terapkanFilter();
+        }
+
+        // Inisialisasi status hak akses UI saat pertama kali dimuat
+        function inisialisasiAplikasiPresensi() {
+            muatDariLocalStorage();
+            updateUIAksesAdmin();
+            initFirebase();
+            setViewMode(currentViewMode);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener("DOMContentLoaded", inisialisasiAplikasiPresensi);
+        } else {
+            inisialisasiAplikasiPresensi();
         }
 
         function scrollTableTo(pos) {
