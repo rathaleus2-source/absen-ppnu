@@ -5239,19 +5239,72 @@
             return lines;
         }
 
+        const STOPWORDS_SANTRI = ['muhammad', 'mochammad', 'mohammad', 'muhamad', 'moch', 'muh', 'm', 'ahmad', 'achmad', 'abdul', 'abdullah', 'al', 'el', 'bin'];
+
+        function cleanSantriStr(s) {
+            if (!s) return '';
+            return (s || '').toLowerCase()
+                .replace(/['"`\-]/g, ' ')
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function extractCoreTokensJS(cleaned) {
+            const toks = cleaned.split(' ').filter(w => w.length > 0);
+            const core = toks.filter(w => !STOPWORDS_SANTRI.includes(w) && w.length > 1);
+            return { toks, core };
+        }
+
+        function isStrictNameMatchJS(name1, name2) {
+            const n1 = cleanSantriStr(name1);
+            const n2 = cleanSantriStr(name2);
+            if (!n1 || !n2) return false;
+            if (n1 === n2) return true;
+
+            const { core: c1 } = extractCoreTokensJS(n1);
+            const { core: c2 } = extractCoreTokensJS(n2);
+
+            const phonetic = t => t.replace(/kh/g, 'h').replace(/oe/g, 'u').replace(/dh/g, 'd').replace(/y/g, 'i');
+            const p1 = phonetic(n1);
+            const p2 = phonetic(n2);
+            if (p1 === p2) return true;
+
+            // Truncation match (mesin potong nama panjang)
+            if (n1.length >= 12 || n2.length >= 12) {
+                const shorter = n1.length < n2.length ? n1 : n2;
+                const longer = n1.length < n2.length ? n2 : n1;
+                if (longer.startsWith(shorter) && shorter.length >= 12) return true;
+            }
+
+            // Core tokens comparison
+            if (c1.length > 0 && c2.length > 0) {
+                const pc1 = c1.map(phonetic);
+                const pc2 = c2.map(phonetic);
+                if (pc1.join(' ') === pc2.join(' ')) return true;
+
+                // Minimal 2 kata unik cocok dan tidak ada kata unik lain yang saling bertentangan
+                const common = pc1.filter(w => pc2.includes(w));
+                if (common.length >= 2 && (common.length === pc1.length || common.length === pc2.length)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function normalizeSantriName(str) {
-            return (str || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/kh/g, 'h');
+            return cleanSantriStr(str);
         }
 
         function findSantriByName(namaForm) {
             if (!namaForm) return null;
-            const norm = normalizeSantriName(namaForm);
-            let found = santriList.find(s => normalizeSantriName(s.nama) === norm);
+            const norm = cleanSantriStr(namaForm);
+            // 1. Exact match
+            let found = santriList.find(s => cleanSantriStr(s.nama) === norm);
             if (found) return found;
-            found = santriList.find(s => {
-                const sn = normalizeSantriName(s.nama);
-                return sn.includes(norm) || norm.includes(sn);
-            });
+
+            // 2. Strict matching anti-cocoklogi
+            found = santriList.find(s => isStrictNameMatchJS(namaForm, s.nama));
             return found || null;
         }
 
