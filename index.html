@@ -5296,14 +5296,30 @@
             return cleanSantriStr(str);
         }
 
+        const MANUAL_NAME_MAP_JS = {
+            'irvan nur yulianto': '2AA18',
+            'irvan yulianto': '2AA18',
+            'irfan zulianto': '2AA18',
+            'muhammad arvin maulana': '2AA06',
+            'arvin maulana': '2AA06',
+            'muhammad alvin seria dharmawan': '2WA14',
+            'alvin seria dharmawan': '2WA14'
+        };
+
         function findSantriByName(namaForm) {
             if (!namaForm) return null;
             const norm = cleanSantriStr(namaForm);
-            // 1. Exact match
+            // 1. Cek Manual Map
+            if (MANUAL_NAME_MAP_JS[norm]) {
+                const targetPin = MANUAL_NAME_MAP_JS[norm];
+                const foundByPin = santriList.find(s => s.pin === targetPin);
+                if (foundByPin) return foundByPin;
+            }
+            // 2. Exact match
             let found = santriList.find(s => cleanSantriStr(s.nama) === norm);
             if (found) return found;
 
-            // 2. Strict matching anti-cocoklogi
+            // 3. Strict matching anti-cocoklogi
             found = santriList.find(s => isStrictNameMatchJS(namaForm, s.nama));
             return found || null;
         }
