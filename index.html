@@ -671,7 +671,7 @@
                 class="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-6 shadow-xl border border-slate-700 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full md:w-auto text-center md:text-left">
                     <div class="border-r border-slate-700/60 pr-4">
-                        <p class="text-xs text-slate-400 font-medium">Santri Terdaftar</p>
+                        <p class="text-xs text-slate-400 font-medium">Santri Aktif</p>
                         <p id="statTotalSantri" class="text-2xl font-black text-emerald-400">0</p>
                     </div>
                     <div class="border-r border-slate-700/60 pr-4">
@@ -1289,13 +1289,23 @@
             updateToggleHideLiburUI();
 
             if (santriList.length > 0 && dateList.length > 0) {
-                document.getElementById('statTotalSantri').innerText = santriList.length;
+                const countAktifAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]).length;
+                const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
+                const countBoyong = santriList.filter(s => (statusSantriMDNU[s.pin] === 'boyong' || statusSantriAsrama[s.pin] === 'boyong')).length;
+                const countAktif = santriList.length - countBoyong;
+
+                const elTotalSantri = document.getElementById('statTotalSantri');
+                if (elTotalSantri) {
+                    if (countBoyong > 0) {
+                        elTotalSantri.innerHTML = `${countAktif} <span class="text-xs font-normal text-slate-400">Aktif</span> <span class="text-[11px] font-semibold text-rose-400">(${countBoyong} Boyong)</span>`;
+                    } else {
+                        elTotalSantri.innerText = santriList.length;
+                    }
+                }
                 document.getElementById('statTotalDays').innerText = dateList.length;
                 document.getElementById('statDateRange').innerText =
                     `${dateList[0].displayDate} s.d ${dateList[dateList.length - 1].displayDate}`;
 
-                const countAktifAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]).length;
-                const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
                 document.getElementById('badgeCountAsrama').innerText = `${countAktifAsr} Santri`;
                 document.getElementById('badgeCountMDNU').innerText = `${countAktifMdn} Santri`;
                 const bRekap = document.getElementById('badgeCountRekap');
@@ -3385,10 +3395,20 @@
             terapkanTanggalMulaiDanDispensasiKeMatriks();
 
             // Update UI Stats
-            document.getElementById('statTotalSantri').innerText = santriList.length.toLocaleString('id-ID');
-            document.getElementById('statTotalDays').innerText = dateList.length.toLocaleString('id-ID');
             const countAktifAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]).length;
             const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
+            const countBoyong = santriList.filter(s => (statusSantriMDNU[s.pin] === 'boyong' || statusSantriAsrama[s.pin] === 'boyong')).length;
+            const countAktif = santriList.length - countBoyong;
+
+            const elTotalSantri = document.getElementById('statTotalSantri');
+            if (elTotalSantri) {
+                if (countBoyong > 0) {
+                    elTotalSantri.innerHTML = `${countAktif} <span class="text-xs font-normal text-slate-400">Aktif</span> <span class="text-[11px] font-semibold text-rose-400">(${countBoyong} Boyong)</span>`;
+                } else {
+                    elTotalSantri.innerText = santriList.length.toLocaleString('id-ID');
+                }
+            }
+            document.getElementById('statTotalDays').innerText = dateList.length.toLocaleString('id-ID');
             document.getElementById('badgeCountAsrama').innerText = `${countAktifAsr} Santri`;
             document.getElementById('badgeCountMDNU').innerText = `${countAktifMdn} Santri`;
             updateHiddenBadges();
@@ -3443,9 +3463,16 @@
                 return !query || s.nama.toLowerCase().includes(query) || s.pin.toLowerCase().includes(query);
             });
 
+            const isAsrama = (activeTab === 'asrama');
+            const isMDNU = (activeTab === 'mdnu');
+            const currentHidden = isAsrama ? hiddenSantriAsrama : (isMDNU ? hiddenSantriMDNU : {});
+            const activeFiltered = filteredSantri.filter(s => !currentHidden[s.pin]);
+            const hiddenCountInFilter = filteredSantri.length - activeFiltered.length;
+
             const lbl = document.getElementById('labelJumlahData');
             if (lbl) {
-                lbl.innerText = `Menampilkan ${filteredSantri.length.toLocaleString('id-ID')} santri (${dateList.length} hari kegiatan)`;
+                const hiddenNote = hiddenCountInFilter > 0 ? ` (${hiddenCountInFilter} disembunyikan)` : '';
+                lbl.innerText = `Menampilkan ${activeFiltered.length.toLocaleString('id-ID')} santri aktif${hiddenNote} (${dateList.length} hari kegiatan)`;
             }
 
             if (currentViewMode === 'cards') {
@@ -5096,12 +5123,20 @@
                     const pemberi = (r[1] || '-').trim();
                     const noIzin = (r[13] || '-').trim();
 
+                    // Cek pola cerdas: Izin Sore + Malam (Pel 1, 2, 3) + Subuh (Pagi)
+                    // Jika santri izin sore, malam, dan subuh: santri baru berangkat sore hari,
+                    // sehingga Subuh hari pertama santri masih di pondok, dan izin Subuh berlaku untuk BESOKNYA!
+                    const hasSore = sesiStr.includes('sore');
+                    const hasMalam = sesiStr.includes('ke-1') || sesiStr.includes('ke 1') || sesiStr.includes('ke-2') || sesiStr.includes('ke 2') || sesiStr.includes('ke-3') || sesiStr.includes('ke 3') || sesiStr.includes('malam');
+                    const hasSubuh = sesiStr.includes('pagi') || sesiStr.includes('subuh');
+                    const isIzinSoreMalamSubuh = hasSore && hasMalam && hasSubuh;
+
                     // Izin seharian penuh (Full Day): jika multi hari, kolom sesi kosong/semua, atau izin pulang/cuti/sakit
                     const isMultiHari = (eDt.getTime() > sDt.getTime());
-                    const isFullDay = isMultiHari || sesiStr === '' || sesiStr.includes('semua') || sesiStr.includes('penuh') ||
+                    const isFullDay = (isMultiHari || sesiStr === '' || sesiStr.includes('semua') || sesiStr.includes('penuh') ||
                                       alasan.toLowerCase().includes('pulang') || alasan.toLowerCase().includes('cuti') ||
                                       alasan.toLowerCase().includes('sakit') || alasan.toLowerCase().includes('keluarga') ||
-                                      durasiHariText.toLowerCase().includes('malam');
+                                      durasiHariText.toLowerCase().includes('malam')) && !isIzinSoreMalamSubuh;
 
                     let curDt = new Date(sDt);
                     while (curDt <= eDt) {
@@ -5133,7 +5168,15 @@
                             const curAsr = asramaMatrix[pin][isoTgl];
 
                             // 1a. Asrama Subuh
-                            const isPagi = isFullDay || sesiStr.includes('pagi') || sesiStr.includes('subuh');
+                            let isPagi = false;
+                            if (isIzinSoreMalamSubuh) {
+                                // Pada hari pertama (sDt): santri baru berangkat sore hari, subuh masih di pondok
+                                const isFirstDay = (curDt.getTime() === sDt.getTime());
+                                isPagi = !isFirstDay;
+                            } else {
+                                isPagi = isFullDay || sesiStr.includes('pagi') || sesiStr.includes('subuh');
+                            }
+
                             if (isPagi && curAsr.subuh !== 'LIBUR' && curAsr.subuh !== 'BELUM') {
                                 if (curAsr.subuh === 'H' || curAsr.subuh_time) {
                                     countKeptHadir++;
@@ -5208,6 +5251,44 @@
                         });
 
                         curDt.setDate(curDt.getDate() + 1);
+                    }
+
+                    // ATURAN CERDAS: Jika santri izin sore + malam + subuh,
+                    // izin Subuh-nya dialokasikan untuk BESOKNYA setelah izin malam berakhir (eDt + 1 hari)
+                    if (isIzinSoreMalamSubuh) {
+                        const nextDt = new Date(eDt);
+                        nextDt.setDate(nextDt.getDate() + 1);
+
+                        if (!freezeDt || nextDt > freezeDt) {
+                            const isoTglNext = formatISODate(nextDt);
+                            const dayIdxNext = nextDt.getDay();
+                            const isSantriLaju = !!hiddenSantriAsrama[pin];
+                            const defAsrNext = getAsramaDefault(pin, dayIdxNext, isoTglNext);
+
+                            if (!isSantriLaju) {
+                                if (!asramaMatrix[pin]) asramaMatrix[pin] = {};
+                                if (!asramaMatrix[pin][isoTglNext]) {
+                                    asramaMatrix[pin][isoTglNext] = Object.assign({}, defAsrNext);
+                                }
+
+                                const curAsrNext = asramaMatrix[pin][isoTglNext];
+                                if (curAsrNext.subuh !== 'LIBUR' && curAsrNext.subuh !== 'BELUM') {
+                                    if (curAsrNext.subuh === 'H' || curAsrNext.subuh_time) {
+                                        countKeptHadir++;
+                                    } else if (curAsrNext.subuh === 'A' || curAsrNext.subuh === '-' || curAsrNext.subuh === 'I') {
+                                        curAsrNext.subuh = 'I';
+                                        curAsrNext.subuh_time = '';
+                                        permissionDetailsMap[`${pin}__${isoTglNext}__subuh__asrama`] = {
+                                            alasan: `${alasan} (Izin Subuh Lanjutan Sore-Malam)`,
+                                            pemberiIzin: pemberi,
+                                            noIzin,
+                                            durasi: durasiHariText
+                                        };
+                                        countConvertedToIzin++;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
