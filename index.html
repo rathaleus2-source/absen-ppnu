@@ -1482,6 +1482,7 @@
                 // Ekstrak bulan dinamis dari dateList agar jika ada tanggal/bulan baru langsung terdaftar
                 ekstrakBulanTersedia();
                 renderAdminPanelMalamSabtu();
+                terapkanTanggalMulaiDanDispensasiKeMatriks();
                 terapkanFilter();
                 renderEvaluasi();
             }
@@ -2765,18 +2766,21 @@
 
             const hasIzinSubuh = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__subuh__asrama`] !== undefined);
             const hasIzinMalam = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__malam__asrama`] !== undefined);
+            const disp = getDispensasiSantri(pin, tgl);
 
             let subuh = defItem.subuh;
             if (defItem.subuh === 'LIBUR') {
                 subuh = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
             } else if (ovrSubuh !== undefined) {
                 subuh = ovrSubuh;
-            } else if (hasIzinSubuh && !raw.subuh_time) {
+            } else if (raw.subuh_time) {
+                subuh = 'H'; // Scan fisik mesin selalu hadir!
+            } else if (hasIzinSubuh) {
                 subuh = 'I'; // Ada surat izin resmi -> WAJIB IZIN
+            } else if (disp) {
+                subuh = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
             } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== 'LIBUR') {
                 subuh = raw.subuh;
-            } else if (hasIzinSubuh) {
-                subuh = 'I';
             } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
                 subuh = 'BELUM_MULAI';
             } else {
@@ -2788,12 +2792,14 @@
                 malam = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
             } else if (ovrMalam !== undefined) {
                 malam = ovrMalam;
-            } else if (hasIzinMalam && !raw.malam_time) {
+            } else if (raw.malam_time) {
+                malam = 'H'; // Scan fisik mesin selalu hadir!
+            } else if (hasIzinMalam) {
                 malam = 'I'; // Ada surat izin resmi -> WAJIB IZIN
+            } else if (disp) {
+                malam = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
             } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== 'LIBUR') {
                 malam = raw.malam;
-            } else if (hasIzinMalam) {
-                malam = 'I';
             } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
                 malam = 'BELUM_MULAI';
             } else {
@@ -2811,6 +2817,7 @@
         function getMDNUCell(pin, day, tgl) {
             const defItem = getMDNUDefault(pin, day, tgl);
             const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
+            const disp = getDispensasiSantri(pin, tgl);
             
             const res = {
                 sore_time: raw.sore_time || '',
@@ -2829,12 +2836,14 @@
                     res[sesi] = 'LIBUR'; // Putihkan total jika jadwal resmi sesi ini LIBUR!
                 } else if (ovr !== undefined) {
                     res[sesi] = ovr;
-                } else if (hasIzin && !res[`${sesi}_time`]) {
+                } else if (res[`${sesi}_time`]) {
+                    res[sesi] = 'H'; // Scan fisik mesin selalu hadir!
+                } else if (hasIzin) {
                     res[sesi] = 'I'; // Ada surat izin resmi -> WAJIB IZIN
+                } else if (disp) {
+                    res[sesi] = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
                 } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== 'LIBUR') {
                     res[sesi] = raw[sesi];
-                } else if (hasIzin) {
-                    res[sesi] = 'I';
                 } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
                     res[sesi] = 'BELUM_MULAI';
                 } else {
