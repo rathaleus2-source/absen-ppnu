@@ -1117,8 +1117,9 @@
 
         // Keamanan Akses & Pengaturan 2 Interface (Publik vs Admin)
         const DEFAULT_ADMIN_PASSWORD = "admin123";
+        let cloudAdminPassword = null;
         function getAdminPassword() {
-            return localStorage.getItem("ppnu_admin_password") || DEFAULT_ADMIN_PASSWORD;
+            return cloudAdminPassword || localStorage.getItem("ppnu_admin_password") || DEFAULT_ADMIN_PASSWORD;
         }
         // Pertahankan sesi Admin jika sebelumnya sudah login di tab ini
         let isAdmin = sessionStorage.getItem("ppnu_admin_logged") === "true";
@@ -1222,6 +1223,20 @@
 
         function terapkanDataDariCloud(data) {
             if (!data) return;
+
+            // Sinkronisasi kata sandi Admin dari Cloud Firebase
+            if (data.adminPassword) {
+                cloudAdminPassword = String(data.adminPassword).trim();
+                try { localStorage.setItem("ppnu_admin_password", cloudAdminPassword); } catch (e) {}
+            } else if (fbDb) {
+                // Auto-migrasi: Jika di Firebase belum ada sandi tetapi di browser pengurus ini sudah diubah
+                const localSaved = localStorage.getItem("ppnu_admin_password");
+                if (localSaved && localSaved !== DEFAULT_ADMIN_PASSWORD) {
+                    console.log("[Auth] Menyinkronkan kata sandi admin lokal ke Cloud Firebase...");
+                    fbDb.ref('absensi_ppnu/adminPassword').set(localSaved);
+                    cloudAdminPassword = localSaved;
+                }
+            }
 
             santriList = data.santriList || [];
             dateList = data.dateList || [];
@@ -1371,7 +1386,8 @@
                     manualIzinData: manualIzinData,
                     permissionDetailsMap: permissionDetailsMap,
                     hideEmptyLiburColumns: hideEmptyLiburColumns,
-                    frozenUntilDate: frozenUntilDate
+                    frozenUntilDate: frozenUntilDate,
+                    adminPassword: getAdminPassword()
                 };
 
                 fbDb.ref('absensi_ppnu').update(payload)
@@ -2768,11 +2784,11 @@
         }
 
         function prosesLoginAdmin() {
-            const pwdInput = document.getElementById('inputAdminPassword').value;
+            const pwdInput = (document.getElementById('inputAdminPassword').value || '').trim();
             const validPwd = getAdminPassword();
             const errBox = document.getElementById('adminLoginError');
 
-            if (pwdInput === validPwd) {
+            if (pwdInput && pwdInput === validPwd) {
                 isAdmin = true;
                 currentInterface = "admin";
                 sessionStorage.setItem("ppnu_admin_logged", "true");
@@ -2799,19 +2815,40 @@
 
         function gantiPasswordAdmin() {
             if (!isAdmin) return;
+            const currentPass = getAdminPassword();
             const passLama = prompt("Masukkan kata sandi saat ini:");
-            if (!passLama) return;
-            if (passLama !== getAdminPassword()) {
+            if (passLama === null) return;
+            if (passLama.trim() !== currentPass) {
                 alert("Kata sandi saat ini tidak sesuai!");
                 return;
             }
             const passBaru = prompt("Masukkan kata sandi baru (minimal 4 karakter):");
-            if (!passBaru || passBaru.length < 4) {
-                alert("Kata sandi baru terlalu pendek atau dibatalkan.");
+            if (passBaru === null) return;
+            const cleanPassBaru = passBaru.trim();
+            if (cleanPassBaru.length < 4) {
+                alert("Kata sandi baru terlalu pendek (minimal 4 karakter)!");
                 return;
             }
-            localStorage.setItem("ppnu_admin_password", passBaru);
-            alert("Kata sandi Admin berhasil diperbarui!");
+
+            cloudAdminPassword = cleanPassBaru;
+            try { localStorage.setItem("ppnu_admin_password", cleanPassBaru); } catch (e) {}
+
+            if (fbDb) {
+                updateCloudSyncStatus('saving', 'Menyimpan Sandi...');
+                fbDb.ref('absensi_ppnu/adminPassword').set(cleanPassBaru)
+                    .then(() => {
+                        updateCloudSyncStatus('synced', 'Sandi Tersimpan');
+                        tampilkanToast("✅ Kata sandi Admin berhasil diubah dan disinkronkan ke seluruh perangkat!");
+                        alert("Berhasil!\n\nKata sandi Admin telah diperbarui di Database Cloud Firebase.\nSemua perangkat lain sekarang harus menggunakan kata sandi baru ini.");
+                    })
+                    .catch((err) => {
+                        console.error("Gagal sinkron kata sandi ke cloud:", err);
+                        alert("Kata sandi tersimpan di browser ini, tetapi gagal sinkron ke cloud: " + err.message);
+                    });
+            } else {
+                tampilkanToast("Kata sandi diperbarui secara lokal.");
+                alert("Kata sandi Admin berhasil diperbarui di browser lokal!");
+            }
         }
 
         function tampilkanToast(pesan) {
@@ -5806,12 +5843,10 @@
             <!-- Modal Body -->
             <form onsubmit="event.preventDefault(); prosesLoginAdmin();" class="p-6 space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kata Sandi /
-                        Password Admin</label>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kata Sandi / Password Admin</label>
                     <input type="password" id="inputAdminPassword" placeholder="Masukkan password admin..."
                         class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white font-mono">
-                    <p class="text-[11px] text-slate-500 mt-1 italic">Default password: <code
-                            class="font-bold text-indigo-700 font-mono">admin123</code></p>
+                    <p class="text-[11px] text-slate-500 mt-1">Hanya pengurus / admin yang memiliki hak akses yang dapat masuk ke mode ini.</p>
                 </div>
 
                 <div id="adminLoginError"
