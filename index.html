@@ -375,6 +375,21 @@
                 </div>
             </div>
 
+            <!-- Main Navigation Mode Switcher -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 shadow-inner">
+                <button type="button" id="btnNavMenuAbsen" onclick="gantiMenuUtama('absen')"
+                    class="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-xs cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    <span>Presensi</span>
+                </button>
+                <button type="button" id="btnNavMenuSantri" onclick="gantiMenuUtama('santri')"
+                    class="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                    <span>Data Santri</span>
+                    <span id="badgeNavSantriBelumMesin" class="hidden text-[10px] bg-amber-500 text-white px-1.5 py-0.2 rounded-full font-bold animate-pulse">!</span>
+                </button>
+            </div>
+
             <div class="flex items-center gap-2 sm:gap-3">
                 <!-- Admin Authentication Area -->
                 <div id="navAuthArea" class="flex items-center gap-2">
@@ -394,6 +409,9 @@
 
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+
+        <!-- CONTAINER MENU 1: ABSENSI & PRESENSI -->
+        <div id="containerMenuAbsen" class="space-y-8">
 
         <!-- State Informasi Publik saat belum ada data -->
         <div id="emptyStatePublic"
@@ -971,6 +989,157 @@
 
             </div>
 
+        </div><!-- End containerMenuAbsen -->
+
+        <!-- CONTAINER MENU 2: DIREKTORI DATA INDUK SANTRI -->
+        <div id="containerMenuSantri" class="hidden space-y-8">
+            <!-- Header Hero Data Santri -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-indigo-500/30">
+                <div class="absolute -right-16 -top-16 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold tracking-wide">
+                            <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                            DIREKTORI DATA INDUK SANTRI PPNU
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Database Induk &amp; Status Santri</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                            Integrasi otomatis data kesantrian dari Google Spreadsheet Sekretariat dan status pendaftaran sidik jari mesin fingerprint.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3 shrink-0">
+                        <button type="button" onclick="sinkronkanDataSantriManual()" id="btnSyncSantriSheets"
+                            class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-95">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span id="btnSyncSantriSheetsText">Sinkronkan Spreadsheet</span>
+                        </button>
+                        <button type="button" onclick="unduhExcelDataSantri()"
+                            class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer">
+                            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            <span>Unduh Excel</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric Cards Data Santri -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🕌
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Santri Mukim</p>
+                        <h4 id="statSantriMukim" class="text-2xl font-black text-slate-900 mt-0.5">0</h4>
+                        <span class="text-[11px] text-emerald-700 font-semibold">Aktif Asrama &amp; MDNU</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🚲
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Santri Laju</p>
+                        <h4 id="statSantriLaju" class="text-2xl font-black text-slate-900 mt-0.5">0</h4>
+                        <span class="text-[11px] text-amber-700 font-semibold">Khusus MDNU Putra</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🎒
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Santri Boyong</p>
+                        <h4 id="statSantriBoyong" class="text-2xl font-black text-slate-900 mt-0.5">0</h4>
+                        <span class="text-[11px] text-rose-700 font-semibold">Non-Aktif / Pindah</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-amber-300 shadow-sm flex items-center gap-4 bg-amber-50/40">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xl shrink-0 shadow-md shadow-amber-500/20">
+                        ⚠️
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-amber-800 uppercase tracking-wider">Belum Masuk Mesin</p>
+                        <h4 id="statSantriBelumMesin" class="text-2xl font-black text-amber-900 mt-0.5">0</h4>
+                        <span class="text-[11px] text-amber-700 font-semibold">Perlu Daftarkan Jari</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar & Search Data Santri -->
+            <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                        <button type="button" onclick="setFilterStatusSantriInduk('all')" id="btnFilterSantri_all"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-xs cursor-pointer">
+                            <span>Semua Santri</span>
+                            <span id="badgeFilterSantri_all" class="bg-indigo-800 text-white text-[10px] px-2 py-0.2 rounded-full">0</span>
+                        </button>
+                        <button type="button" onclick="setFilterStatusSantriInduk('mukim')" id="btnFilterSantri_mukim"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Mukim</span>
+                            <span id="badgeFilterSantri_mukim" class="bg-slate-200 text-slate-800 text-[10px] px-2 py-0.2 rounded-full">0</span>
+                        </button>
+                        <button type="button" onclick="setFilterStatusSantriInduk('laju')" id="btnFilterSantri_laju"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Laju</span>
+                            <span id="badgeFilterSantri_laju" class="bg-slate-200 text-slate-800 text-[10px] px-2 py-0.2 rounded-full">0</span>
+                        </button>
+                        <button type="button" onclick="setFilterStatusSantriInduk('boyong')" id="btnFilterSantri_boyong"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Boyong</span>
+                            <span id="badgeFilterSantri_boyong" class="bg-slate-200 text-slate-800 text-[10px] px-2 py-0.2 rounded-full">0</span>
+                        </button>
+                        <button type="button" onclick="setFilterStatusSantriInduk('unregistered')" id="btnFilterSantri_unregistered"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-amber-800 hover:bg-amber-100 cursor-pointer border border-amber-300">
+                            <span>⚠️ Belum Ada Mesin</span>
+                            <span id="badgeFilterSantri_unregistered" class="bg-amber-500 text-white text-[10px] px-2 py-0.2 rounded-full font-bold">0</span>
+                        </button>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="relative w-full sm:w-72">
+                        <input type="text" id="searchSantriIndukInput" oninput="handleSearchSantriInduk(this.value)"
+                            placeholder="Cari Nama / PIN / Kamar / Kelas..."
+                            class="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs sm:text-sm font-medium focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition" />
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                </div>
+
+                <div class="text-xs text-slate-500 flex items-center justify-between pt-2 border-t border-slate-100">
+                    <span id="labelSummarySantriInduk">Memuat direktori santri...</span>
+                    <span id="labelLastSantriSync" class="text-[11px] text-slate-400 italic">Terakhir disinkronkan: -</span>
+                </div>
+            </div>
+
+            <!-- Tabel Data Induk Santri -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/80 border-b border-slate-200 text-slate-700 text-xs font-extrabold uppercase tracking-wider">
+                                <th class="py-3 px-4 w-12 text-center">No</th>
+                                <th class="py-3 px-4 w-28">PIN Mesin</th>
+                                <th class="py-3 px-4 min-w-[200px]">Nama Santri</th>
+                                <th class="py-3 px-4 w-24">Kamar</th>
+                                <th class="py-3 px-4 w-36">Kelas Diniyah</th>
+                                <th class="py-3 px-4 w-28">Status</th>
+                                <th class="py-3 px-4 w-44">Status Biometrik</th>
+                                <th class="py-3 px-4 w-32 admin-only text-center">Aksi Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodySantriInduk" class="divide-y divide-slate-200 text-xs sm:text-sm">
+                            <!-- Populated dynamically via renderTabelSantriInduk() -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
     </main>
@@ -1280,6 +1449,14 @@
             permissionDetailsMap = data.permissionDetailsMap || {};
             frozenUntilDate = data.frozenUntilDate || '2026-09-30';
             updateFreezeUI();
+            dataSantriInduk = data.dataSantriInduk || [];
+            if (data.meta && data.meta.lastSantriSync) {
+                const elLast = document.getElementById('labelLastSantriSync');
+                if (elLast) elLast.innerText = `Terakhir disinkronkan: ${data.meta.lastSantriSync}`;
+            }
+            if (typeof renderMenuDataSantri === 'function') {
+                renderMenuDataSantri();
+            }
             if (data.hideEmptyLiburColumns !== undefined) {
                 hideEmptyLiburColumns = (data.hideEmptyLiburColumns === true);
             } else {
@@ -1358,7 +1535,8 @@
                     manualIzinData: manualIzinData,
                     permissionDetailsMap: permissionDetailsMap,
                     hideEmptyLiburColumns: hideEmptyLiburColumns,
-                    frozenUntilDate: frozenUntilDate
+                    frozenUntilDate: frozenUntilDate,
+                    dataSantriInduk: dataSantriInduk
                 };
                 localStorage.setItem('ppnu_absen_cache', JSON.stringify(cacheData));
             } catch (e) {
@@ -5788,6 +5966,341 @@
 
         // Jalankan timer saat script dimuat
         initLiveTodayWidgetTimer();
+
+        // ========================================================
+        // MODUL MENU UTAMA 2: DATA INDUK SANTRI & SINKRONISASI
+        // ========================================================
+        let menuUtamaAktif = 'absen'; // 'absen' | 'santri'
+        let filterStatusSantriInduk = 'all'; // 'all' | 'mukim' | 'laju' | 'boyong' | 'unregistered'
+        let searchSantriIndukQuery = '';
+
+        function gantiMenuUtama(menu) {
+            menuUtamaAktif = menu;
+            const btnAbsen = document.getElementById('btnNavMenuAbsen');
+            const btnSantri = document.getElementById('btnNavMenuSantri');
+            const secAbsen = document.getElementById('containerMenuAbsen');
+            const secSantri = document.getElementById('containerMenuSantri');
+
+            if (menu === 'absen') {
+                if (btnAbsen) {
+                    btnAbsen.className = 'px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-emerald-600 text-white shadow-xs cursor-pointer';
+                }
+                if (btnSantri) {
+                    btnSantri.className = 'px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+                }
+                if (secAbsen) secAbsen.classList.remove('hidden');
+                if (secSantri) secSantri.classList.add('hidden');
+            } else {
+                if (btnSantri) {
+                    btnSantri.className = 'px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-xs cursor-pointer';
+                }
+                if (btnAbsen) {
+                    btnAbsen.className = 'px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-600 hover:text-slate-900 cursor-pointer';
+                }
+                if (secAbsen) secAbsen.classList.add('hidden');
+                if (secSantri) secSantri.classList.remove('hidden');
+                renderMenuDataSantri();
+            }
+        }
+
+        function setFilterStatusSantriInduk(filterKey) {
+            filterStatusSantriInduk = filterKey;
+            const filterButtons = ['all', 'mukim', 'laju', 'boyong', 'unregistered'];
+            filterButtons.forEach(k => {
+                const btn = document.getElementById(`btnFilterSantri_${k}`);
+                if (!btn) return;
+                const isSelected = (k === filterKey);
+                if (isSelected) {
+                    if (k === 'unregistered') {
+                        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-amber-500 text-white shadow-xs cursor-pointer border border-amber-500';
+                    } else {
+                        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-xs cursor-pointer';
+                    }
+                } else {
+                    if (k === 'unregistered') {
+                        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-amber-800 hover:bg-amber-100 cursor-pointer border border-amber-300';
+                    } else {
+                        btn.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer';
+                    }
+                }
+            });
+            renderTabelSantriInduk();
+        }
+
+        let debounceSearchSantriTimer = null;
+        function handleSearchSantriInduk(query) {
+            clearTimeout(debounceSearchSantriTimer);
+            debounceSearchSantriTimer = setTimeout(() => {
+                searchSantriIndukQuery = (query || '').toLowerCase().trim();
+                renderTabelSantriInduk();
+            }, 100);
+        }
+
+        function renderMenuDataSantri() {
+            if (!dataSantriInduk || dataSantriInduk.length === 0) {
+                // Fallback otomatis dari santriList jika dataSantriInduk belum ditarik
+                if (santriList && santriList.length > 0) {
+                    dataSantriInduk = santriList.map(s => {
+                        const stAsr = statusSantriAsrama[s.pin];
+                        const stMdn = statusSantriMDNU[s.pin];
+                        const st = (stAsr === 'boyong' || stMdn === 'boyong') ? 'boyong' : (stAsr === 'laju' ? 'laju' : 'mukim');
+                        return {
+                            nama: s.nama,
+                            pin: s.pin,
+                            namaMesin: s.nama,
+                            status: st,
+                            kamar: '-',
+                            kelas: '-',
+                            terdaftarMesin: true,
+                            tglBoyong: '',
+                            source: 'Santri List Mesin'
+                        };
+                    });
+                }
+            }
+
+            // Hitung ringkasan status
+            let cMukim = 0, cLaju = 0, cBoyong = 0, cUnregistered = 0;
+            (dataSantriInduk || []).forEach(s => {
+                const st = (s.status || 'mukim').toLowerCase();
+                if (st === 'mukim') cMukim++;
+                else if (st === 'laju') cLaju++;
+                else if (st === 'boyong') cBoyong++;
+                if (!s.terdaftarMesin) cUnregistered++;
+            });
+
+            // Update stats cards
+            const elMukim = document.getElementById('statSantriMukim');
+            if (elMukim) elMukim.innerText = cMukim;
+            const elLaju = document.getElementById('statSantriLaju');
+            if (elLaju) elLaju.innerText = cLaju;
+            const elBoyong = document.getElementById('statSantriBoyong');
+            if (elBoyong) elBoyong.innerText = cBoyong;
+            const elBelum = document.getElementById('statSantriBelumMesin');
+            if (elBelum) elBelum.innerText = cUnregistered;
+
+            // Update badge navigasi
+            const bNavBelum = document.getElementById('badgeNavSantriBelumMesin');
+            if (bNavBelum) {
+                bNavBelum.classList.toggle('hidden', cUnregistered === 0);
+                bNavBelum.innerText = cUnregistered;
+            }
+
+            // Update badge filters
+            const bAll = document.getElementById('badgeFilterSantri_all');
+            if (bAll) bAll.innerText = dataSantriInduk.length;
+            const bF_mukim = document.getElementById('badgeFilterSantri_mukim');
+            if (bF_mukim) bF_mukim.innerText = cMukim;
+            const bF_laju = document.getElementById('badgeFilterSantri_laju');
+            if (bF_laju) bF_laju.innerText = cLaju;
+            const bF_boyong = document.getElementById('badgeFilterSantri_boyong');
+            if (bF_boyong) bF_boyong.innerText = cBoyong;
+            const bF_unreg = document.getElementById('badgeFilterSantri_unregistered');
+            if (bF_unreg) bF_unreg.innerText = cUnregistered;
+
+            renderTabelSantriInduk();
+        }
+
+        function renderTabelSantriInduk() {
+            const tbody = document.getElementById('tbodySantriInduk');
+            if (!tbody) return;
+
+            const q = searchSantriIndukQuery;
+            const fStatus = filterStatusSantriInduk;
+
+            const filtered = (dataSantriInduk || []).filter(s => {
+                // Filter status
+                if (fStatus === 'mukim' && s.status !== 'mukim') return false;
+                if (fStatus === 'laju' && s.status !== 'laju') return false;
+                if (fStatus === 'boyong' && s.status !== 'boyong') return false;
+                if (fStatus === 'unregistered' && s.terdaftarMesin) return false;
+
+                // Search query
+                if (q) {
+                    const matchNama = (s.nama || '').toLowerCase().includes(q);
+                    const matchPin = (s.pin || '').toLowerCase().includes(q);
+                    const matchKamar = (s.kamar || '').toLowerCase().includes(q);
+                    const matchKelas = (s.kelas || '').toLowerCase().includes(q);
+                    if (!matchNama && !matchPin && !matchKamar && !matchKelas) return false;
+                }
+                return true;
+            });
+
+            const lblSummary = document.getElementById('labelSummarySantriInduk');
+            if (lblSummary) {
+                lblSummary.innerText = `Menampilkan ${filtered.length} dari ${dataSantriInduk.length} santri terdata`;
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 italic">Tidak ada santri yang cocok dengan kriteria filter atau pencarian.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach((s, idx) => {
+                const st = (s.status || 'mukim').toLowerCase();
+                const isMukim = (st === 'mukim');
+                const isLaju = (st === 'laju');
+                const isBoyong = (st === 'boyong');
+
+                // Status Badge
+                let badgeStatus = '';
+                if (isMukim) {
+                    badgeStatus = '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">🟢 Mukim</span>';
+                } else if (isLaju) {
+                    badgeStatus = '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">🟡 Laju</span>';
+                } else if (isBoyong) {
+                    const tglNote = s.tglBoyong ? ` (${s.tglBoyong.split(' ')[0]})` : '';
+                    badgeStatus = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full">🔴 Boyong${tglNote}</span>`;
+                }
+
+                // Status Mesin Biometrik
+                let badgeMesin = '';
+                if (s.terdaftarMesin && s.pin && s.pin !== '-') {
+                    badgeMesin = '<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">✅ Terdaftar di Mesin</span>';
+                } else {
+                    badgeMesin = '<span class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-lg animate-pulse">⚠️ Belum Masuk Mesin</span>';
+                }
+
+                const pinBadge = (s.pin && s.pin !== '-')
+                    ? `<span class="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md border border-slate-200">${s.pin}</span>`
+                    : `<span class="font-mono text-xs text-slate-400 italic">-</span>`;
+
+                const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
+
+                // Admin Action Buttons
+                let adminActions = '';
+                if (isAdmin) {
+                    const curPin = (s.pin && s.pin !== '-') ? s.pin : s.nama;
+                    adminActions = `
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="ubahStatusSantriInduk('${curPin}', 'mukim')" title="Set Mukim"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${isMukim ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 border border-slate-200'}">M</button>
+                            <button onclick="ubahStatusSantriInduk('${curPin}', 'laju')" title="Set Laju"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${isLaju ? 'bg-amber-600 text-white' : 'bg-slate-100 hover:bg-amber-50 text-slate-600 border border-slate-200'}">L</button>
+                            <button onclick="ubahStatusSantriInduk('${curPin}', 'boyong')" title="Set Boyong"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${isBoyong ? 'bg-rose-600 text-white' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 border border-slate-200'}">B</button>
+                        </div>
+                    `;
+                } else {
+                    adminActions = '<span class="text-slate-300 text-xs">-</span>';
+                }
+
+                html += `
+                    <tr class="${rowBg} hover:bg-indigo-50/40 transition">
+                        <td class="py-2.5 px-4 text-center font-mono text-slate-400 text-xs">${idx + 1}</td>
+                        <td class="py-2.5 px-4">${pinBadge}</td>
+                        <td class="py-2.5 px-4">
+                            <div class="font-bold text-slate-900">${s.nama}</div>
+                            ${(s.namaMesin && s.namaMesin !== '-' && s.namaMesin !== s.nama) ? `<div class="text-[11px] text-slate-400">Nama Mesin: ${s.namaMesin}</div>` : ''}
+                        </td>
+                        <td class="py-2.5 px-4 font-mono font-medium text-slate-700">${s.kamar || '-'}</td>
+                        <td class="py-2.5 px-4 text-slate-700 font-medium">${s.kelas || '-'}</td>
+                        <td class="py-2.5 px-4">${badgeStatus}</td>
+                        <td class="py-2.5 px-4">${badgeMesin}</td>
+                        <td class="py-2.5 px-4 admin-only text-center">${adminActions}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        async function sinkronkanDataSantriManual() {
+            const btn = document.getElementById('btnSyncSantriSheets');
+            const btnText = document.getElementById('btnSyncSantriSheetsText');
+            if (btn) btn.disabled = true;
+            if (btnText) btnText.innerText = 'Mengunduh Spreadsheet...';
+
+            tampilkanToast('⏳ Menghubungi Google Spreadsheet Sekretariat...');
+
+            try {
+                if (fbDb) {
+                    const snap = await fbDb.ref('absensi_ppnu/dataSantriInduk').once('value');
+                    const val = snap.val();
+                    if (val && Array.isArray(val)) {
+                        dataSantriInduk = val;
+                        renderMenuDataSantri();
+                    }
+                }
+                tampilkanToast('✅ Data Santri Induk berhasil disinkronkan & diperbarui!');
+            } catch (err) {
+                console.error("Gagal sinkron data santri:", err);
+                tampilkanToast(`⚠️ Gagal sinkronisasi data santri: ${err.message}`);
+            } finally {
+                if (btn) btn.disabled = false;
+                if (btnText) btnText.innerText = 'Sinkronkan Spreadsheet';
+            }
+        }
+
+        function unduhExcelDataSantri() {
+            if (!dataSantriInduk || dataSantriInduk.length === 0) {
+                alert("Data santri belum tersedia untuk diunduh.");
+                return;
+            }
+
+            const rows = [
+                ["NO", "PIN MESIN", "NAMA SANTRI", "KAMAR", "KELAS DINIYAH", "STATUS", "STATUS BIOMETRIK MESIN", "TANGGAL BOYONG"]
+            ];
+
+            dataSantriInduk.forEach((s, idx) => {
+                rows.push([
+                    idx + 1,
+                    s.pin || "-",
+                    s.nama || "-",
+                    s.kamar || "-",
+                    s.kelas || "-",
+                    (s.status || "mukim").toUpperCase(),
+                    s.terdaftarMesin ? "TERDAFTAR DI MESIN" : "BELUM MASUK MESIN",
+                    s.tglBoyong || "-"
+                ]);
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(rows);
+            XLSX.utils.book_append_sheet(wb, ws, "Data Santri PPNU");
+            const dateStr = new Date().toISOString().split('T')[0];
+            XLSX.writeFile(wb, `Data_Santri_Induk_PPNU_${dateStr}.xlsx`);
+            tampilkanToast("📥 Berhasil mengekspor Data Induk Santri ke Excel (.xlsx)!");
+        }
+
+        function ubahStatusSantriInduk(pinOrNama, newStatus) {
+            if (!isAdmin) {
+                alert("Hanya Admin yang dapat mengubah status santri.");
+                return;
+            }
+
+            const target = dataSantriInduk.find(s => s.pin === pinOrNama || s.nama === pinOrNama);
+            if (!target) return;
+
+            target.status = newStatus;
+            const cleanPin = (target.pin && target.pin !== '-') ? target.pin : null;
+
+            if (cleanPin) {
+                if (newStatus === 'boyong') {
+                    statusSantriAsrama[cleanPin] = 'boyong';
+                    statusSantriMDNU[cleanPin] = 'boyong';
+                    hiddenSantriAsrama[cleanPin] = true;
+                    hiddenSantriMDNU[cleanPin] = true;
+                } else if (newStatus === 'laju') {
+                    statusSantriAsrama[cleanPin] = 'laju';
+                    statusSantriMDNU[cleanPin] = 'laju';
+                    hiddenSantriAsrama[cleanPin] = true;
+                    delete hiddenSantriMDNU[cleanPin];
+                } else {
+                    delete statusSantriAsrama[cleanPin];
+                    delete statusSantriMDNU[cleanPin];
+                    delete hiddenSantriAsrama[cleanPin];
+                    delete hiddenSantriMDNU[cleanPin];
+                }
+                updateHiddenBadges();
+                terapkanFilter();
+            }
+
+            renderMenuDataSantri();
+            simpanKeCloud();
+            tampilkanToast(`Status santri ${target.nama} berhasil diubah menjadi: ${newStatus.toUpperCase()}`);
+        }
     </script>
         <!-- ======================================================== -->
     <!-- MODAL 1: KELOLA STATUS SANTRI (MUKIM, LAJU & BOYONG) -->
