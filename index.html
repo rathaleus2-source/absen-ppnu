@@ -66,15 +66,15 @@
         /* Fluid Mobile & Tablet Responsive Defaults */
         @media (max-width: 640px) {
             :root {
-                --col-pin-w: 48px;
-                --col-nama-w: 136px;
-                --col-stat-w: 38px;
-                --col-pct-w: 46px;
-                --col-sesi-w: 46px;
-                --cell-h: 36px;
-                --cell-font: 11px;
-                --cell-badge-w: 26px;
-                --cell-badge-h: 22px;
+                --col-pin-w: 44px;
+                --col-nama-w: 122px;
+                --col-stat-w: 34px;
+                --col-pct-w: 42px;
+                --col-sesi-w: 42px;
+                --cell-h: 34px;
+                --cell-font: 10.5px;
+                --cell-badge-w: 24px;
+                --cell-badge-h: 20px;
             }
 
             /* Native Bottom Sheet for Modals on Mobile */
@@ -135,6 +135,8 @@
             max-width: var(--col-pin-w) !important;
             box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
             background-color: #ffffff;
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
         }
         tbody tr:nth-child(even) .sticky-col-pin {
             background-color: #f8fafc !important;
@@ -160,6 +162,8 @@
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
             background-color: #ffffff;
+            will-change: transform;
+            transform: translate3d(0, 0, 0);
         }
         tbody tr:nth-child(even) .sticky-col-nama {
             background-color: #f8fafc !important;
@@ -176,6 +180,20 @@
         th.sticky-col-pin,
         th.sticky-col-nama {
             z-index: 34 !important;
+        }
+
+        /* Mobile Zero-Lag Sticky Optimizations */
+        @media (max-width: 768px) {
+            .sticky-col-pin,
+            .sticky-col-nama {
+                box-shadow: none !important;
+            }
+            .sticky-col-nama {
+                border-right: 2px solid #94a3b8 !important;
+            }
+            thead .sticky-col-nama {
+                border-right: 2px solid #475569 !important;
+            }
         }
 
                 /* Standardized Table & Grid Styling (Natural Horizontal Overflow & Crisp Grid) */
@@ -273,13 +291,39 @@
             transform: scale(0.92);
         }
 
-        /* Smooth scroll container with momentum */
+        /* High-Performance Touch Scroll Container (Zero Lag Physics) */
         .table-scroll-container {
             overflow-x: auto;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
+            touch-action: pan-x pan-y;
             overscroll-behavior-x: contain;
+            overscroll-behavior-y: auto;
+        }
+
+        /* GPU & Rendering Acceleration for Massive Attendance Tables */
+        table.app-table tbody tr {
+            content-visibility: auto;
+            contain-intrinsic-size: auto 34px;
+        }
+        .santri-card {
+            content-visibility: auto;
+            contain-intrinsic-size: auto 160px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .santri-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Prevent CPU style recalculation thrashing during mobile touch scroll */
+        @media (hover: none) {
+            table.app-table tr,
+            table.app-table td,
+            .badge-cell,
+            .santri-card {
+                transition: none !important;
+            }
         }
 
         /* Floating Quick-Jump Navigator */
@@ -292,22 +336,17 @@
             align-items: center;
             gap: 0.375rem;
             padding: 0.375rem 0.625rem;
-            background: rgba(15, 23, 42, 0.88);
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
+            background: rgba(15, 23, 42, 0.94);
             border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 9999px;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
             transition: all 0.25s ease;
         }
-
-        /* Card view micro-animations */
-        .santri-card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .santri-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
+        @media (min-width: 769px) {
+            #floatingScrollNavigator {
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+            }
         }
     </style>
 </head>
@@ -910,32 +949,14 @@
                     <span class="text-slate-400">&larr; Gulir ke kanan untuk melihat tanggal berikutnya &rarr;</span>
                 </div>
 
-                <!-- TABLE: ASRAMA PUTRA (FORMAT MENDATAR) -->
-                <div id="viewAsrama"
-                    class="overflow-x-auto rounded-xl border border-slate-200 max-h-[700px] overflow-y-auto">
-                    <table class="app-table whitespace-nowrap">
-                        <thead id="theadAsrama"
-                            class="sticky top-0 z-30 shadow-xs bg-emerald-100 text-emerald-950 font-bold border-b border-emerald-300">
-                            <!-- Rendered via JS -->
-                        </thead>
-                        <tbody id="tbodyAsrama" class="divide-y divide-slate-100 bg-white">
-                            <!-- Rendered via JS -->
-                        </tbody>
-                    </table>
+                <!-- VIEW: ASRAMA PUTRA (FORMAT MENDATAR) -->
+                <div id="viewAsrama" class="space-y-6">
+                    <!-- Populated dynamically via renderTableAsrama() -->
                 </div>
 
-                <!-- TABLE: MDNU PUTRA (FORMAT MENDATAR) -->
-                <div id="viewMDNU"
-                    class="hidden overflow-x-auto rounded-xl border border-slate-200 max-h-[700px] overflow-y-auto">
-                    <table class="app-table whitespace-nowrap">
-                        <thead id="theadMDNU"
-                            class="sticky top-0 z-30 shadow-xs bg-indigo-100 text-indigo-950 font-bold border-b border-indigo-300">
-                            <!-- Rendered via JS -->
-                        </thead>
-                        <tbody id="tbodyMDNU" class="divide-y divide-slate-100 bg-white">
-                            <!-- Rendered via JS -->
-                        </tbody>
-                    </table>
+                <!-- VIEW: MDNU PUTRA (FORMAT MENDATAR) -->
+                <div id="viewMDNU" class="hidden space-y-6">
+                    <!-- Populated dynamically via renderTableMDNU() -->
                 </div>
 
                 <!-- VIEW: REKAPITULASI SANTRI (SEMUA BULAN / DARI AWAL S.D AKHIR PERIODE) -->
@@ -3630,7 +3651,7 @@
                             </div>
                             <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${datesInMonth.length} Tanggal (${datesInMonth[0].displayDate} s.d ${datesInMonth[datesInMonth.length - 1].displayDate})</span>
                         </div>
-                        <div class="overflow-x-auto rounded-xl border border-slate-300 max-h-[650px] overflow-y-auto shadow-sm">
+                        <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
                                 <thead class="sticky top-0 z-30 shadow-xs bg-emerald-100 text-emerald-950 font-bold">
                                     ${h1Asrama}${h2Asrama}
@@ -3644,11 +3665,11 @@
                 `;
             });
 
-            const oldScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            const oldScrollBox = viewContainer.querySelector('.table-scroll-container') || viewContainer.querySelector('.overflow-x-auto');
             const oldScrollLeft = oldScrollBox ? oldScrollBox.scrollLeft : 0;
             const oldScrollTop = oldScrollBox ? oldScrollBox.scrollTop : 0;
             viewContainer.innerHTML = htmlFull;
-            const newScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            const newScrollBox = viewContainer.querySelector('.table-scroll-container') || viewContainer.querySelector('.overflow-x-auto');
             if (newScrollBox) {
                 newScrollBox.scrollLeft = oldScrollLeft;
                 newScrollBox.scrollTop = oldScrollTop;
@@ -3847,7 +3868,7 @@
                             </div>
                             <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${datesInMonth.length} Tanggal (${datesInMonth[0].displayDate} s.d ${datesInMonth[datesInMonth.length - 1].displayDate})</span>
                         </div>
-                        <div class="overflow-x-auto rounded-xl border border-slate-300 max-h-[650px] overflow-y-auto shadow-sm">
+                        <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
                                 <thead class="sticky top-0 z-30 shadow-xs bg-indigo-100 text-indigo-950 font-bold">
                                     ${h1MDNU}${h2MDNU}
@@ -3861,11 +3882,11 @@
                 `;
             });
 
-            const oldScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            const oldScrollBox = viewContainer.querySelector('.table-scroll-container') || viewContainer.querySelector('.overflow-x-auto');
             const oldScrollLeft = oldScrollBox ? oldScrollBox.scrollLeft : 0;
             const oldScrollTop = oldScrollBox ? oldScrollBox.scrollTop : 0;
             viewContainer.innerHTML = htmlFull;
-            const newScrollBox = viewContainer.querySelector('.overflow-x-auto');
+            const newScrollBox = viewContainer.querySelector('.table-scroll-container') || viewContainer.querySelector('.overflow-x-auto');
             if (newScrollBox) {
                 newScrollBox.scrollLeft = oldScrollLeft;
                 newScrollBox.scrollTop = oldScrollTop;
@@ -4020,7 +4041,7 @@
                             <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI ASRAMA PUTRA - DARI ${tglAwal} S.D ${tglAkhir}</span>
                             <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${dateList.length} Tanggal Keseluruhan</span>
                         </div>
-                        <div class="overflow-x-auto rounded-xl border border-slate-300 max-h-[650px] overflow-y-auto shadow-sm">
+                        <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
                                 <thead class="sticky top-0 z-30 shadow-xs bg-emerald-100 text-emerald-950 font-bold">
                                     ${h1}${h2}
@@ -4106,7 +4127,7 @@
                             <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI MDNU PUTRA - DARI ${tglAwal} S.D ${tglAkhir}</span>
                             <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${dateList.length} Tanggal Keseluruhan</span>
                         </div>
-                        <div class="overflow-x-auto rounded-xl border border-slate-300 max-h-[650px] overflow-y-auto shadow-sm">
+                        <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
                                 <thead class="sticky top-0 z-30 shadow-xs bg-indigo-100 text-indigo-950 font-bold">
                                     ${h1}${h2}
@@ -4360,10 +4381,12 @@
             initFirebase();
             setViewMode(currentViewMode);
         });
-            // ========================================================
+
+        // ========================================================
         // RESPONSIVE VIEW ENGINE (AUTO-FIT, CARDS & SCROLL NAV)
         // ========================================================
-        let currentViewMode = localStorage.getItem('ppnu_view_mode') || 'matrix';
+        let savedViewMode = localStorage.getItem('ppnu_view_mode');
+        let currentViewMode = savedViewMode || (window.innerWidth < 768 ? 'cards' : 'matrix');
         if (currentViewMode === 'compact') {
             currentViewMode = 'matrix';
             try { localStorage.setItem('ppnu_view_mode', 'matrix'); } catch (e) {}
@@ -4411,11 +4434,15 @@
 
         function scrollTableTo(pos) {
             let container = null;
-            if (activeTab === 'asrama') container = document.getElementById('viewAsrama');
-            else if (activeTab === 'mdnu') container = document.getElementById('viewMDNU');
-            else if (activeTab === 'rekapitulasi') {
+            if (activeTab === 'asrama') {
+                const wrap = document.getElementById('viewAsrama');
+                if (wrap) container = wrap.querySelector('.table-scroll-container') || wrap.querySelector('.overflow-x-auto');
+            } else if (activeTab === 'mdnu') {
+                const wrap = document.getElementById('viewMDNU');
+                if (wrap) container = wrap.querySelector('.table-scroll-container') || wrap.querySelector('.overflow-x-auto');
+            } else if (activeTab === 'rekapitulasi') {
                 const wrap = document.getElementById('viewRekapitulasi');
-                if (wrap) container = wrap.querySelector('.overflow-x-auto');
+                if (wrap) container = wrap.querySelector('.table-scroll-container') || wrap.querySelector('.overflow-x-auto');
             }
 
             if (!container) return;
@@ -4428,6 +4455,44 @@
             } else if (pos === 'end') {
                 container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
             }
+        }
+
+        // Cache & State for Ultra-Fast Mobile Card View
+        const cardDetailsCache = {};
+        const openCardPins = new Set();
+
+        function handleCardToggle(detailsEl, pin) {
+            if (detailsEl.open) {
+                openCardPins.add(pin);
+                populateCardDetailsBody(pin);
+            } else {
+                openCardPins.delete(pin);
+            }
+        }
+
+        function populateCardDetailsBody(pin) {
+            const bodyEl = document.getElementById(`cardDetailsBody_${pin}`);
+            if (!bodyEl) return;
+            const data = cardDetailsCache[pin];
+            if (!data || !data.dailyDetails) return;
+
+            bodyEl.innerHTML = data.dailyDetails.map(d => `
+                <div class="flex items-center justify-between py-1 text-[11px]">
+                    <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
+                    <div class="flex items-center gap-1">
+                        ${data.isAsrama ? `
+                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'subuh', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
+                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'malam', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
+                        ` : `
+                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'sore', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
+                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel1', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
+                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel2', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'BELUM_MULAI' ? '-' : (d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3)}</span>
+                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel3', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'BELUM_MULAI' ? '-' : (d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4)}</span>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+            bodyEl.setAttribute('data-loaded', 'true');
         }
 
         function renderCardView(santriArr) {
@@ -4507,6 +4572,10 @@
                 if (st === 'laju') statusBadge = '<span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Laju</span>';
                 else if (st === 'boyong') statusBadge = '<span class="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">Boyong</span>';
 
+                // Save data to cache for lazy rendering
+                cardDetailsCache[pin] = { dailyDetails, isAsrama };
+                const isOpen = openCardPins.has(pin);
+
                 cardsHtml += `
                     <div class="santri-card bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-indigo-300 p-4 flex flex-col justify-between space-y-3">
                         <div class="flex items-start justify-between gap-3">
@@ -4547,7 +4616,7 @@
                             </div>
                         </div>
 
-                        <details class="group text-xs pt-1 border-t border-slate-100">
+                        <details class="group text-xs pt-1 border-t border-slate-100" ontoggle="handleCardToggle(this, '${pin}')" ${isOpen ? 'open' : ''}>
                             <summary class="cursor-pointer font-bold text-slate-600 hover:text-indigo-600 flex items-center justify-between py-1 select-none">
                                 <span class="flex items-center gap-1.5">
                                     <svg class="w-3.5 h-3.5 text-slate-400 group-open:rotate-180 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
@@ -4555,23 +4624,8 @@
                                 </span>
                                 <span class="text-[10px] text-indigo-600 font-semibold group-open:hidden">Buka &darr;</span>
                             </summary>
-                            <div class="mt-2 max-h-48 overflow-y-auto space-y-1 pr-1 divide-y divide-slate-100/80">
-                                ${dailyDetails.map(d => `
-                                    <div class="flex items-center justify-between py-1 text-[11px]">
-                                        <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
-                                        <div class="flex items-center gap-1">
-                                            ${isAsrama ? `
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'subuh', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'malam', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
-                                            ` : `
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'sore', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel1', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel2', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'BELUM_MULAI' ? '-' : (d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3)}</span>
-                                                <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel3', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'BELUM_MULAI' ? '-' : (d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4)}</span>
-                                            `}
-                                        </div>
-                                    </div>
-                                `).join('')}
+                            <div id="cardDetailsBody_${pin}" class="mt-2 max-h-48 overflow-y-auto space-y-1 pr-1 divide-y divide-slate-100/80">
+                                ${isOpen ? '' : '<div class="py-2 text-center text-slate-400 text-[10px]">Klik untuk membuka rincian...</div>'}
                             </div>
                         </details>
                     </div>
@@ -4580,6 +4634,11 @@
 
             cardsHtml += '</div>';
             container.innerHTML = cardsHtml;
+
+            // Populate any currently open card details immediately
+            openCardPins.forEach(pin => {
+                populateCardDetailsBody(pin);
+            });
         }
         // ========================================================
         // MODAL & FUNGSI HAPUS / RESET DATA ABSENSI (ADMIN)
