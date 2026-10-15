@@ -830,15 +830,16 @@
                         </button>
                     </div>
 
-                    <!-- Action Buttons: Kelola Santri & Hari Libur Khusus -->
+                    <!-- Action Buttons: Data Santri & Hari Libur Khusus -->
                     <div class="admin-only flex items-center gap-2 flex-wrap">
-                        <button onclick="bukaModalKelolaSantri()"
-                            class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs">
+                        <button onclick="gantiMenuUtama('santri')"
+                            class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
+                            title="Buka Tab Data Santri untuk Kelola Status Mukim, Laju, Boyong, dan Dispensasi">
                             <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
-                            <span>Kelola Santri (Laju & Boyong)</span>
+                            <span>Data Santri (Status & Dispen)</span>
                             <span id="badgeHiddenCountTotal"
                                 class="hidden bg-rose-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold">0</span>
                         </button>
@@ -1438,7 +1439,8 @@
             availableMonths = data.availableMonths || [];
             settingMalamSabtuPerTanggal = data.settingMalamSabtuPerTanggal || {};
             manualCellOverrides = data.manualCellOverrides || {};
-                        tanggalMulaiSantri = data.tanggalMulaiSantri || {};
+            tanggalMulaiSantri = data.tanggalMulaiSantri || {};
+            tglMulaiLajuSantri = data.tglMulaiLajuSantri || {};
             dispensasiSantri = data.dispensasiSantri || {};
             statusSantriAsrama = data.statusSantriAsrama || {};
             statusSantriMDNU = data.statusSantriMDNU || {};
@@ -1527,6 +1529,7 @@
                     settingMalamSabtuPerTanggal: settingMalamSabtuPerTanggal,
                     manualCellOverrides: manualCellOverrides,
                     tanggalMulaiSantri: tanggalMulaiSantri,
+                    tglMulaiLajuSantri: tglMulaiLajuSantri,
                     dispensasiSantri: dispensasiSantri,
                     statusSantriAsrama: statusSantriAsrama,
                     statusSantriMDNU: statusSantriMDNU,
@@ -1586,7 +1589,8 @@
                     availableMonths: availableMonths,
                     settingMalamSabtuPerTanggal: settingMalamSabtuPerTanggal,
                     manualCellOverrides: manualCellOverrides,
-                                        tanggalMulaiSantri: tanggalMulaiSantri,
+                    tanggalMulaiSantri: tanggalMulaiSantri,
+                    tglMulaiLajuSantri: tglMulaiLajuSantri,
                     dispensasiSantri: dispensasiSantri,
                     statusSantriAsrama: statusSantriAsrama,
                     statusSantriMDNU: statusSantriMDNU,
@@ -1666,7 +1670,8 @@
         // Penyimpan perubahan manual cell (klik A -> I -> H -> A) agar tidak hilang saat konfigurasi malam sabtu diubah
         let manualCellOverrides = {}; // Format key: `${pin}__${tgl}__${sesi}__${tab}` -> 'H' / 'A' / 'I'
         // Fitur: Status Santri (Mukim, Laju, Boyong) terpisah per Asrama & MDNU
-                let tanggalMulaiSantri = {}; // Format: { [pin]: 'YYYY-MM-DD' } (Santri baru masuk di tengah periode)
+        let tanggalMulaiSantri = {}; // Format: { [pin]: 'YYYY-MM-DD' } (Santri baru masuk di tengah periode)
+        let tglMulaiLajuSantri = {}; // Format: { [pin]: 'YYYY-MM-DD' } (Santri mulai laju di tengah semester)
         let dispensasiSantri = {};   // Format: { [pin]: [ { id, dari, sampai, ket } ] } (Santri KKN / Tugas Luar)
         let statusSantriAsrama = {}; // Format: { [pin]: 'laju' | 'boyong' }
         let statusSantriMDNU = {};   // Format: { [pin]: 'laju' | 'boyong' }
@@ -2200,16 +2205,27 @@
             hiddenSantriAsrama = {};
             hiddenSantriMDNU = {};
 
-            // 1. Tab Asrama: Jika laju ATAU boyong -> otomatis sembunyikan dari tabel absen Asrama
+            // 1. Tab Asrama:
+            // - Jika boyong -> otomatis sembunyikan total dari Asrama
+            // - Jika laju:
+            //   * Cabang B (Mulai laju di tengah semester, ada tglMulaiLajuSantri): TETAP TAMPILKAN di Asrama!
+            //   * Cabang A (Laju sejak awal semester, tidak ada tglMulaiLajuSantri): Sembunyikan total dari Asrama.
             for (const pin in statusSantriAsrama) {
                 const st = statusSantriAsrama[pin];
-                if (st === 'laju' || st === 'boyong') {
+                if (st === 'boyong') {
                     hiddenSantriAsrama[pin] = true;
+                } else if (st === 'laju') {
+                    if (tglMulaiLajuSantri && tglMulaiLajuSantri[pin]) {
+                        delete hiddenSantriAsrama[pin]; // Tetap tampil di tabel Asrama!
+                    } else {
+                        hiddenSantriAsrama[pin] = true; // Sembunyi total sejak awal
+                    }
                 }
             }
 
-            // 2. Tab MDNU: Jika boyong -> sembunyikan dari tabel absen MDNU.
-            //    Jika laju -> TETAP DITAMPILKAN di tabel absen MDNU.
+            // 2. Tab MDNU:
+            // - Santri Laju WAJIB SELALU DITAMPILKAN di tabel MDNU (karena tetap wajib sekolah).
+            // - Hanya santri Boyong yang disembunyikan dari MDNU.
             for (const pin in statusSantriMDNU) {
                 const st = statusSantriMDNU[pin];
                 if (st === 'boyong') {
@@ -2746,6 +2762,19 @@
         // maka statusnya WAJIB DIPUTIHKAN (tetap 'LIBUR') untuk seluruh santri,
         // meskipun di mesin ada santri yang tidak sengaja scan/absen.
         function getAsramaCell(pin, day, tgl) {
+            // Evaluasi Santri Laju Tengah Semester (Cabang B):
+            // Pada dan setelah tglMulaiLaju, sesi Asrama dinonaktifkan (bebas Alpha, bebas JP, status '-').
+            // Sebelum tanggal tersebut, absensi Asrama tetap normal (data historis H, I, A sah tersimpan).
+            if (statusSantriAsrama && statusSantriAsrama[pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[pin] && tgl >= tglMulaiLajuSantri[pin]) {
+                return {
+                    subuh: 'LAJU',
+                    malam: 'LAJU',
+                    subuh_time: '',
+                    malam_time: '',
+                    isLaju: true
+                };
+            }
+
             const defItem = getAsramaDefault(pin, day, tgl);
             const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
             
@@ -2905,7 +2934,7 @@
                 if (tab === 'asrama') {
                     const item = getAsramaCell(pin, d.dayIndex, tgl);
                     // Sesi Subuh
-                    if (item.subuh !== 'LIBUR' && item.subuh !== 'BELUM' && item.subuh !== 'NONAKTIF' && item.subuh !== 'BELUM_MULAI') {
+                    if (item.subuh !== 'LIBUR' && item.subuh !== 'BELUM' && item.subuh !== 'NONAKTIF' && item.subuh !== 'BELUM_MULAI' && item.subuh !== 'LAJU') {
                         if (item.subuh === 'K' || item.subuh === 'KKN') {
                             cellKkn++; // Dispensasi KKN: tidak dihitung Alpha, tidak menambah beban JP
                         } else {
@@ -2920,7 +2949,7 @@
                         }
                     }
                     // Sesi Malam
-                    if (item.malam !== 'LIBUR' && item.malam !== 'BELUM' && item.malam !== 'NONAKTIF' && item.malam !== 'BELUM_MULAI') {
+                    if (item.malam !== 'LIBUR' && item.malam !== 'BELUM' && item.malam !== 'NONAKTIF' && item.malam !== 'BELUM_MULAI' && item.malam !== 'LAJU') {
                         if (item.malam === 'K' || item.malam === 'KKN') {
                             cellKkn++; // Dispensasi KKN
                         } else {
@@ -3231,6 +3260,9 @@
         function renderBadge(val, pin, tgl, sesi, tab, time) {
             if (val === 'LIBUR') {
                 return `<span class="inline-flex items-center justify-center px-1.5 h-6 rounded text-[10px] font-bold text-slate-400 bg-white border border-slate-200 select-none shadow-2xs">LIBUR</span>`;
+            }
+            if (val === 'LAJU') {
+                return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default font-mono text-[11px]" title="Santri Laju - Bebas Absen Asrama">-</span>`;
             }
             if (val === 'BELUM' || val === 'NONAKTIF') {
                 return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default" title="Belum Mondok / Belum Wajib Absen">-</span>`;
@@ -3820,7 +3852,10 @@
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
                         <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick">
                             <div class="flex items-center justify-between gap-1">
-                                <span class="truncate" title="${s.nama}">${s.nama}</span>
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <span class="truncate" title="${s.nama}">${s.nama}</span>
+                                    ${(statusSantriAsrama[s.pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin]) ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0" title="Santri Laju mulai ${tglMulaiLajuSantri[s.pin]}">LAJU</span>` : ''}
+                                </div>
                                 ${isModeAdmin ? `<button onclick="toggleHideSantri('${s.pin}', 'asrama')" class="text-slate-400 hover:text-rose-600 transition text-xs p-0.5 rounded hover:bg-rose-50" title="Sembunyikan ${s.nama}">[x]</button>` : ''}
                             </div>
                         </td>
@@ -4746,10 +4781,10 @@
                     if (isAsrama) {
                         const cell = getAsramaCell(pin, d.dayIndex, tgl);
                         if (cell.subuh === 'H') h++; else if (cell.subuh === 'A' || cell.subuh === 'T') a++; else if (cell.subuh === 'I') i++;
-                        if (cell.subuh !== 'LIBUR' && cell.subuh !== '-' && cell.subuh !== 'BELUM' && cell.subuh !== 'BELUM_MULAI') jp++;
+                        if (cell.subuh !== 'LIBUR' && cell.subuh !== '-' && cell.subuh !== 'BELUM' && cell.subuh !== 'BELUM_MULAI' && cell.subuh !== 'NONAKTIF' && cell.subuh !== 'LAJU') jp++;
 
                         if (cell.malam === 'H') h++; else if (cell.malam === 'A' || cell.malam === 'T') a++; else if (cell.malam === 'I') i++;
-                        if (cell.malam !== 'LIBUR' && cell.malam !== '-' && cell.malam !== 'BELUM' && cell.malam !== 'BELUM_MULAI') jp++;
+                        if (cell.malam !== 'LIBUR' && cell.malam !== '-' && cell.malam !== 'BELUM' && cell.malam !== 'BELUM_MULAI' && cell.malam !== 'NONAKTIF' && cell.malam !== 'LAJU') jp++;
 
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam, t1: cell.subuh_time, t2: cell.malam_time });
                     } else if (isMDNU) {
@@ -4757,7 +4792,7 @@
                         ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
                             const val = cell[sesi];
                             if (val === 'H') h++; else if (val === 'A' || val === 'T') a++; else if (val === 'I') i++;
-                            if (val !== 'LIBUR' && val !== '-' && val !== 'BELUM' && val !== 'BELUM_MULAI') jp++;
+                            if (val !== 'LIBUR' && val !== '-' && val !== 'BELUM' && val !== 'BELUM_MULAI' && val !== 'NONAKTIF' && val !== 'LAJU') jp++;
                         });
                         dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3, t1: cell.sore_time, t2: cell.pel1_time, t3: cell.pel2_time, t4: cell.pel3_time });
                     } else {
@@ -4765,7 +4800,7 @@
                         const cMdn = getMDNUCell(pin, d.dayIndex, tgl);
                         [cAsr.subuh, cAsr.malam, cMdn.sore, cMdn.pel1, cMdn.pel2, cMdn.pel3].forEach(v => {
                             if (v === 'H') h++; else if (v === 'A' || v === 'T') a++; else if (v === 'I') i++;
-                            if (v !== 'LIBUR' && v !== '-' && v !== 'BELUM' && v !== 'BELUM_MULAI') jp++;
+                            if (v !== 'LIBUR' && v !== '-' && v !== 'BELUM' && v !== 'BELUM_MULAI' && v !== 'NONAKTIF' && v !== 'LAJU') jp++;
                         });
                     }
                 });
@@ -6141,20 +6176,43 @@
 
             let html = '';
             filtered.forEach((s, idx) => {
+                const curPin = (s.pin && s.pin !== '-') ? s.pin : s.nama;
+                const encodedPin = encodeURIComponent(curPin);
+                const cleanPin = (s.pin && s.pin !== '-') ? s.pin : null;
+
                 const st = (s.status || 'mukim').toLowerCase();
                 const isMukim = (st === 'mukim');
                 const isLaju = (st === 'laju');
                 const isBoyong = (st === 'boyong');
+
+                const tglLaju = (cleanPin && tglMulaiLajuSantri && tglMulaiLajuSantri[cleanPin]) || s.tglMulaiLaju || '';
+                const listDisp = (cleanPin && dispensasiSantri && dispensasiSantri[cleanPin] && Array.isArray(dispensasiSantri[cleanPin])) ? dispensasiSantri[cleanPin] : [];
 
                 // Status Badge
                 let badgeStatus = '';
                 if (isMukim) {
                     badgeStatus = '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2.5 py-0.5 rounded-full">🟢 Mukim</span>';
                 } else if (isLaju) {
-                    badgeStatus = '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">🟡 Laju</span>';
+                    if (tglLaju) {
+                        badgeStatus = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full" title="Mulai Laju: ${tglLaju}">🟡 Laju (${tglLaju})</span>`;
+                    } else {
+                        badgeStatus = '<span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full" title="Laju sejak awal semester">🟡 Laju (Awal)</span>';
+                    }
                 } else if (isBoyong) {
                     const tglNote = s.tglBoyong ? ` (${s.tglBoyong.split(' ')[0]})` : '';
                     badgeStatus = `<span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100 px-2.5 py-0.5 rounded-full">🔴 Boyong${tglNote}</span>`;
+                }
+
+                // Dispensasi Badge jika ada
+                let badgeDispen = '';
+                if (listDisp.length > 0) {
+                    badgeDispen = `
+                        <button onclick="bukaModalDispensasiInduk('${encodedPin}')" 
+                            class="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 px-2 py-0.5 rounded-full transition cursor-pointer" 
+                            title="${listDisp.length} periode dispensasi aktif. Klik untuk kelola.">
+                            🏷️ ${listDisp.length} Dispen
+                        </button>
+                    `;
                 }
 
                 // Status Mesin Biometrik
@@ -6171,21 +6229,19 @@
 
                 const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
-                // Admin Action Buttons
+                // Admin Action Buttons: M (Mukim), L (Laju), B (Boyong), 🏷️ Dispen
                 let adminActions = '';
                 if (isAdmin) {
-                    const curPin = (s.pin && s.pin !== '-') ? s.pin : s.nama;
-                    const encodedPin = encodeURIComponent(curPin);
                     adminActions = `
                         <div class="flex items-center justify-center gap-1">
-                            <button onclick="ubahStatusSantriInduk('${encodedPin}', 'mukim')" title="Set Mukim"
-                                class="px-2 py-1 rounded text-[10px] font-bold ${isMukim ? 'bg-emerald-600 text-white' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 border border-slate-200'}">M</button>
-                            <button onclick="ubahStatusSantriInduk('${encodedPin}', 'laju')" title="Set Laju"
-                                class="px-2 py-1 rounded text-[10px] font-bold ${isLaju ? 'bg-amber-600 text-white' : 'bg-slate-100 hover:bg-amber-50 text-slate-600 border border-slate-200'}">L</button>
-                            <button onclick="ubahStatusSantriInduk('${encodedPin}', 'boyong')" title="Set Boyong"
-                                class="px-2 py-1 rounded text-[10px] font-bold ${isBoyong ? 'bg-rose-600 text-white' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 border border-slate-200'}">B</button>
-                            <button onclick="tautkanPinSantriInduk('${encodeURIComponent(s.nama)}')" title="Tautkan / Edit PIN Mesin Fingerprint"
-                                class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 transition">🔗 PIN</button>
+                            <button onclick="setSantriMukimInduk('${encodedPin}')" title="Set Mukim Penuh (Asrama & MDNU)"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${isMukim ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 border border-slate-200'} cursor-pointer">M</button>
+                            <button onclick="bukaModalAturLaju('${encodedPin}')" title="Atur Laju (Awal Semester atau Mulai Tengah Semester)"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${isLaju ? 'bg-amber-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-amber-50 text-slate-600 border border-slate-200'} cursor-pointer">L</button>
+                            <button onclick="bukaModalAturBoyong('${encodedPin}')" title="Atur Santri Boyong"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${isBoyong ? 'bg-rose-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 border border-slate-200'} cursor-pointer">B</button>
+                            <button onclick="bukaModalDispensasiInduk('${encodedPin}')" title="Kelola Dispensasi KKN / Tugas Pondok"
+                                class="px-2 py-1 rounded text-[10px] font-bold ${listDisp.length > 0 ? 'bg-indigo-600 text-white shadow-xs' : 'bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200'} transition cursor-pointer">🏷️ Dispen</button>
                         </div>
                     `;
                 } else {
@@ -6202,7 +6258,12 @@
                         </td>
                         <td class="py-2.5 px-4 font-mono font-medium text-slate-700">${s.kamar || '-'}</td>
                         <td class="py-2.5 px-4 text-slate-700 font-medium">${s.kelas || '-'}</td>
-                        <td class="py-2.5 px-4">${badgeStatus}</td>
+                        <td class="py-2.5 px-4">
+                            <div class="flex flex-col items-start gap-1">
+                                ${badgeStatus}
+                                ${badgeDispen}
+                            </div>
+                        </td>
                         <td class="py-2.5 px-4">${badgeMesin}</td>
                         <td class="py-2.5 px-4 admin-only text-center">${adminActions}</td>
                     </tr>
@@ -6270,107 +6331,545 @@
             tampilkanToast("📥 Berhasil mengekspor Data Induk Santri ke Excel (.xlsx)!");
         }
 
-        function ubahStatusSantriInduk(encodedPinOrNama, newStatus) {
+        // ========================================================
+        // KELOLA STATUS SANTRI INDUK (MUKIM, LAJU BERCABANG, BOYONG, DISPENSASI)
+        // ========================================================
+        function setSantriMukimInduk(encodedPinOrNama) {
             if (!isAdmin) {
-                alert("Hanya Admin yang dapat mengubah status santri.");
+                bukaModalLoginAdmin();
                 return;
             }
-
             const pinOrNama = decodeURIComponent(encodedPinOrNama);
             const target = dataSantriInduk.find(s => s.pin === pinOrNama || s.nama === pinOrNama);
             if (!target) return;
 
-            target.status = newStatus;
-            const cleanPin = (target.pin && target.pin !== '-') ? target.pin : null;
+            target.status = 'mukim';
+            delete target.tglMulaiLaju;
+            delete target.tglBoyong;
 
+            const cleanPin = (target.pin && target.pin !== '-') ? target.pin : null;
             if (cleanPin) {
-                if (newStatus === 'boyong') {
-                    statusSantriAsrama[cleanPin] = 'boyong';
-                    statusSantriMDNU[cleanPin] = 'boyong';
-                    hiddenSantriAsrama[cleanPin] = true;
-                    hiddenSantriMDNU[cleanPin] = true;
-                } else if (newStatus === 'laju') {
-                    statusSantriAsrama[cleanPin] = 'laju';
-                    statusSantriMDNU[cleanPin] = 'laju';
-                    hiddenSantriAsrama[cleanPin] = true;
-                    delete hiddenSantriMDNU[cleanPin];
-                } else {
-                    delete statusSantriAsrama[cleanPin];
-                    delete statusSantriMDNU[cleanPin];
-                    delete hiddenSantriAsrama[cleanPin];
-                    delete hiddenSantriMDNU[cleanPin];
-                }
-                updateHiddenBadges();
-                terapkanFilter();
+                delete statusSantriAsrama[cleanPin];
+                delete statusSantriMDNU[cleanPin];
+                delete hiddenSantriAsrama[cleanPin];
+                delete hiddenSantriMDNU[cleanPin];
+                if (tglMulaiLajuSantri) delete tglMulaiLajuSantri[cleanPin];
             }
 
+            sinkronkanHiddenSantri();
+            updateHiddenBadges();
+            terapkanFilter();
             renderMenuDataSantri();
             simpanKeCloud();
-            tampilkanToast(`Status santri ${target.nama} berhasil diubah menjadi: ${newStatus.toUpperCase()}`);
+            tampilkanToast(`✅ Santri ${target.nama} berhasil disetel sebagai MUKIM aktif (Asrama & MDNU).`);
         }
 
-        function tautkanPinSantriInduk(encodedNama) {
+        let santriDipilihUntukLaju = null;
+        function bukaModalAturLaju(encodedPinOrNama) {
             if (!isAdmin) {
-                alert("Hanya Admin yang dapat menautkan PIN mesin fingerprint santri.");
+                bukaModalLoginAdmin();
                 return;
             }
-            const namaSantri = decodeURIComponent(encodedNama);
-            const target = (dataSantriInduk || []).find(s => s.nama === namaSantri);
+            const pinOrNama = decodeURIComponent(encodedPinOrNama);
+            const target = dataSantriInduk.find(s => s.pin === pinOrNama || s.nama === pinOrNama);
             if (!target) return;
 
-            const defaultVal = (target.pin && target.pin !== '-') ? target.pin : '';
-            const inputPin = prompt(
-                `Hubungkan PIN Mesin Fingerprint untuk:\n"${target.nama}"\n\nMasukkan nomor PIN mesin santri (Contoh: 15, 95):\n(Kosongkan atau ketik "-" untuk membatalkan tautan)`,
-                defaultVal
-            );
+            santriDipilihUntukLaju = target;
+            const cleanPin = (target.pin && target.pin !== '-') ? target.pin : target.nama;
 
-            if (inputPin === null) return; // Dibatalkan admin
+            const elNama = document.getElementById('modalLajuNamaSantri');
+            const elPin = document.getElementById('modalLajuPinSantri');
+            const elTgl = document.getElementById('inputTglMulaiLaju');
+            const radioAwal = document.getElementById('radioLajuAwal');
+            const radioTengah = document.getElementById('radioLajuTengah');
 
-            const cleanPin = inputPin.trim();
-            if (!cleanPin || cleanPin === '-' || cleanPin === '0') {
-                target.pin = '-';
-                target.terdaftarMesin = false;
-                target.namaMesin = '-';
-                tampilkanToast(`Tautan PIN untuk "${target.nama}" dibatalkan.`);
+            if (elNama) elNama.innerText = target.nama;
+            if (elPin) elPin.innerText = `PIN Mesin: ${target.pin || '-'}`;
+
+            const existingTgl = (tglMulaiLajuSantri && tglMulaiLajuSantri[cleanPin]) || target.tglMulaiLaju || '';
+            if (existingTgl) {
+                if (radioTengah) radioTengah.checked = true;
+                if (elTgl) elTgl.value = existingTgl;
+                toggleOpsiLaju('tengah');
             } else {
-                target.pin = cleanPin;
-                target.terdaftarMesin = true;
-                target.namaMesin = target.nama;
-
-                // Pastikan PIN ada di santriList
-                if (santriList && !santriList.some(s => s.pin === cleanPin)) {
-                    santriList.push({
-                        pin: cleanPin,
-                        nama: target.nama,
-                        kamar: target.kamar || '-',
-                        kelas: target.kelas || '-'
-                    });
-                }
-
-                // Terapkan status boyong/laju ke asrama & mdnu
-                const st = (target.status || 'mukim').toLowerCase();
-                if (st === 'boyong') {
-                    statusSantriAsrama[cleanPin] = 'boyong';
-                    statusSantriMDNU[cleanPin] = 'boyong';
-                    hiddenSantriAsrama[cleanPin] = true;
-                    hiddenSantriMDNU[cleanPin] = true;
-                } else if (st === 'laju') {
-                    statusSantriAsrama[cleanPin] = 'laju';
-                    statusSantriMDNU[cleanPin] = 'laju';
-                    hiddenSantriAsrama[cleanPin] = true;
-                    delete hiddenSantriMDNU[cleanPin];
-                }
-
-                tampilkanToast(`✅ Berhasil menautkan PIN ${cleanPin} ke "${target.nama}"!`);
+                if (radioAwal) radioAwal.checked = true;
+                const today = new Date().toISOString().split('T')[0];
+                if (elTgl) elTgl.value = today;
+                toggleOpsiLaju('awal');
             }
 
-            if (typeof updateHiddenBadges === 'function') updateHiddenBadges();
-            if (typeof terapkanFilter === 'function') terapkanFilter();
+            const modal = document.getElementById('modalAturStatusLaju');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function tutupModalAturLaju() {
+            santriDipilihUntukLaju = null;
+            const modal = document.getElementById('modalAturStatusLaju');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function toggleOpsiLaju(tipe) {
+            const containerTgl = document.getElementById('containerInputTglLaju');
+            if (!containerTgl) return;
+            if (tipe === 'tengah') {
+                containerTgl.classList.remove('hidden');
+            } else {
+                containerTgl.classList.add('hidden');
+            }
+        }
+
+        function simpanStatusLajuInduk() {
+            if (!santriDipilihUntukLaju) return;
+            const target = santriDipilihUntukLaju;
+            const cleanPin = (target.pin && target.pin !== '-') ? target.pin : null;
+            const isTengah = document.getElementById('radioLajuTengah')?.checked;
+            const inputTgl = document.getElementById('inputTglMulaiLaju')?.value?.trim();
+
+            target.status = 'laju';
+            if (isTengah && inputTgl) {
+                target.tglMulaiLaju = inputTgl;
+                if (cleanPin) {
+                    if (!tglMulaiLajuSantri) tglMulaiLajuSantri = {};
+                    tglMulaiLajuSantri[cleanPin] = inputTgl;
+                }
+            } else {
+                delete target.tglMulaiLaju;
+                if (cleanPin && tglMulaiLajuSantri) {
+                    delete tglMulaiLajuSantri[cleanPin];
+                }
+            }
+
+            if (cleanPin) {
+                statusSantriAsrama[cleanPin] = 'laju';
+                statusSantriMDNU[cleanPin] = 'laju';
+            }
+
+            sinkronkanHiddenSantri();
+            updateHiddenBadges();
+            terapkanFilter();
             renderMenuDataSantri();
             simpanKeCloud();
+            tutupModalAturLaju();
+
+            if (isTengah && inputTgl) {
+                tampilkanToast(`✅ ${target.nama} diatur LAJU mulai ${inputTgl}. Data sebelum tanggal ini tetap dihitung.`);
+            } else {
+                tampilkanToast(`✅ ${target.nama} diatur LAJU sejak awal semester (disembunyikan dari Asrama).`);
+            }
+        }
+
+        let santriDipilihUntukBoyong = null;
+        function bukaModalAturBoyong(encodedPinOrNama) {
+            if (!isAdmin) {
+                bukaModalLoginAdmin();
+                return;
+            }
+            const pinOrNama = decodeURIComponent(encodedPinOrNama);
+            const target = dataSantriInduk.find(s => s.pin === pinOrNama || s.nama === pinOrNama);
+            if (!target) return;
+
+            santriDipilihUntukBoyong = target;
+            const elNama = document.getElementById('modalBoyongNamaSantri');
+            const elPin = document.getElementById('modalBoyongPinSantri');
+            const elTgl = document.getElementById('inputTglBoyong');
+
+            if (elNama) elNama.innerText = target.nama;
+            if (elPin) elPin.innerText = `PIN Mesin: ${target.pin || '-'}`;
+            if (elTgl) {
+                elTgl.value = target.tglBoyong || new Date().toISOString().split('T')[0];
+            }
+
+            const modal = document.getElementById('modalAturBoyong');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function tutupModalAturBoyong() {
+            santriDipilihUntukBoyong = null;
+            const modal = document.getElementById('modalAturBoyong');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function simpanStatusBoyongInduk() {
+            if (!santriDipilihUntukBoyong) return;
+            const target = santriDipilihUntukBoyong;
+            const cleanPin = (target.pin && target.pin !== '-') ? target.pin : null;
+            const tgl = document.getElementById('inputTglBoyong')?.value?.trim() || new Date().toISOString().split('T')[0];
+
+            target.status = 'boyong';
+            target.tglBoyong = tgl;
+            delete target.tglMulaiLaju;
+
+            if (cleanPin) {
+                statusSantriAsrama[cleanPin] = 'boyong';
+                statusSantriMDNU[cleanPin] = 'boyong';
+                if (tglMulaiLajuSantri) delete tglMulaiLajuSantri[cleanPin];
+            }
+
+            sinkronkanHiddenSantri();
+            updateHiddenBadges();
+            terapkanFilter();
+            renderMenuDataSantri();
+            simpanKeCloud();
+            tutupModalAturBoyong();
+            tampilkanToast(`🔴 Santri ${target.nama} telah ditandai BOYONG (${tgl}). Disembunyikan dari Asrama & MDNU.`);
+        }
+
+        let santriDipilihUntukDispen = null;
+        function bukaModalDispensasiInduk(encodedPinOrNama) {
+            if (!isAdmin) {
+                bukaModalLoginAdmin();
+                return;
+            }
+            const pinOrNama = decodeURIComponent(encodedPinOrNama);
+            const target = dataSantriInduk.find(s => s.pin === pinOrNama || s.nama === pinOrNama);
+            if (!target) return;
+
+            santriDipilihUntukDispen = target;
+            const elNama = document.getElementById('modalDispenNamaSantri');
+            const elPin = document.getElementById('modalDispenPinSantri');
+            if (elNama) elNama.innerText = target.nama;
+            if (elPin) elPin.innerText = `PIN: ${target.pin || '-'}`;
+
+            // Reset input form
+            const today = new Date().toISOString().split('T')[0];
+            const inDari = document.getElementById('inputDispenDari');
+            const inSampai = document.getElementById('inputDispenSampai');
+            const inKet = document.getElementById('inputDispenKet');
+            if (inDari) inDari.value = today;
+            if (inSampai) inSampai.value = today;
+            if (inKet) inKet.value = 'KKN';
+
+            renderModalDispensasiIndukList();
+
+            const modal = document.getElementById('modalKelolaDispensasiInduk');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function tutupModalDispensasiInduk() {
+            santriDipilihUntukDispen = null;
+            const modal = document.getElementById('modalKelolaDispensasiInduk');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function renderModalDispensasiIndukList() {
+            const listEl = document.getElementById('modalDispenListContainer');
+            if (!listEl || !santriDipilihUntukDispen) return;
+
+            const curPin = (santriDipilihUntukDispen.pin && santriDipilihUntukDispen.pin !== '-') ? santriDipilihUntukDispen.pin : null;
+            if (!curPin || !dispensasiSantri[curPin] || !Array.isArray(dispensasiSantri[curPin]) || dispensasiSantri[curPin].length === 0) {
+                listEl.innerHTML = `
+                    <div class="p-4 text-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        Belum ada riwayat dispensasi untuk santri ini.
+                    </div>
+                `;
+                return;
+            }
+
+            const arr = dispensasiSantri[curPin];
+            let html = '<div class="space-y-2">';
+            arr.forEach((d, idx) => {
+                const rentang = (d.sampai && d.sampai !== d.dari) ? `${d.dari} s.d ${d.sampai}` : d.dari;
+                html += `
+                    <div class="flex items-center justify-between p-2.5 bg-indigo-50/60 rounded-xl border border-indigo-200 text-xs">
+                        <div class="space-y-0.5">
+                            <div class="font-extrabold text-indigo-950 flex items-center gap-1.5">
+                                <span class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.2 rounded font-mono">#${idx + 1}</span>
+                                <span>${d.ket || 'Dispensasi'}</span>
+                            </div>
+                            <div class="text-[11px] font-mono text-indigo-700">${rentang}</div>
+                        </div>
+                        <button onclick="hapusDispensasiInduk('${d.id}')"
+                            class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white font-bold transition text-xs border border-rose-200 cursor-pointer">
+                            Hapus
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            listEl.innerHTML = html;
+        }
+
+        function tambahDispensasiInduk() {
+            if (!santriDipilihUntukDispen) return;
+            const curPin = (santriDipilihUntukDispen.pin && santriDipilihUntukDispen.pin !== '-') ? santriDipilihUntukDispen.pin : null;
+            if (!curPin) {
+                alert("Santri ini belum memiliki PIN mesin fingerprint yang valid.");
+                return;
+            }
+
+            const dari = document.getElementById('inputDispenDari')?.value?.trim();
+            const sampai = document.getElementById('inputDispenSampai')?.value?.trim() || dari;
+            const ket = document.getElementById('inputDispenKet')?.value?.trim() || 'KKN';
+
+            if (!dari) {
+                alert("Tanggal mulai dispensasi wajib diisi!");
+                return;
+            }
+
+            if (!dispensasiSantri[curPin]) dispensasiSantri[curPin] = [];
+            dispensasiSantri[curPin].push({
+                id: 'disp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+                dari: dari,
+                sampai: sampai,
+                ket: ket,
+                createdAt: new Date().toISOString()
+            });
+
+            terapkanTanggalMulaiDanDispensasiKeMatriks();
+            terapkanFilter();
+            renderEvaluasi();
+            renderModalDispensasiIndukList();
+            renderMenuDataSantri();
+            simpanKeCloud();
+            tampilkanToast(`✅ Dispensasi ${ket} (${dari} s.d ${sampai}) berhasil ditambahkan.`);
+        }
+
+        function hapusDispensasiInduk(dispId) {
+            if (!santriDipilihUntukDispen) return;
+            const curPin = (santriDipilihUntukDispen.pin && santriDipilihUntukDispen.pin !== '-') ? santriDipilihUntukDispen.pin : null;
+            if (!curPin || !dispensasiSantri[curPin]) return;
+
+            dispensasiSantri[curPin] = dispensasiSantri[curPin].filter(d => d.id !== dispId);
+            if (dispensasiSantri[curPin].length === 0) delete dispensasiSantri[curPin];
+
+            terapkanTanggalMulaiDanDispensasiKeMatriks();
+            terapkanFilter();
+            renderEvaluasi();
+            renderModalDispensasiIndukList();
+            renderMenuDataSantri();
+            simpanKeCloud();
+            tampilkanToast(`Dispensasi berhasil dihapus.`);
+        }
+
+        // Fallback untuk backward compatibility
+        function ubahStatusSantriInduk(encodedPinOrNama, newStatus) {
+            if (newStatus === 'mukim') setSantriMukimInduk(encodedPinOrNama);
+            else if (newStatus === 'laju') bukaModalAturLaju(encodedPinOrNama);
+            else if (newStatus === 'boyong') bukaModalAturBoyong(encodedPinOrNama);
         }
     </script>
-        <!-- ======================================================== -->
+
+    <!-- ======================================================== -->
+    <!-- MODAL BARU 1: ATUR STATUS LAJU (BERCABANG: AWAL VS TENGAH) -->
+    <!-- ======================================================== -->
+    <div id="modalAturStatusLaju" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-amber-600/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-amber-950">Atur Status Santri Laju</h3>
+                        <p class="text-xs text-amber-800">Pilih mekanisme Laju Awal Semester atau Tengah Semester</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalAturLaju()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Info Santri Target -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase">Santri Target</span>
+                        <span id="modalLajuNamaSantri" class="text-sm font-extrabold text-slate-900">-</span>
+                    </div>
+                    <span id="modalLajuPinSantri" class="font-mono text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200">PIN: -</span>
+                </div>
+
+                <!-- Pilihan Cabang Mekanisme Laju -->
+                <div class="space-y-2">
+                    <label class="block font-bold text-slate-800 text-xs">Pilih Ketentuan Santri Laju:</label>
+                    
+                    <!-- Opsi Awal Semester -->
+                    <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/40 cursor-pointer transition">
+                        <input type="radio" name="radioMekanismeLaju" id="radioLajuAwal" value="awal" onchange="toggleOpsiLaju('awal')" class="mt-0.5 text-amber-600 focus:ring-amber-500 cursor-pointer">
+                        <div class="space-y-0.5">
+                            <span class="block font-bold text-slate-900 text-xs">Laju Sejak Awal Semester</span>
+                            <span class="block text-[11px] text-slate-500 leading-relaxed">Santri disembunyikan sepenuhnya dari tabel Asrama Putra. Di tabel MDNU Putra, santri <b>tetap tampil normal</b>.</span>
+                        </div>
+                    </label>
+
+                    <!-- Opsi Tengah Semester -->
+                    <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:border-amber-400 hover:bg-amber-50/40 cursor-pointer transition">
+                        <input type="radio" name="radioMekanismeLaju" id="radioLajuTengah" value="tengah" onchange="toggleOpsiLaju('tengah')" class="mt-0.5 text-amber-600 focus:ring-amber-500 cursor-pointer">
+                        <div class="space-y-0.5">
+                            <span class="block font-bold text-slate-900 text-xs">Mulai Laju di Tengah Semester (Bercabang)</span>
+                            <span class="block text-[11px] text-slate-500 leading-relaxed">Data sebelum tanggal mulai laju <b>tetap dihitung dan ditampakkan</b> di Asrama. Setelah tanggal tersebut, absen Asrama dinonaktifkan (bebas Alpha & bebas JP).</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Input Tanggal Mulai Laju (jika tengah semester) -->
+                <div id="containerInputTglLaju" class="hidden p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                    <label class="block font-bold text-amber-950 text-xs">Tanggal Mulai Laju:</label>
+                    <input type="date" id="inputTglMulaiLaju"
+                        class="w-full px-3.5 py-2 rounded-xl border border-amber-300 focus:ring-2 focus:ring-amber-500 bg-white font-mono text-sm text-slate-800">
+                    <p class="text-[11px] text-amber-900 leading-relaxed">
+                        Mulai tanggal ini ke atas, sesi Asrama santri otomatis berstatus bebas absen (<code>-</code>). Nilai kehadiran/alpha sebelum tanggal ini tetap sah tersimpan di rekap.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5">
+                <button type="button" onclick="tutupModalAturLaju()"
+                    class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="simpanStatusLajuInduk()"
+                    class="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/30 transition flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Simpan Status Laju</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL BARU 2: ATUR SANTRI BOYONG -->
+    <!-- ======================================================== -->
+    <div id="modalAturBoyong" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-rose-600/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-rose-950">Atur Santri Boyong</h3>
+                        <p class="text-xs text-rose-800">Menonaktifkan santri dari seluruh kegiatan pesantren</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalAturBoyong()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4 text-xs">
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase">Santri Target</span>
+                        <span id="modalBoyongNamaSantri" class="text-sm font-extrabold text-slate-900">-</span>
+                    </div>
+                    <span id="modalBoyongPinSantri" class="font-mono text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200">PIN: -</span>
+                </div>
+
+                <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl space-y-1 text-rose-900">
+                    <div class="font-bold flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <span>Konsekuensi Boyong:</span>
+                    </div>
+                    <p class="text-[11px] leading-relaxed">
+                        Santri boyong otomatis disembunyikan dari tabel absensi <b>Asrama Putra</b> dan <b>MDNU Putra</b>.
+                    </p>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block font-bold text-slate-800 text-xs">Tanggal Resmi Boyong:</label>
+                    <input type="date" id="inputTglBoyong"
+                        class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-rose-500 bg-white font-mono text-sm text-slate-800">
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end gap-2.5">
+                <button type="button" onclick="tutupModalAturBoyong()"
+                    class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="simpanStatusBoyongInduk()"
+                    class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/30 transition flex items-center gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span>Konfirmasi Santri Boyong</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL BARU 3: KELOLA DISPENSASI INDUK (KKN / TUGAS LUAR) -->
+    <!-- ======================================================== -->
+    <div id="modalKelolaDispensasiInduk" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-indigo-600/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-extrabold text-indigo-950">Kelola Dispensasi Santri</h3>
+                        <p class="text-xs text-indigo-800">Dispensasi KKN, Tugas Pondok, atau Izin Khusus</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalDispensasiInduk()" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4 text-xs">
+                <!-- Info Santri Target -->
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                    <div>
+                        <span class="block text-[10px] font-bold text-slate-400 uppercase">Santri Target</span>
+                        <span id="modalDispenNamaSantri" class="text-sm font-extrabold text-slate-900">-</span>
+                    </div>
+                    <span id="modalDispenPinSantri" class="font-mono text-xs font-bold text-slate-600 bg-white px-2.5 py-1 rounded-lg border border-slate-200">PIN: -</span>
+                </div>
+
+                <!-- Form Tambah Dispensasi Baru -->
+                <div class="p-3.5 bg-indigo-50/60 border border-indigo-200 rounded-xl space-y-3">
+                    <span class="block font-extrabold text-indigo-950 text-xs">Tambah Periode Dispensasi Baru:</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <div class="space-y-1">
+                            <label class="block font-bold text-slate-700 text-[11px]">Tanggal Mulai:</label>
+                            <input type="date" id="inputDispenDari" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 font-mono bg-white text-xs">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block font-bold text-slate-700 text-[11px]">Tanggal Selesai:</label>
+                            <input type="date" id="inputDispenSampai" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 font-mono bg-white text-xs">
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="block font-bold text-slate-700 text-[11px]">Keterangan Dispensasi:</label>
+                        <input type="text" id="inputDispenKet" placeholder="Contoh: KKN, Tugas Pondok, Sakit Panjang"
+                            class="w-full px-3 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 bg-white text-xs font-medium">
+                    </div>
+                    <button type="button" onclick="tambahDispensasiInduk()"
+                        class="w-full py-2 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Simpan Periode Dispensasi</span>
+                    </button>
+                </div>
+
+                <!-- Riwayat Dispensasi Aktif -->
+                <div class="space-y-2">
+                    <span class="block font-bold text-slate-800 text-xs">Daftar Dispensasi Aktif Santri:</span>
+                    <div id="modalDispenListContainer" class="max-h-48 overflow-y-auto space-y-2">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-end">
+                <button type="button" onclick="tutupModalDispensasiInduk()"
+                    class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
+                    Selesai / Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
     <!-- MODAL 1: KELOLA STATUS SANTRI (MUKIM, LAJU & BOYONG) -->
     <!-- ======================================================== -->
     <div id="modalKelolaSantri" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
