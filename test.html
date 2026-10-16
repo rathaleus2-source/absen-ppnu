@@ -514,34 +514,24 @@
                     </div>
 
                     <!-- Mobile Search Icon Button -->
-                    <button type="button" onclick="toggleMobileSearchBar()" class="sm:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 active:scale-95 transition" title="Cari Santri">
+                    <button type="button" onclick="toggleMobileSearchBar()" class="sm:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 active:scale-95 transition cursor-pointer" title="Cari Santri">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </button>
 
-                    <!-- Admin Tools Button (Hanya tampil jika admin login) -->
-                    <button type="button" id="btnOpenAdminDrawer" onclick="toggleAdminDrawer(true)"
-                        class="hidden px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 transition cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Mobile Admin Tools Icon Button (Hanya jika admin login) -->
+                    <button type="button" id="mobileBtnOpenAdmin" onclick="toggleAdminDrawer(true)" class="hidden sm:hidden p-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 active:scale-95 transition cursor-pointer" title="Buka Tools Admin">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        <span class="hidden md:inline">Tools Admin</span>
-                        <span class="w-2 h-2 rounded-full bg-amber-400"></span>
                     </button>
 
-                    <!-- Header Auth Area for Compatibility -->
-                    <div id="navAuthArea" class="flex items-center gap-1.5">
-                        <button type="button" onclick="bukaModalLoginAdmin()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            <span class="hidden sm:inline">Login Admin</span>
-                        </button>
-                    </div>
+                    <!-- Admin Tools Button (Hanya tampil di kanan jika admin sudah login) -->
+                    <div id="navAuthArea" class="flex items-center gap-1.5"></div>
 
-                    <!-- Hidden legacy buttons for JS compatibility -->
-                    <button type="button" id="btnNavMenuAbsen" onclick="gantiMenuUtama('absen')" class="hidden"></button>
-                    <button type="button" id="btnNavMenuSantri" onclick="gantiMenuUtama('santri')" class="hidden"></button>
+
                 </div>
             </div>
 
@@ -783,7 +773,7 @@
                     </div>
 
                     <!-- Quick Jump Buttons for Tablet & Mobile -->
-                    <div class="flex items-center gap-1.5 justify-end">
+                    <div id="tableJumpControls" class="flex items-center gap-1.5 justify-end">
                         <span class="text-[11px] text-slate-500 font-semibold hidden md:inline">Geser:</span>
                         <button onclick="scrollTableTo('start')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition shadow-2xs" title="Lompat ke Tanggal Awal">
                             &laquo; Awal
@@ -833,11 +823,7 @@
                     <div id="pillsFilterBulan" class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 no-scrollbar">
                         <!-- Diisi dinamis via renderPillsFilterBulan() -->
                     </div>
-                    <div class="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onclick="scrollTableTo('end')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs flex items-center gap-1 transition shadow-2xs cursor-pointer">
-                            <span>Terkini &raquo;</span>
-                        </button>
-                    </div>
+                    
                 </div>
 
             </div>
@@ -2995,10 +2981,10 @@
                 titleEl.innerText = (menuUtamaAktif === 'santri') ? "Data Santri" : "Absen";
             }
 
-            // 2. Admin drawer trigger button in top header
-            const btnAdminDrawer = document.getElementById('btnOpenAdminDrawer');
-            if (btnAdminDrawer) {
-                btnAdminDrawer.classList.toggle('hidden', !isAdmin);
+            // 2. Mobile Admin Tools Icon Button
+            const mobAdminBtn = document.getElementById('mobileBtnOpenAdmin');
+            if (mobAdminBtn) {
+                mobAdminBtn.classList.toggle('hidden', !isAdmin);
             }
 
             // 3. Desktop Dock Auth Area
@@ -3057,28 +3043,24 @@
                 }
             }
 
-            // 5. Header navAuthArea
+            // 5. Header navAuthArea (HANYA tampil tombol Tools Admin jika admin sudah login, publik bersih)
             const navAuth = document.getElementById('navAuthArea');
             if (navAuth) {
                 if (isAdmin) {
                     navAuth.innerHTML = `
-                        <button type="button" onclick="toggleAdminDrawer(true)" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer">
+                        <button type="button" onclick="toggleAdminDrawer(true)" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 transition cursor-pointer">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             <span class="hidden sm:inline">Tools Admin</span>
+                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
                         </button>
                     `;
                 } else {
-                    navAuth.innerHTML = `
-                        <button type="button" onclick="bukaModalLoginAdmin()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
-                            <span class="hidden sm:inline">Login Admin</span>
-                        </button>
-                    `;
+                    navAuth.innerHTML = '';
                 }
             }
 
             // 6. Close admin drawer if logged out
-            if (!isAdmin) {
+            if (!isAdmin && typeof toggleAdminDrawer === 'function') {
                 toggleAdminDrawer(false);
             }
 
@@ -3573,6 +3555,8 @@
             clearTimeout(searchDebounceTimeout);
             searchDebounceTimeout = setTimeout(() => {
                 if (menuUtamaAktif === 'santri') {
+                    const santriInp = document.getElementById('searchSantriIndukInput');
+                    if (santriInp && santriInp.value !== val) santriInp.value = val;
                     searchSantriIndukQuery = (val || '').toLowerCase().trim();
                     renderTabelSantriInduk();
                 } else {
@@ -3581,16 +3565,7 @@
             }, 120);
         }
 
-        function clearSearch() {
-            const input = document.getElementById('filterSearch');
-            if (input) {
-                input.value = '';
-                input.focus();
-            }
-            const btnClear = document.getElementById('btnClearSearch');
-            if (btnClear) btnClear.classList.add('hidden');
-            terapkanFilter();
-        }
+
 
         // Filter & Render Tabel Matriks (Smart Rendering: Hanya render tab yang sedang aktif untuk performa maksimal)
         function terapkanFilter() {
@@ -4611,7 +4586,17 @@
             const viewRekap = document.getElementById('viewRekapitulasi');
             const flNav = document.getElementById('floatingScrollNavigator');
 
-            if (mode === 'cards') {
+            // Handle Rekapitulasi: Multi-month spreadsheet matrix always takes precedence
+            if (activeTab === 'rekapitulasi') {
+                if (viewAsrama) viewAsrama.classList.add('hidden');
+                if (viewMDNU) viewMDNU.classList.add('hidden');
+                if (viewCardList) viewCardList.classList.add('hidden');
+                if (viewRekap) viewRekap.classList.remove('hidden');
+                if (flNav) {
+                    if (dateList.length > 0) flNav.classList.remove('hidden');
+                    else flNav.classList.add('hidden');
+                }
+            } else if (mode === 'cards') {
                 if (viewAsrama) viewAsrama.classList.add('hidden');
                 if (viewMDNU) viewMDNU.classList.add('hidden');
                 if (viewRekap) viewRekap.classList.add('hidden');
@@ -4621,11 +4606,17 @@
                 if (viewCardList) viewCardList.classList.add('hidden');
                 if (viewAsrama) viewAsrama.classList.toggle('hidden', activeTab !== 'asrama');
                 if (viewMDNU) viewMDNU.classList.toggle('hidden', activeTab !== 'mdnu');
-                if (viewRekap) viewRekap.classList.toggle('hidden', activeTab !== 'rekapitulasi');
+                if (viewRekap) viewRekap.classList.add('hidden');
                 if (flNav) {
                     if (dateList.length > 0) flNav.classList.remove('hidden');
                     else flNav.classList.add('hidden');
                 }
+            }
+
+            // Sync visibility of horizontal jump buttons based on view mode
+            const jumpControls = document.getElementById('tableJumpControls');
+            if (jumpControls) {
+                jumpControls.classList.toggle('hidden', mode === 'cards' && activeTab !== 'rekapitulasi');
             }
             terapkanFilter();
         }
@@ -5999,12 +5990,12 @@
 
             // 1. Jika di tab rekapitulasi, alihkan ke asrama terlebih dahulu
             if (activeTab === 'rekapitulasi') {
-                switchTab('asrama');
+                gantiTab('asrama');
             }
 
             // 2. Pastikan tampilan adalah mode matriks spreadsheet
             if (currentViewMode === 'cards') {
-                toggleViewMode('matrix');
+                setViewMode('matrix');
             }
 
             // 3. Pastikan bulan tanggal target aktif terpilih di filter bulan
@@ -6171,6 +6162,14 @@
 
         let debounceSearchSantriTimer = null;
         function handleSearchSantriInduk(query) {
+            // Sinkronkan ke input search header desktop & mobile
+            const dsk = document.getElementById('filterSearch');
+            if (dsk && dsk.value !== query) dsk.value = query;
+            const mob = document.getElementById('mobileFilterSearch');
+            if (mob && mob.value !== query) mob.value = query;
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) btnClear.classList.toggle('hidden', !query || query.length === 0);
+
             clearTimeout(debounceSearchSantriTimer);
             debounceSearchSantriTimer = setTimeout(() => {
                 searchSantriIndukQuery = (query || '').toLowerCase().trim();
@@ -6751,12 +6750,93 @@
             else if (newStatus === 'laju') bukaModalAturLaju(encodedPinOrNama);
             else if (newStatus === 'boyong') bukaModalAturBoyong(encodedPinOrNama);
         }
+
+        // ==========================================
+        // DRAWER & MOBILE APP BAR HELPER FUNCTIONS
+        // ==========================================
+        function toggleMobileNavDrawer(open) {
+            const backdrop = document.getElementById('mobileNavDrawerBackdrop');
+            const sheet = document.getElementById('mobileNavDrawerSheet');
+            if (!backdrop || !sheet) return;
+            if (open) {
+                backdrop.classList.remove('hidden');
+                setTimeout(() => {
+                    sheet.classList.remove('-translate-x-full');
+                }, 10);
+            } else {
+                sheet.classList.add('-translate-x-full');
+                setTimeout(() => {
+                    backdrop.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function toggleAdminDrawer(open) {
+            const backdrop = document.getElementById('adminRightDrawerBackdrop');
+            const panel = document.getElementById('adminRightDrawerPanel');
+            if (!backdrop || !panel) return;
+            if (open) {
+                if (!isAdmin) {
+                    bukaModalLoginAdmin();
+                    return;
+                }
+                backdrop.classList.remove('hidden');
+                setTimeout(() => {
+                    panel.classList.remove('translate-x-full');
+                }, 10);
+                if (typeof renderAdminPanelMalamSabtu === 'function') {
+                    renderAdminPanelMalamSabtu();
+                }
+            } else {
+                panel.classList.add('translate-x-full');
+                setTimeout(() => {
+                    backdrop.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function toggleMobileSearchBar() {
+            const searchBox = document.getElementById('mobileSearchContainer');
+            if (!searchBox) return;
+            const isHidden = searchBox.classList.contains('hidden');
+            searchBox.classList.toggle('hidden', !isHidden);
+            if (isHidden) {
+                const inp = document.getElementById('mobileFilterSearch');
+                if (inp) inp.focus();
+            }
+        }
+
+        function syncMobileSearch(val) {
+            const dskInput = document.getElementById('filterSearch');
+            if (dskInput) dskInput.value = val;
+            handleSearchInput(val);
+        }
+
+        function clearSearch() {
+            const input = document.getElementById('filterSearch');
+            if (input) {
+                input.value = '';
+                input.focus();
+            }
+            const mobInput = document.getElementById('mobileFilterSearch');
+            if (mobInput) mobInput.value = '';
+
+            const btnClear = document.getElementById('btnClearSearch');
+            if (btnClear) btnClear.classList.add('hidden');
+
+            if (menuUtamaAktif === 'santri') {
+                searchSantriIndukQuery = '';
+                renderTabelSantriInduk();
+            } else {
+                terapkanFilter();
+            }
+        }
     </script>
 
     <!-- ======================================================== -->
     <!-- MODAL BARU 1: ATUR STATUS LAJU (BERCABANG: AWAL VS TENGAH) -->
     <!-- ======================================================== -->
-    <div id="modalAturStatusLaju" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
+    <div id="modalAturStatusLaju" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             <!-- Modal Header -->
             <div class="p-4 sm:p-5 border-b border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 flex items-center justify-between">
@@ -6837,7 +6917,7 @@
     <!-- ======================================================== -->
     <!-- MODAL BARU 2: ATUR SANTRI BOYONG -->
     <!-- ======================================================== -->
-    <div id="modalAturBoyong" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
+    <div id="modalAturBoyong" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             <!-- Modal Header -->
             <div class="p-4 sm:p-5 border-b border-rose-200 bg-gradient-to-r from-rose-50 to-pink-50 flex items-center justify-between">
@@ -6900,7 +6980,7 @@
     <!-- ======================================================== -->
     <!-- MODAL BARU 3: KELOLA DISPENSASI INDUK (KKN / TUGAS LUAR) -->
     <!-- ======================================================== -->
-    <div id="modalKelolaDispensasiInduk" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
+    <div id="modalKelolaDispensasiInduk" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto app-modal-overlay">
         <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             <!-- Modal Header -->
             <div class="p-4 sm:p-5 border-b border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 flex items-center justify-between">
@@ -6976,7 +7056,7 @@
     <!-- ======================================================== -->
     <!-- MODAL 1: KELOLA STATUS SANTRI (MUKIM, LAJU & BOYONG) -->
     <!-- ======================================================== -->
-    <div id="modalKelolaSantri" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
+    <div id="modalKelolaSantri" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
         <div
             class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             <!-- Modal Header -->
@@ -7076,7 +7156,7 @@
     <!-- ======================================================== -->
     <!-- MODAL 2: KELOLA HARI LIBUR KHUSUS (HARI KOSONG / ACARA SPESIAL) -->
     <!-- ======================================================== -->
-    <div id="modalKelolaLibur" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
+    <div id="modalKelolaLibur" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
         <div
             class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             <!-- Modal Header -->
@@ -7136,7 +7216,7 @@
     <!-- ======================================================== -->
     <!-- MODAL 3: LOGIN AKSES EDIT ADMIN -->
     <!-- ======================================================== -->
-    <div id="modalLoginAdmin" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
+    <div id="modalLoginAdmin" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
         <div
             class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md max-h-[92dvh] sm:max-h-[90vh] overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             <!-- Modal Header -->
@@ -7145,7 +7225,7 @@
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-indigo-600/30">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
@@ -7192,7 +7272,7 @@
     <!-- MODAL 5: KUNCI / FREEZE DATA ABSENSI (ADMIN ONLY) -->
     <!-- ======================================================== -->
     <div id="modalFreezeData"
-        class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
+        class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
         <div
             class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             
@@ -7273,7 +7353,7 @@
     <!-- MODAL 4: HAPUS / RESET DATA ABSENSI (ADMIN ONLY) -->
     <!-- ======================================================== -->
     <div id="modalHapusData"
-        class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
+        class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
         <div
             class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
             
@@ -7404,7 +7484,7 @@
     </div>
 
     <!-- MODAL 6: SINKRONISASI PERIZINAN SANTRI (GOOGLE FORM) -->
-    <div id="modalIzinGoogleForm" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div id="modalIzinGoogleForm" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[92vh] overflow-hidden border border-slate-200">
             <!-- Modal Header -->
             <div class="p-4 sm:px-6 py-4 bg-gradient-to-r from-purple-50 via-indigo-50 to-purple-50 border-b border-purple-200 flex items-center justify-between">
@@ -7497,25 +7577,6 @@
                 </button>
             </div>
         </div>
-    </div>
-
-    <!-- Floating Quick-Jump Navigator (Aktif saat tabel bergeser mendatar) -->
-    <div id="floatingScrollNavigator" class="hidden">
-        <button onclick="scrollTableTo('start')" class="text-white hover:text-emerald-400 font-bold text-xs px-2 py-1 transition" title="Lompat ke Tanggal Pertama">
-            &laquo; Awal
-        </button>
-        <span class="text-slate-600">|</span>
-        <button onclick="scrollTableTo('middle')" class="text-white hover:text-emerald-400 font-bold text-xs px-2 py-1 transition hidden sm:inline" title="Lompat ke Tengah Periode">
-            &hArr;
-        </button>
-        <span class="text-slate-600 hidden sm:inline">|</span>
-        <button onclick="scrollTableTo('end')" class="text-white hover:text-emerald-400 font-bold text-xs px-2 py-1 transition" title="Lompat ke Tanggal Terkini">
-            Akhir &raquo;
-        </button>
-        <span class="text-slate-600">|</span>
-        <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="text-emerald-400 hover:text-white font-black text-xs px-2 py-1 transition" title="Kembali ke Atas">
-            &uarr; Top
-        </button>
     </div>
 
         </div><!-- End 2. MAIN CONTENT WRAPPER -->
@@ -7647,7 +7708,24 @@
                         </div>
                     </div>
 
-                    <!-- 4. Upload Mesin Absensi -->
+                    <!-- 4. Sinkronisasi Izin Google Form -->
+                    <div class="bg-purple-50/70 border border-purple-300/80 rounded-2xl p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-black text-purple-950 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>📝</span> Sinkronisasi Izin Keamanan
+                            </h4>
+                            <span class="bg-purple-200 text-purple-900 text-[10px] px-2 py-0.5 rounded-full font-bold">Google Form</span>
+                        </div>
+                        <p class="text-xs text-purple-800">
+                            Tarik data perizinan santri dari Google Spreadsheet Keamanan &amp; terapkan ke presensi.
+                        </p>
+                        <button type="button" onclick="bukaModalIzinForm()" class="w-full p-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            <span>Tarik Perizinan Keamanan</span>
+                        </button>
+                    </div>
+
+                    <!-- 5. Upload Mesin Absensi -->
                     <div id="sectionUploadArea" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
                         <h4 class="text-xs font-black text-slate-700 uppercase tracking-wider">
                             📤 Unggah Data Mesin Fingerprint
