@@ -540,16 +540,8 @@
                         </svg>
                     </button>
 
-                    <!-- Mobile Admin Tools Icon Button (Hanya jika admin login) -->
-                    <button type="button" id="mobileBtnOpenAdmin" onclick="toggleAdminDrawer(true)" class="hidden sm:hidden p-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 active:scale-95 transition cursor-pointer" title="Buka Tools Admin">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </button>
-
-                    <!-- Admin Tools Button (Hanya tampil di kanan jika admin sudah login) -->
-                    <div id="navAuthArea" class="flex items-center gap-1.5"></div>
+                    <!-- Single Mobile Admin / Auth Button (HANYA tampil di layar HP <768px, Desktop dikelola oleh Sidebar Dock) -->
+                    <div id="mobileAuthArea" class="md:hidden flex items-center"></div>
 
 
                 </div>
@@ -3053,13 +3045,26 @@
                 titleEl.innerText = (menuUtamaAktif === 'santri') ? "Data Santri" : "Absen";
             }
 
-            // 2. Mobile Admin Tools Icon Button
-            const mobAdminBtn = document.getElementById('mobileBtnOpenAdmin');
-            if (mobAdminBtn) {
-                mobAdminBtn.classList.toggle('hidden', !isAdmin);
+            // 2. Mobile Header Auth Button (HANYA SATU tombol di HP, di pojok kanan header)
+            const mobAuthHeader = document.getElementById('mobileAuthArea');
+            if (mobAuthHeader) {
+                if (isAdmin) {
+                    mobAuthHeader.innerHTML = `
+                        <button type="button" onclick="toggleAdminDrawer(true)" class="relative p-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 active:scale-95 transition cursor-pointer" title="Panel Kelola Admin">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 absolute top-1.5 right-1.5 ring-2 ring-white animate-pulse"></span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        </button>
+                    `;
+                } else {
+                    mobAuthHeader.innerHTML = `
+                        <button type="button" onclick="bukaModalLoginAdmin()" class="p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-slate-100 active:scale-95 transition cursor-pointer" title="Login Admin">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        </button>
+                    `;
+                }
             }
 
-            // 3. Desktop Dock Auth Area
+            // 3. Desktop Dock Auth Area (HANYA SATU tombol di Desktop: di Dock Kiri Bawah)
             const dockAuth = document.getElementById('dockAuthContainer');
             if (dockAuth) {
                 if (isAdmin) {
@@ -3087,47 +3092,30 @@
                 }
             }
 
-            // 4. Mobile Drawer Auth Area
+            // 4. Mobile Drawer Auth Area (HANYA status & keluar di menu hamburger, TANPA tombol duplikat buka tools)
             const mobAuth = document.getElementById('mobileDrawerAuthArea');
             if (mobAuth) {
                 if (isAdmin) {
                     mobAuth.innerHTML = `
-                        <div class="space-y-2">
-                            <button type="button" onclick="toggleAdminDrawer(true); toggleMobileNavDrawer(false)"
-                                class="w-full p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold bg-indigo-600 text-white shadow-sm transition cursor-pointer">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <span>Buka Tools Admin</span>
-                            </button>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="text-xs font-bold text-slate-700">Mode Admin Aktif</span>
+                            </div>
                             <button type="button" onclick="logoutAdmin(); toggleMobileNavDrawer(false)"
-                                class="w-full p-2.5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition cursor-pointer">
-                                <span>Keluar / Logout</span>
+                                class="text-xs font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer">
+                                Keluar
                             </button>
                         </div>
                     `;
                 } else {
                     mobAuth.innerHTML = `
                         <button type="button" onclick="bukaModalLoginAdmin(); toggleMobileNavDrawer(false)"
-                            class="w-full p-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            class="w-full p-2.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition cursor-pointer">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
                             <span>Login Admin</span>
                         </button>
                     `;
-                }
-            }
-
-            // 5. Header navAuthArea (HANYA tampil tombol Tools Admin jika admin sudah login, publik bersih)
-            const navAuth = document.getElementById('navAuthArea');
-            if (navAuth) {
-                if (isAdmin) {
-                    navAuth.innerHTML = `
-                        <button type="button" onclick="toggleAdminDrawer(true)" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-indigo-600/20 active:scale-95 transition cursor-pointer">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                            <span class="hidden sm:inline">Tools Admin</span>
-                            <span class="w-2 h-2 rounded-full bg-amber-400"></span>
-                        </button>
-                    `;
-                } else {
-                    navAuth.innerHTML = '';
                 }
             }
 
@@ -6830,8 +6818,11 @@
 
         // ==========================================
         // DRAWER & MOBILE APP BAR HELPER FUNCTIONS
+        // (Integrasi History Back untuk UX Native Mobile)
         // ==========================================
-        function toggleMobileNavDrawer(open) {
+        let isInternalHistoryAction = false;
+
+        function toggleMobileNavDrawer(open, fromPopState = false) {
             const backdrop = document.getElementById('mobileNavDrawerBackdrop');
             const sheet = document.getElementById('mobileNavDrawerSheet');
             if (!backdrop || !sheet) return;
@@ -6840,15 +6831,29 @@
                 setTimeout(() => {
                     sheet.classList.remove('-translate-x-full');
                 }, 10);
+
+                if (!history.state || history.state.drawer !== 'navDrawer') {
+                    try {
+                        history.pushState({ drawer: 'navDrawer' }, '');
+                    } catch (e) {}
+                }
             } else {
                 sheet.classList.add('-translate-x-full');
                 setTimeout(() => {
                     backdrop.classList.add('hidden');
                 }, 300);
+
+                if (!fromPopState && history.state && history.state.drawer === 'navDrawer') {
+                    isInternalHistoryAction = true;
+                    try {
+                        history.back();
+                    } catch (e) {}
+                    setTimeout(() => { isInternalHistoryAction = false; }, 200);
+                }
             }
         }
 
-        function toggleAdminDrawer(open) {
+        function toggleAdminDrawer(open, fromPopState = false) {
             const backdrop = document.getElementById('adminRightDrawerBackdrop');
             const panel = document.getElementById('adminRightDrawerPanel');
             if (!backdrop || !panel) return;
@@ -6864,13 +6869,77 @@
                 if (typeof renderAdminPanelMalamSabtu === 'function') {
                     renderAdminPanelMalamSabtu();
                 }
+
+                // Push state history agar tombol back/kembali di HP menutup drawer admin, BUKAN menutup tab browser!
+                if (!history.state || history.state.drawer !== 'adminDrawer') {
+                    try {
+                        history.pushState({ drawer: 'adminDrawer' }, '');
+                    } catch (e) {
+                        console.warn('History pushState error:', e);
+                    }
+                }
             } else {
                 panel.classList.add('translate-x-full');
                 setTimeout(() => {
                     backdrop.classList.add('hidden');
                 }, 300);
+
+                // Jika ditutup secara manual (klik tombol X atau backdrop), sinkronkan history browser
+                if (!fromPopState && history.state && history.state.drawer === 'adminDrawer') {
+                    isInternalHistoryAction = true;
+                    try {
+                        history.back();
+                    } catch (e) {}
+                    setTimeout(() => { isInternalHistoryAction = false; }, 200);
+                }
             }
         }
+
+        // Listener Tombol Kembali (Back Button / Swipe Back di HP Android & iOS)
+        window.addEventListener('popstate', function (event) {
+            if (isInternalHistoryAction) return;
+
+            // 1. Jika Drawer Admin sedang terbuka, tutup drawer admin dan pertahankan tab
+            const adminBackdrop = document.getElementById('adminRightDrawerBackdrop');
+            if (adminBackdrop && !adminBackdrop.classList.contains('hidden')) {
+                toggleAdminDrawer(false, true);
+                return;
+            }
+
+            // 2. Jika Drawer Navigasi Mobile sedang terbuka
+            const navBackdrop = document.getElementById('mobileNavDrawerBackdrop');
+            if (navBackdrop && !navBackdrop.classList.contains('hidden')) {
+                toggleMobileNavDrawer(false, true);
+                return;
+            }
+
+            // 3. Jika ada modal yang terbuka
+            const modalLogin = document.getElementById('modalLoginAdmin');
+            if (modalLogin && !modalLogin.classList.contains('hidden')) {
+                tutupModalLoginAdmin();
+                return;
+            }
+            const modalHapus = document.getElementById('modalHapusData');
+            if (modalHapus && !modalHapus.classList.contains('hidden')) {
+                tutupModalHapusData();
+                return;
+            }
+            const modalFreeze = document.getElementById('modalFreezeData');
+            if (modalFreeze && !modalFreeze.classList.contains('hidden')) {
+                tutupModalFreezeData();
+                return;
+            }
+            const modalSantri = document.getElementById('modalKelolaSantri');
+            if (modalSantri && !modalSantri.classList.contains('hidden')) {
+                tutupModalKelolaSantri();
+                return;
+            }
+            const modalLibur = document.getElementById('modalKelolaLibur');
+            if (modalLibur && !modalLibur.classList.contains('hidden')) {
+                tutupModalKelolaLibur();
+                return;
+            }
+        });
 
         function toggleMobileSearchBar() {
             const searchBox = document.getElementById('mobileSearchContainer');
