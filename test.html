@@ -390,6 +390,26 @@
             transform: scale(0.92);
         }
 
+        /* ========================================================
+           KATEGORI TABS RESPONSIVE ISOLATION (ANTI DOBEL MOBILE)
+           Desktop (>=768px): Tampilkan #headerCategoryPills di Header
+           Mobile (<768px): HANYA tampilkan #mobileCategoryBar di bawah judul
+           ======================================================== */
+        @media (max-width: 767px) {
+            #headerCategoryPills {
+                display: none !important;
+            }
+        }
+        @media (min-width: 768px) {
+            #mobileCategoryBar {
+                display: none !important;
+            }
+        }
+        #headerCategoryPills.hidden,
+        #mobileCategoryBar.hidden {
+            display: none !important;
+        }
+
     </style>
 </head>
 
