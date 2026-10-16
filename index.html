@@ -1371,7 +1371,7 @@
         function initFirebase() {
             try {
                 if (typeof firebase !== 'undefined') {
-                    if (!firebase.apps.length) {
+                    if (!firebase.apps || !firebase.apps.length) {
                         firebase.initializeApp(firebaseConfig);
                     }
                     fbDb = firebase.database();
@@ -2253,7 +2253,7 @@
                 const st = statusSantriAsrama[pin];
                 if (st === 'boyong') {
                     hiddenSantriAsrama[pin] = true;
-                } else if (st === 'laju') {
+                } else if (st === 'laju' || st === 'kantin') {
                     if (tglMulaiLajuSantri && tglMulaiLajuSantri[pin]) {
                         delete hiddenSantriAsrama[pin]; // Tetap tampil di tabel Asrama!
                     } else {
@@ -2331,7 +2331,7 @@
         function updateHiddenBadges() {
             let lajuAsr = 0, boyongAsr = 0;
             for (const p in statusSantriAsrama) {
-                if (statusSantriAsrama[p] === 'laju') lajuAsr++;
+                if (statusSantriAsrama[p] === 'laju' || statusSantriAsrama[p] === 'kantin') lajuAsr++;
                 else if (statusSantriAsrama[p] === 'boyong') boyongAsr++;
             }
             const countHiddenAsr = Object.keys(hiddenSantriAsrama).length;
@@ -2835,7 +2835,7 @@
             // Evaluasi Santri Laju Tengah Semester (Cabang B):
             // Pada dan setelah tglMulaiLaju, sesi Asrama dinonaktifkan (bebas Alpha, bebas JP, status '-').
             // Sebelum tanggal tersebut, absensi Asrama tetap normal (data historis H, I, A sah tersimpan).
-            if (statusSantriAsrama && statusSantriAsrama[pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[pin] && tgl >= tglMulaiLajuSantri[pin]) {
+            if (statusSantriAsrama && (statusSantriAsrama[pin] === 'laju' || statusSantriAsrama[pin] === 'kantin') && tglMulaiLajuSantri && tglMulaiLajuSantri[pin] && tgl >= tglMulaiLajuSantri[pin]) {
                 return {
                     subuh: 'LAJU',
                     malam: 'LAJU',
@@ -3295,7 +3295,7 @@
                 tampilkanToast("Sesi ini adalah hari libur resmi (tidak dapat diubah).");
                 return;
             }
-            if (cur === 'LAJU' || (tab === 'asrama' && statusSantriAsrama && statusSantriAsrama[cleanPin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[cleanPin] && tgl >= tglMulaiLajuSantri[cleanPin])) {
+            if (cur === 'LAJU' || (tab === 'asrama' && statusSantriAsrama && (statusSantriAsrama[cleanPin] === 'laju' || statusSantriAsrama[cleanPin] === 'kantin') && tglMulaiLajuSantri && tglMulaiLajuSantri[cleanPin] && tgl >= tglMulaiLajuSantri[cleanPin])) {
                 tampilkanToast("Santri sudah berstatus Laju pada tanggal ini (sesi Asrama tidak dapat diubah).");
                 return;
             }
@@ -3788,7 +3788,7 @@
 
             const activeFiltered = filteredSantri.filter(s => {
                 if (currentHidden[s.pin]) return false;
-                if (isAsrama && statusSantriAsrama[s.pin] === 'laju') {
+                if (isAsrama && (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin')) {
                     const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
                     if (!tglLaju) return false;
                     return currentMonthDates.some(d => d.displayDate < tglLaju);
@@ -3865,7 +3865,7 @@
                 // Filter santri aktif khusus bulan ini di Asrama:
                 // Santri Laju hanya ditampilkan jika di dalam bulan ini terdapat tanggal SEBELUM tanggal ia mulai laju!
                 const activeSantriInMonth = activeSantriArr.filter(s => {
-                    if (statusSantriAsrama[s.pin] === 'laju') {
+                    if (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin') {
                         const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
                         if (!tglLaju) return false;
                         return datesInMonth.some(d => d.displayDate < tglLaju);
@@ -4688,7 +4688,7 @@
                 const aoaAsrama = [row1Asr, row2Asr];
                 const exportSantriAsr = santriList.filter(s => {
                     if (hiddenSantriAsrama[s.pin]) return false;
-                    if (statusSantriAsrama[s.pin] === 'laju') {
+                    if (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin') {
                         const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
                         if (!tglLaju) return false;
                         return datesInMonth.some(d => d.displayDate < tglLaju);
@@ -4892,7 +4892,7 @@
 
             const activeSantri = santriArr.filter(s => {
                 if (currentHidden[s.pin]) return false;
-                if (isAsrama && statusSantriAsrama[s.pin] === 'laju') {
+                if (isAsrama && (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin')) {
                     const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
                     if (!tglLaju) return false;
                     return currentMonthDates.some(d => d.displayDate < tglLaju);
