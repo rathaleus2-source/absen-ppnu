@@ -2715,6 +2715,13 @@
                     // Subuh batas akhir / cutoff pukul 07:00 WIB
                     return curMinutes < 7 * 60;
                 } else if (sesi === 'malam') {
+                    const day = now.getDay();
+                    if (day === 5) { // Jumat (Malam Sabtu)
+                        const mSetting = (typeof getMalamSabtuSetting === 'function') ? getMalamSabtuSetting(tgl) : 'pel1';
+                        if (mSetting === 'pel1') return curMinutes < (19 * 60 + 40);
+                        if (mSetting === 'pel2') return curMinutes < (21 * 60);
+                        if (mSetting === 'pel3') return curMinutes < (22 * 60 + 30);
+                    }
                     // Asrama malam batas akhir / cutoff pukul 23:00 WIB
                     return curMinutes < 23 * 60;
                 }
@@ -2754,7 +2761,18 @@
             let startMin = 0, cutoffMin = 0, startText = '', cutoffText = '';
             if (tab === 'asrama') {
                 if (sesi === 'subuh') { startMin = 4 * 60; cutoffMin = 7 * 60; startText = '04:00'; cutoffText = '07:00'; }
-                else { startMin = 18 * 60 + 30; cutoffMin = 23 * 60; startText = '18:30'; cutoffText = '23:00'; }
+                else { 
+                    const day = now.getDay();
+                    if (day === 5) {
+                        const todayISO = getTodayISODate();
+                        const mSetting = (typeof getMalamSabtuSetting === 'function') ? getMalamSabtuSetting(todayISO) : 'pel1';
+                        if (mSetting === 'pel2') { startMin = 19 * 60 + 40; cutoffMin = 21 * 60; startText = '19:40'; cutoffText = '21:00'; }
+                        else if (mSetting === 'pel3') { startMin = 21 * 60; cutoffMin = 22 * 60 + 30; startText = '21:00'; cutoffText = '22:30'; }
+                        else { startMin = 18 * 60 + 30; cutoffMin = 19 * 60 + 40; startText = '18:30'; cutoffText = '19:40'; }
+                    } else {
+                        startMin = 18 * 60 + 30; cutoffMin = 23 * 60; startText = '18:30'; cutoffText = '23:00'; 
+                    }
+                }
             } else {
                 if (sesi === 'sore') { startMin = 14 * 60; cutoffMin = 17 * 60 + 30; startText = '14:00'; cutoffText = '17:30'; }
                 else if (sesi === 'pel1') { startMin = 18 * 60 + 30; cutoffMin = 19 * 60 + 40; startText = '18:30'; cutoffText = '19:40'; }
@@ -2818,10 +2836,10 @@
                 subuh = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (disp) {
                 subuh = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
+            } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
+                subuh = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
             } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== 'LIBUR') {
                 subuh = raw.subuh;
-            } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
-                subuh = 'BELUM_MULAI';
             } else {
                 subuh = defItem.subuh;
             }
@@ -2837,10 +2855,10 @@
                 malam = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (disp) {
                 malam = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
+            } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
+                malam = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
             } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== 'LIBUR') {
                 malam = raw.malam;
-            } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
-                malam = 'BELUM_MULAI';
             } else {
                 malam = defItem.malam;
             }
@@ -2881,10 +2899,10 @@
                     res[sesi] = 'I'; // Ada surat izin resmi -> WAJIB IZIN
                 } else if (disp) {
                     res[sesi] = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
+                } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
+                    res[sesi] = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
                 } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== 'LIBUR') {
                     res[sesi] = raw[sesi];
-                } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
-                    res[sesi] = 'BELUM_MULAI';
                 } else {
                     res[sesi] = defItem[sesi];
                 }
