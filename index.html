@@ -135,8 +135,6 @@
             max-width: var(--col-pin-w) !important;
             box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
             background-color: #ffffff;
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
         }
         tbody tr:nth-child(even) .sticky-col-pin {
             background-color: #f8fafc !important;
@@ -162,8 +160,6 @@
             text-overflow: ellipsis !important;
             white-space: nowrap !important;
             background-color: #ffffff;
-            will-change: transform;
-            transform: translate3d(0, 0, 0);
         }
         tbody tr:nth-child(even) .sticky-col-nama {
             background-color: #f8fafc !important;
@@ -283,12 +279,27 @@
             font-size: calc(var(--cell-font) - 1.5px);
             font-weight: 800;
             user-select: none;
-            transition: transform 0.1s ease;
             white-space: nowrap;
             letter-spacing: -0.25px;
         }
-        .badge-cell:active {
-            transform: scale(0.92);
+        .is-admin-cell {
+            cursor: pointer;
+            transition: transform 0.1s ease, opacity 0.1s ease;
+        }
+        @media (hover: hover) {
+            .is-admin-cell:hover {
+                opacity: 0.8;
+            }
+            .is-admin-cell:active {
+                transform: scale(0.92);
+            }
+            #viewAsrama table.app-table tbody tr:hover,
+            #viewRekapitulasi table.app-table tbody tr:hover {
+                background-color: rgba(16, 185, 129, 0.08) !important;
+            }
+            #viewMDNU table.app-table tbody tr:hover {
+                background-color: rgba(99, 102, 241, 0.08) !important;
+            }
         }
 
         /* High-Performance Touch Scroll Container (Zero Lag Physics) */
@@ -299,13 +310,22 @@
             touch-action: pan-x pan-y;
             overscroll-behavior-x: contain;
             overscroll-behavior-y: auto;
+            contain: paint;
+            transform: translateZ(0);
         }
 
-        /* GPU & Rendering Acceleration for Massive Attendance Tables */
-        table.app-table tbody tr {
-            content-visibility: auto;
-            contain-intrinsic-size: auto 34px;
+        /* Standar rendering tabel murni tanpa content-visibility pada TR (mencegah layout thrashing pada sticky columns) */
+        table.app-table {
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+            width: max-content !important;
+            min-width: 100% !important;
+            font-size: var(--cell-font);
+            border: 1px solid #cbd5e1 !important;
+            background-color: #ffffff;
+            table-layout: auto !important;
         }
+
         .santri-card {
             content-visibility: auto;
             contain-intrinsic-size: auto 160px;
@@ -323,6 +343,12 @@
             .badge-cell,
             .santri-card {
                 transition: none !important;
+            }
+            .badge-cell:active {
+                transform: none !important;
+            }
+            table.app-table tr:hover {
+                background-color: inherit !important;
             }
         }
 
@@ -2711,7 +2737,17 @@
         }
 
         // Ambil info status sesi saat ini: 'belum_mulai' vs 'sedang_berlangsung' vs 'selesai'
+        let _sesiProgressCache = {};
+        let _sesiProgressCacheTime = 0;
         function getSesiProgressInfo(sesi, tab) {
+            const nowTime = Date.now();
+            if (nowTime - _sesiProgressCacheTime > 15000) {
+                _sesiProgressCache = {};
+                _sesiProgressCacheTime = nowTime;
+            }
+            const cacheKey = `${tab}_${sesi}`;
+            if (_sesiProgressCache[cacheKey]) return _sesiProgressCache[cacheKey];
+
             const now = new Date();
             const curMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -2726,13 +2762,16 @@
                 else if (sesi === 'pel3') { startMin = 21 * 60; cutoffMin = 22 * 60 + 30; startText = '21:00'; cutoffText = '22:30'; }
             }
 
+            let res;
             if (curMinutes < startMin) {
-                return { status: 'belum_mulai', text: `Sesi Belum Dimulai (Mulai ${startText} WIB)` };
+                res = { status: 'belum_mulai', text: `Sesi Belum Dimulai (Mulai ${startText} WIB)` };
             } else if (curMinutes < cutoffMin) {
-                return { status: 'sedang_berlangsung', text: `Sesi Sedang Berlangsung (Batas Absen s.d ${cutoffText} WIB)` };
+                res = { status: 'sedang_berlangsung', text: `Sesi Sedang Berlangsung (Batas Absen s.d ${cutoffText} WIB)` };
             } else {
-                return { status: 'selesai', text: `Sesi Telah Selesai (Batas ${cutoffText} WIB)` };
+                res = { status: 'selesai', text: `Sesi Telah Selesai (Batas ${cutoffText} WIB)` };
             }
+            _sesiProgressCache[cacheKey] = res;
+            return res;
         }
 
         // Helper Single-Source-of-Truth untuk Resolusi Cell Asrama & MDNU
@@ -3247,7 +3286,20 @@
             tampilkanToast(`✅ ${cleanPin} (${tgl} - ${sesi.toUpperCase()}): Diubah menjadi ${next === 'I' ? 'IZIN' : (next === 'H' ? 'HADIR' : 'ALPHA')}`);
         }
 
-                // Format Badge Tampilan Cell Standar Presisi (H, A, I, K, LIBUR, -)
+        // Global Delegated Click Handler untuk Cell Absensi (Zero Touch Lag di Mobile & Memori Hemat)
+        document.addEventListener('click', function (e) {
+            const badge = e.target.closest('.badge-cell[data-cell-pin]');
+            if (!badge) return;
+            const pin = badge.getAttribute('data-cell-pin');
+            const tgl = badge.getAttribute('data-cell-tgl');
+            const sesi = badge.getAttribute('data-cell-sesi');
+            const tab = badge.getAttribute('data-cell-tab');
+            if (pin && tgl && sesi && tab) {
+                cycleStatusCell(pin, tgl, sesi, tab);
+            }
+        });
+
+        // Format Badge Tampilan Cell Standar Presisi (H, A, I, K, LIBUR, -)
         function renderBadge(val, pin, tgl, sesi, tab, time) {
             if (val === 'LIBUR') {
                 return `<span class="inline-flex items-center justify-center px-1.5 h-6 rounded text-[10px] font-bold text-slate-400 bg-white border border-slate-200 select-none shadow-2xs">LIBUR</span>`;
@@ -3262,8 +3314,8 @@
                 return `<span class="badge-cell bg-indigo-100 text-indigo-900 border border-indigo-300 select-none shadow-2xs" title="Dispensasi: KKN / Tugas Pondok">K</span>`;
             }
             const isModeAdmin = (currentInterface === 'admin' && isAdmin);
-            const clickAttr = `onclick="cycleStatusCell('${pin}', '${tgl}', '${sesi}', '${tab}')"`;
-            const cursorClass = "cursor-pointer hover:opacity-80 active:scale-95";
+            const dataAttrs = `data-cell-pin="${pin}" data-cell-tgl="${tgl}" data-cell-sesi="${sesi}" data-cell-tab="${tab}"`;
+            const cursorClass = isModeAdmin ? "is-admin-cell cursor-pointer" : "cursor-pointer";
 
             if (val === 'BELUM_MULAI') {
                 const info = getSesiProgressInfo(sesi, tab);
@@ -3272,7 +3324,7 @@
                 const badgeStyle = isOngoing 
                     ? "bg-amber-50 text-amber-800 border-amber-300 font-bold" 
                     : "bg-slate-100/90 text-slate-400 border-slate-200";
-                return `<span ${clickAttr} 
+                return `<span ${dataAttrs} 
                     class="badge-cell ${badgeStyle} border ${cursorClass} select-none font-mono" 
                     title="${info.text}${hint}">-</span>`;
             }
@@ -3282,7 +3334,7 @@
                 const detail = permissionDetailsMap[`${pin}__${tgl}__${sesi}__${tab}`];
                 const durasiInfo = (detail && detail.durasi) ? ` [${detail.durasi}]` : '';
                 const detailText = detail ? ` - ${detail.alasan}${durasiInfo} (ACC: ${detail.pemberiIzin || detail.pemberi || '-'})` : '';
-                return `<span ${clickAttr} 
+                return `<span ${dataAttrs} 
                     class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none shadow-2xs font-bold" 
                     title="Status: IZIN${detailText}${hint}">I</span>`;
             }
@@ -3290,13 +3342,13 @@
             if (val === 'T' || val === 'TANGGUH') {
                 const hint = isModeAdmin ? " (Status: DITANGGUHKAN / TAKZIRAN - Klik untuk ganti: T -> H)" : "";
                 const scanInfo = time ? `Scan: ${time} | ` : '';
-                return `<span ${clickAttr} 
+                return `<span ${dataAttrs} 
                     class="badge-cell bg-amber-500 text-white border border-amber-600 ${cursorClass} select-none shadow-2xs font-bold" 
                     title="${scanInfo}Status: DITANGGUHKAN (Finger tapi tidak ngaji)${hint}">T</span>`;
             }
             if (val === 'A' || val === '-' || !val) {
                 const hint = isModeAdmin ? " (Klik untuk ganti: A -> I -> H)" : "";
-                return `<span ${clickAttr} 
+                return `<span ${dataAttrs} 
                     class="badge-cell bg-rose-100 text-rose-800 border border-rose-300 ${cursorClass} select-none shadow-2xs" 
                     title="Status: ALPHA${hint}">A</span>`;
             }
@@ -3305,7 +3357,7 @@
             const hint = isModeAdmin ? " (Klik untuk ganti: H -> A -> I)" : "";
             const displayHadir = (time && time.length >= 4) ? time.substring(0, 5) : 'H';
             const monoClass = (time && time.length >= 4) ? 'font-mono' : '';
-            return `<span ${clickAttr} 
+            return `<span ${dataAttrs} 
                 class="badge-cell bg-emerald-100 text-emerald-800 border border-emerald-300 ${cursorClass} select-none shadow-2xs ${monoClass}" 
                 title="${scanInfo}Status: HADIR${hint}">${displayHadir}</span>`;
         }
@@ -3868,7 +3920,7 @@
 
                     const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
-                    tbodyRows += `<tr class="${rowBg} hover:bg-emerald-50/50 transition-colors">
+                    tbodyRows += `<tr class="${rowBg}">
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
                         <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick">
                             <div class="flex items-center justify-between gap-1">
@@ -4089,7 +4141,7 @@
 
                     const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
-                    tbodyRows += `<tr class="${rowBg} hover:bg-indigo-50/50 transition-colors">
+                    tbodyRows += `<tr class="${rowBg}">
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
                         <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick">
                             <div class="flex items-center justify-between gap-1">
@@ -4273,7 +4325,7 @@
                     const cellPct = isOver ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
                     const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
-                    tbody += `<tr class="${rowBg} hover:bg-emerald-50/50 transition-colors">
+                    tbody += `<tr class="${rowBg}">
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
                         <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick truncate" title="${s.nama}">${s.nama}</td>
                         <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${stat.h}</td>
@@ -4357,7 +4409,7 @@
                     const cellPct = isOver ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
                     const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
-                    tbody += `<tr class="${rowBg} hover:bg-indigo-50/50 transition-colors">
+                    tbody += `<tr class="${rowBg}">
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
                         <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick truncate" title="${s.nama}">${s.nama}</td>
                         <td class="col-stat font-mono font-bold text-indigo-900 bg-indigo-50/40">${stat.h}</td>
@@ -4753,13 +4805,13 @@
                     <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
                     <div class="flex items-center gap-1">
                         ${data.isAsrama ? `
-                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'subuh', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
-                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'malam', 'asrama')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
+                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="subuh" data-cell-tab="asrama" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
+                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="malam" data-cell-tab="asrama" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
                         ` : `
-                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'sore', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
-                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel1', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
-                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel2', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'BELUM_MULAI' ? '-' : (d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3)}</span>
-                            <span onclick="cycleStatusCell('${pin}', '${d.tgl}', 'pel3', 'mdnu')" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'BELUM_MULAI' ? '-' : (d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4)}</span>
+                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="sore" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
+                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="pel1" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
+                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="pel2" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'BELUM_MULAI' ? '-' : (d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3)}</span>
+                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="pel3" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'BELUM_MULAI' ? '-' : (d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4)}</span>
                         `}
                     </div>
                 </div>
@@ -4820,7 +4872,7 @@
                 let h = 0, a = 0, i = 0, jp = 0;
                 let dailyDetails = [];
 
-                dateList.forEach(d => {
+                currentMonthDates.forEach(d => {
                     const tgl = d.displayDate;
                     if (isAsrama) {
                         const cell = getAsramaCell(pin, d.dayIndex, tgl);
@@ -6106,12 +6158,32 @@
             }, 300);
         }
 
+        // Update jam digital mandiri tanpa re-evaluasi seluruh array santri (Ultra-Lightweight < 0.1ms)
+        function updateDigitalClockWidget() {
+            const clockEl = document.getElementById('liveWidgetDigitalClock');
+            if (!clockEl) return;
+            const now = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const jamStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())} WIB`;
+            if (clockEl.innerText !== jamStr) {
+                clockEl.innerText = jamStr;
+            }
+        }
+
         // Inisialisasi Timer Realtime Clock Widget
         function initLiveTodayWidgetTimer() {
             if (liveClockIntervalId) clearInterval(liveClockIntervalId);
+            // Timer 1 detik HANYA update string jam:menit:detik digital
             liveClockIntervalId = setInterval(() => {
-                renderLiveTodayWidget();
+                updateDigitalClockWidget();
             }, 1000);
+
+            // Timer evaluasi sesi & statistik (tiap 60 detik atau saat data/tab berubah)
+            setInterval(() => {
+                renderLiveTodayWidget();
+            }, 60000);
+
+            updateDigitalClockWidget();
             renderLiveTodayWidget();
         }
 
