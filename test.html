@@ -326,22 +326,11 @@
             table-layout: auto !important;
         }
 
-        .santri-card {
-            content-visibility: auto;
-            contain-intrinsic-size: auto 160px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .santri-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.08);
-        }
-
         /* Prevent CPU style recalculation thrashing during mobile touch scroll */
         @media (hover: none) {
             table.app-table tr,
             table.app-table td,
-            .badge-cell,
-            .santri-card {
+            .badge-cell {
                 transition: none !important;
             }
             .badge-cell:active {
@@ -764,28 +753,21 @@
                 </div>
             </div>
 
-            <!-- Table & Card Container -->
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-5">
-                <!-- View Mode & Quick-Jump Toolbar (Tabel Matriks & Kartu Santri) -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                    <div class="flex items-center gap-2 flex-wrap">
-                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5 shrink-0">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                            Tampilan:
+            <!-- Table Container -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4">
+                <!-- Quick-Jump & Info Toolbar -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold shrink-0">
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            <span>Tabel Presensi</span>
                         </span>
-                        <div class="inline-flex p-1 bg-white border border-slate-300 rounded-xl shadow-2xs">
-                            <button id="btnViewMatrix" onclick="setViewMode('matrix')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-emerald-600 text-white shadow-xs flex items-center gap-1.5">
-                                <span>📊 Tabel Matriks</span>
-                            </button>
-                            <button id="btnViewCards" onclick="setViewMode('cards')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5">
-                                <span>📇 Kartu Santri</span>
-                            </button>
-                        </div>
+                        <span id="labelJumlahData" class="text-xs text-slate-600 font-semibold truncate">Menampilkan seluruh santri...</span>
                     </div>
 
                     <!-- Quick Jump Buttons for Tablet & Mobile -->
-                    <div id="tableJumpControls" class="flex items-center gap-1.5 justify-end">
-                        <span class="text-[11px] text-slate-500 font-semibold hidden md:inline">Geser:</span>
+                    <div id="tableJumpControls" class="flex items-center gap-1.5 justify-end shrink-0">
+                        <span class="text-[11px] text-slate-500 font-semibold hidden sm:inline">Geser Tanggal:</span>
                         <button onclick="scrollTableTo('start')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs transition shadow-2xs" title="Lompat ke Tanggal Awal">
                             &laquo; Awal
                         </button>
@@ -798,9 +780,8 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between text-xs text-slate-500 font-medium">
-                    <span id="labelJumlahData">Menampilkan seluruh baris santri...</span>
-                    <span class="text-slate-400">&larr; Gulir ke kanan untuk melihat tanggal berikutnya &rarr;</span>
+                <div class="flex items-center justify-end text-[11px] text-slate-400 font-medium px-1">
+                    <span>&larr; Geser tabel ke samping untuk melihat tanggal lainnya &rarr;</span>
                 </div>
 
                 <!-- VIEW: ASRAMA PUTRA (FORMAT MENDATAR) -->
@@ -816,11 +797,6 @@
                 <!-- VIEW: REKAPITULASI SANTRI (SEMUA BULAN / DARI AWAL S.D AKHIR PERIODE) -->
                 <div id="viewRekapitulasi" class="hidden space-y-6">
                     <!-- Populated dynamically via renderRekapitulasiSantri() -->
-                </div>
-
-                <!-- VIEW: KARTU SANTRI (MOBILE CARD VIEW) -->
-                <div id="viewCardList" class="hidden space-y-4">
-                    <!-- Populated dynamically via renderCardView() -->
                 </div>
 
                 <!-- Pilihan Bulan di Bawah Sendiri (Modern Horizontal Slider / Carousel) -->
@@ -3665,12 +3641,7 @@
                 lbl.innerText = `Menampilkan ${activeFiltered.length.toLocaleString('id-ID')} santri aktif${hiddenNote} (${currentMonthDates.length} hari kegiatan)`;
             }
 
-            if (currentViewMode === 'cards') {
-                renderCardView(filteredSantri);
-                return;
-            }
-
-            // Di mode matrix, hanya render tab yang sedang aktif untuk kecepatan maksimal (Zero Lag!)
+            // Hanya render tabel tab yang sedang aktif untuk kecepatan maksimal (Zero Lag!)
             if (activeTab === 'asrama') {
                 renderTableAsrama(filteredSantri);
             } else if (activeTab === 'mdnu') {
@@ -4161,7 +4132,7 @@
             }
 
             renderPillsFilterBulan();
-            setViewMode(currentViewMode);
+            syncTableView();
         }
 
         // Sub-tab untuk Rekapitulasi Santri: 'asrama_semua', 'mdnu_semua', 'analisis'
@@ -4618,70 +4589,30 @@
             XLSX.writeFile(wb, "Rekap_Absensi_PPNU_Matriks.xlsx");
         }
         // ========================================================
-        // RESPONSIVE VIEW ENGINE (AUTO-FIT, CARDS & SCROLL NAV)
+        // TAB VIEW ENGINE (ASRAMA, MDNU & REKAPITULASI)
         // ========================================================
-        let savedViewMode = localStorage.getItem('ppnu_view_mode');
-        let currentViewMode = savedViewMode || (window.innerWidth < 768 ? 'cards' : 'matrix');
-        if (currentViewMode === 'compact') {
-            currentViewMode = 'matrix';
-            try { localStorage.setItem('ppnu_view_mode', 'matrix'); } catch (e) {}
-        }
+        let currentViewMode = 'matrix';
+        try { localStorage.removeItem('ppnu_view_mode'); } catch (e) {}
 
-        function setViewMode(mode) {
-            if (mode === 'compact') mode = 'matrix';
-            currentViewMode = mode;
-            try { localStorage.setItem('ppnu_view_mode', mode); } catch (e) {}
-
-            const btnMatrix = document.getElementById('btnViewMatrix');
-            const btnCards = document.getElementById('btnViewCards');
-
-            // Warna tombol aktif selaras dengan tab (Asrama: Emerald, MDNU: Indigo, Rekap: Indigo-700)
-            const activeColor = (activeTab === 'mdnu') ? 'bg-indigo-600' : (activeTab === 'rekapitulasi' ? 'bg-indigo-700' : 'bg-emerald-600');
-            const activeBtnClass = `px-3 py-1.5 rounded-lg text-xs font-bold transition ${activeColor} text-white shadow-xs flex items-center gap-1.5`;
-            const inactiveBtnClass = 'px-3 py-1.5 rounded-lg text-xs font-bold transition bg-transparent text-slate-600 hover:text-slate-900 flex items-center gap-1.5';
-
-            if (btnMatrix) btnMatrix.className = (mode === 'matrix' ? activeBtnClass : inactiveBtnClass);
-            if (btnCards) btnCards.className = (mode === 'cards' ? activeBtnClass : inactiveBtnClass);
-
-            const viewCardList = document.getElementById('viewCardList');
+        function syncTableView() {
             const viewAsrama = document.getElementById('viewAsrama');
             const viewMDNU = document.getElementById('viewMDNU');
             const viewRekap = document.getElementById('viewRekapitulasi');
             const flNav = document.getElementById('floatingScrollNavigator');
 
-            // Handle Rekapitulasi: Multi-month spreadsheet matrix always takes precedence
-            if (activeTab === 'rekapitulasi') {
-                if (viewAsrama) viewAsrama.classList.add('hidden');
-                if (viewMDNU) viewMDNU.classList.add('hidden');
-                if (viewCardList) viewCardList.classList.add('hidden');
-                if (viewRekap) viewRekap.classList.remove('hidden');
-                if (flNav) {
-                    if (dateList.length > 0) flNav.classList.remove('hidden');
-                    else flNav.classList.add('hidden');
-                }
-            } else if (mode === 'cards') {
-                if (viewAsrama) viewAsrama.classList.add('hidden');
-                if (viewMDNU) viewMDNU.classList.add('hidden');
-                if (viewRekap) viewRekap.classList.add('hidden');
-                if (viewCardList) viewCardList.classList.remove('hidden');
-                if (flNav) flNav.classList.add('hidden');
-            } else {
-                if (viewCardList) viewCardList.classList.add('hidden');
-                if (viewAsrama) viewAsrama.classList.toggle('hidden', activeTab !== 'asrama');
-                if (viewMDNU) viewMDNU.classList.toggle('hidden', activeTab !== 'mdnu');
-                if (viewRekap) viewRekap.classList.add('hidden');
-                if (flNav) {
-                    if (dateList.length > 0) flNav.classList.remove('hidden');
-                    else flNav.classList.add('hidden');
-                }
-            }
+            if (viewAsrama) viewAsrama.classList.toggle('hidden', activeTab !== 'asrama');
+            if (viewMDNU) viewMDNU.classList.toggle('hidden', activeTab !== 'mdnu');
+            if (viewRekap) viewRekap.classList.toggle('hidden', activeTab !== 'rekapitulasi');
 
-            // Sync visibility of horizontal jump buttons based on view mode
-            const jumpControls = document.getElementById('tableJumpControls');
-            if (jumpControls) {
-                jumpControls.classList.toggle('hidden', mode === 'cards' && activeTab !== 'rekapitulasi');
+            if (flNav) {
+                if (dateList && dateList.length > 0) flNav.classList.remove('hidden');
+                else flNav.classList.add('hidden');
             }
             terapkanFilter();
+        }
+
+        function setViewMode(mode) {
+            syncTableView();
         }
 
         // Inisialisasi status hak akses UI saat pertama kali dimuat
@@ -4690,7 +4621,7 @@
             muatDariLocalStorage();
             updateUIAksesAdmin();
             initFirebase();
-            setViewMode(currentViewMode);
+            syncTableView();
         }
 
         if (document.readyState === 'loading') {
@@ -4722,205 +4653,6 @@
             } else if (pos === 'end') {
                 container.scrollTo({ left: container.scrollWidth, behavior: 'smooth' });
             }
-        }
-
-        // Cache & State for Ultra-Fast Mobile Card View
-        const cardDetailsCache = {};
-        const openCardPins = new Set();
-
-        function handleCardToggle(detailsEl, pin) {
-            if (detailsEl.open) {
-                openCardPins.add(pin);
-                populateCardDetailsBody(pin);
-            } else {
-                openCardPins.delete(pin);
-            }
-        }
-
-        function populateCardDetailsBody(pin) {
-            const bodyEl = document.getElementById(`cardDetailsBody_${pin}`);
-            if (!bodyEl) return;
-            const data = cardDetailsCache[pin];
-            if (!data || !data.dailyDetails) return;
-
-            bodyEl.innerHTML = data.dailyDetails.map(d => `
-                <div class="flex items-center justify-between py-1 text-[11px]">
-                    <span class="font-mono text-slate-600 font-medium">${d.tgl} (${d.hari})</span>
-                    <div class="flex items-center gap-1">
-                        ${data.isAsrama ? `
-                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="subuh" data-cell-tab="asrama" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
-                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="malam" data-cell-tab="asrama" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
-                        ` : `
-                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="sore" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s1 === 'H' ? 'badge-hadir' : (d.s1 === 'A' ? 'badge-absen' : (d.s1 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s1 === 'BELUM_MULAI' ? '-' : (d.s1 === 'H' && d.t1 ? d.t1.substring(0, 5) : d.s1)}</span>
-                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="pel1" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s2 === 'H' ? 'badge-hadir' : (d.s2 === 'A' ? 'badge-absen' : (d.s2 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s2 === 'BELUM_MULAI' ? '-' : (d.s2 === 'H' && d.t2 ? d.t2.substring(0, 5) : d.s2)}</span>
-                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="pel2" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s3 === 'H' ? 'badge-hadir' : (d.s3 === 'A' ? 'badge-absen' : (d.s3 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s3 === 'BELUM_MULAI' ? '-' : (d.s3 === 'H' && d.t3 ? d.t3.substring(0, 5) : d.s3)}</span>
-                            <span data-cell-pin="${pin}" data-cell-tgl="${d.tgl}" data-cell-sesi="pel3" data-cell-tab="mdnu" class="badge-cell cursor-pointer text-[10px] ${d.s4 === 'H' ? 'badge-hadir' : (d.s4 === 'A' ? 'badge-absen' : (d.s4 === 'I' ? 'badge-izin' : 'badge-libur'))}">${d.s4 === 'BELUM_MULAI' ? '-' : (d.s4 === 'H' && d.t4 ? d.t4.substring(0, 5) : d.s4)}</span>
-                        `}
-                    </div>
-                </div>
-            `).join('');
-            bodyEl.setAttribute('data-loaded', 'true');
-        }
-
-        function renderCardView(santriArr) {
-            const container = document.getElementById('viewCardList');
-            if (!container) return;
-
-            const isAsrama = (activeTab === 'asrama');
-            const isMDNU = (activeTab === 'mdnu');
-            const currentHidden = isAsrama ? hiddenSantriAsrama : (isMDNU ? hiddenSantriMDNU : {});
-
-            let currentMonthDates = dateList;
-            if (selectedMonthKey && selectedMonthKey !== 'all') {
-                const mObj = availableMonths.find(m => m.key === selectedMonthKey);
-                if (mObj && mObj.dates && mObj.dates.length > 0) currentMonthDates = mObj.dates;
-            }
-
-            const activeSantri = santriArr.filter(s => {
-                if (currentHidden[s.pin]) return false;
-                if (isAsrama && (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin')) {
-                    const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
-                    if (!tglLaju) return false;
-                    return currentMonthDates.some(d => d.displayDate < tglLaju);
-                }
-                return true;
-            });
-
-            if (activeSantri.length === 0) {
-                container.innerHTML = `
-                    <div class="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-400 space-y-2">
-                        <div class="text-3xl">&#128101;</div>
-                        <p class="font-bold text-sm text-slate-700">Tidak ada santri yang cocok.</p>
-                        <p class="text-xs">Coba sesuaikan kata kunci pencarian Anda.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            let cardsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
-
-            activeSantri.forEach(s => {
-                const pin = s.pin;
-                const nama = s.nama;
-                const st = (isAsrama ? statusSantriAsrama[pin] : statusSantriMDNU[pin]) || 'mukim';
-
-                let clsPrefix = pin.slice(0, 3).toUpperCase();
-                let avatarBg = 'from-emerald-600 to-teal-500';
-                if (clsPrefix.startsWith('2U')) avatarBg = 'from-blue-600 to-indigo-600';
-                else if (clsPrefix.startsWith('1U')) avatarBg = 'from-emerald-600 to-teal-600';
-                else if (clsPrefix.startsWith('2W')) avatarBg = 'from-violet-600 to-purple-600';
-                else if (clsPrefix.startsWith('1W')) avatarBg = 'from-amber-600 to-orange-600';
-                else if (clsPrefix.startsWith('2A')) avatarBg = 'from-rose-600 to-pink-600';
-
-                let h = 0, a = 0, i = 0, jp = 0;
-                let dailyDetails = [];
-
-                currentMonthDates.forEach(d => {
-                    const tgl = d.displayDate;
-                    if (isAsrama) {
-                        const cell = getAsramaCell(pin, d.dayIndex, tgl);
-                        if (cell.subuh === 'H') h++; else if (cell.subuh === 'A' || cell.subuh === 'T') a++; else if (cell.subuh === 'I') i++;
-                        if (cell.subuh !== 'LIBUR' && cell.subuh !== '-' && cell.subuh !== 'BELUM' && cell.subuh !== 'BELUM_MULAI' && cell.subuh !== 'NONAKTIF' && cell.subuh !== 'LAJU') jp++;
-
-                        if (cell.malam === 'H') h++; else if (cell.malam === 'A' || cell.malam === 'T') a++; else if (cell.malam === 'I') i++;
-                        if (cell.malam !== 'LIBUR' && cell.malam !== '-' && cell.malam !== 'BELUM' && cell.malam !== 'BELUM_MULAI' && cell.malam !== 'NONAKTIF' && cell.malam !== 'LAJU') jp++;
-
-                        dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.subuh, s2: cell.malam, t1: cell.subuh_time, t2: cell.malam_time });
-                    } else if (isMDNU) {
-                        const cell = getMDNUCell(pin, d.dayIndex, tgl);
-                        ['sore', 'pel1', 'pel2', 'pel3'].forEach(sesi => {
-                            const val = cell[sesi];
-                            if (val === 'H') h++; else if (val === 'A' || val === 'T') a++; else if (val === 'I') i++;
-                            if (val !== 'LIBUR' && val !== '-' && val !== 'BELUM' && val !== 'BELUM_MULAI' && val !== 'NONAKTIF' && val !== 'LAJU') jp++;
-                        });
-                        dailyDetails.push({ tgl: d.displayDate, hari: d.namaHari, s1: cell.sore, s2: cell.pel1, s3: cell.pel2, s4: cell.pel3, t1: cell.sore_time, t2: cell.pel1_time, t3: cell.pel2_time, t4: cell.pel3_time });
-                    } else {
-                        const cAsr = getAsramaCell(pin, d.dayIndex, tgl);
-                        const cMdn = getMDNUCell(pin, d.dayIndex, tgl);
-                        [cAsr.subuh, cAsr.malam, cMdn.sore, cMdn.pel1, cMdn.pel2, cMdn.pel3].forEach(v => {
-                            if (v === 'H') h++; else if (v === 'A' || v === 'T') a++; else if (v === 'I') i++;
-                            if (v !== 'LIBUR' && v !== '-' && v !== 'BELUM' && v !== 'BELUM_MULAI' && v !== 'NONAKTIF' && v !== 'LAJU') jp++;
-                        });
-                    }
-                });
-
-                const manualIzin = (manualIzinData[pin] && manualIzinData[pin][activeTab]) ? manualIzinData[pin][activeTab] : 0;
-                i += manualIzin;
-
-                const pct = jp > 0 ? ((a / jp) * 100).toFixed(1) : '0.0';
-                const isWarningAlpha = parseFloat(pct) >= 15.0;
-
-                let statusBadge = '<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Mukim</span>';
-                if (st === 'laju') statusBadge = '<span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Laju</span>';
-                else if (st === 'boyong') statusBadge = '<span class="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">Boyong</span>';
-
-                // Save data to cache for lazy rendering
-                cardDetailsCache[pin] = { dailyDetails, isAsrama };
-                const isOpen = openCardPins.has(pin);
-
-                cardsHtml += `
-                    <div class="santri-card bg-white rounded-2xl border border-slate-200 shadow-xs hover:border-indigo-300 p-4 flex flex-col justify-between space-y-3">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr ${avatarBg} text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-sm shadow-indigo-500/20 font-mono">
-                                    ${pin.slice(0, 4)}
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="font-mono text-xs font-black text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded">${pin}</span>
-                                        ${statusBadge}
-                                    </div>
-                                    <h4 class="font-bold text-sm text-slate-900 truncate mt-0.5" title="${nama}">${nama}</h4>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-5 gap-1.5 text-center bg-slate-50 p-2 rounded-xl border border-slate-200/70">
-                            <div class="bg-emerald-50/80 border border-emerald-200/60 rounded-lg py-1">
-                                <span class="block text-[10px] text-emerald-800 font-bold">Hadir</span>
-                                <span class="font-mono text-xs font-black text-emerald-700">${h}</span>
-                            </div>
-                            <div class="bg-rose-50/80 border border-rose-200/60 rounded-lg py-1">
-                                <span class="block text-[10px] text-rose-800 font-bold">Alpha</span>
-                                <span class="font-mono text-xs font-black text-rose-700">${a}</span>
-                            </div>
-                            <div class="bg-amber-50/80 border border-amber-200/60 rounded-lg py-1">
-                                <span class="block text-[10px] text-amber-800 font-bold">Izin</span>
-                                <span class="font-mono text-xs font-black text-amber-700">${i}</span>
-                            </div>
-                            <div class="bg-slate-100 border border-slate-200 rounded-lg py-1">
-                                <span class="block text-[10px] text-slate-600 font-bold">JP</span>
-                                <span class="font-mono text-xs font-black text-slate-800">${jp}</span>
-                            </div>
-                            <div class="${isWarningAlpha ? 'bg-red-600 text-white font-black' : 'bg-slate-100 text-slate-800'} rounded-lg py-1 border ${isWarningAlpha ? 'border-red-700 shadow-2xs' : 'border-slate-200'}">
-                                <span class="block text-[10px] ${isWarningAlpha ? 'text-red-100' : 'text-slate-600'} font-bold">% Alph</span>
-                                <span class="font-mono text-xs font-black">${pct}%</span>
-                            </div>
-                        </div>
-
-                        <details class="group text-xs pt-1 border-t border-slate-100" ontoggle="handleCardToggle(this, '${pin}')" ${isOpen ? 'open' : ''}>
-                            <summary class="cursor-pointer font-bold text-slate-600 hover:text-indigo-600 flex items-center justify-between py-1 select-none">
-                                <span class="flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5 text-slate-400 group-open:rotate-180 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                    <span>Rincian Absen (${dailyDetails.length} Hari)</span>
-                                </span>
-                                <span class="text-[10px] text-indigo-600 font-semibold group-open:hidden">Buka &darr;</span>
-                            </summary>
-                            <div id="cardDetailsBody_${pin}" class="mt-2 max-h-48 overflow-y-auto space-y-1 pr-1 divide-y divide-slate-100/80">
-                                ${isOpen ? '' : '<div class="py-2 text-center text-slate-400 text-[10px]">Klik untuk membuka rincian...</div>'}
-                            </div>
-                        </details>
-                    </div>
-                `;
-            });
-
-            cardsHtml += '</div>';
-            container.innerHTML = cardsHtml;
-
-            // Populate any currently open card details immediately
-            openCardPins.forEach(pin => {
-                populateCardDetailsBody(pin);
-            });
         }
         // ========================================================
         // MODAL & FUNGSI HAPUS / RESET DATA ABSENSI (ADMIN)
@@ -6056,10 +5788,6 @@
                 gantiTab('asrama');
             }
 
-            // 2. Pastikan tampilan adalah mode matriks spreadsheet
-            if (currentViewMode === 'cards') {
-                setViewMode('matrix');
-            }
 
             // 3. Pastikan bulan tanggal target aktif terpilih di filter bulan
             const targetMonthKey = targetTgl.substring(0, 7); // Format: 'YYYY-MM'
