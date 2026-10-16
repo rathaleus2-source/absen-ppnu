@@ -1561,6 +1561,32 @@
                 const data = JSON.parse(cached);
                 if (data && data.santriList && data.santriList.length > 0) {
                     console.log("Memuat data absensi instan dari LocalStorage Cache...");
+                    // Pembersihan instan Alpha prematur pada cache lokal hari ini jika ada
+                    const todayISO = getTodayISODate();
+                    if (data.mdnuMatrix) {
+                        Object.keys(data.mdnuMatrix).forEach(p => {
+                            const row = data.mdnuMatrix[p] && data.mdnuMatrix[p][todayISO];
+                            if (row) {
+                                ['sore', 'pel1', 'pel2', 'pel3'].forEach(s => {
+                                    if (row[s] === 'A' && !row[`${s}_time`] && isSesiBelumLewatBatas(todayISO, s, 'mdnu')) {
+                                        row[s] = '-';
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    if (data.asramaMatrix) {
+                        Object.keys(data.asramaMatrix).forEach(p => {
+                            const row = data.asramaMatrix[p] && data.asramaMatrix[p][todayISO];
+                            if (row) {
+                                ['subuh', 'malam'].forEach(s => {
+                                    if (row[s] === 'A' && !row[`${s}_time`] && isSesiBelumLewatBatas(todayISO, s, 'asrama')) {
+                                        row[s] = '-';
+                                    }
+                                });
+                            }
+                        });
+                    }
                     terapkanDataDariCloud(data);
                     return true;
                 }
@@ -1886,14 +1912,18 @@
 
                         if (defMdn[sName] === 'LIBUR') {
                             curMdn[sName] = 'LIBUR';
-                        } else if (curMdn[sName] === 'LIBUR') {
-                            // Sesi ini sekarang aktif, buang status LIBUR basi!
+                        } else if (curMdn[sName] === 'LIBUR' || curMdn[sName] === 'A') {
+                            // Sesi ini sekarang aktif: jangan vonis 'A' jika belum lewat cutoff!
                             if (ovr !== undefined) {
                                 curMdn[sName] = ovr;
                             } else if (hasIzin) {
                                 curMdn[sName] = 'I';
+                            } else if (curMdn[`${sName}_time`]) {
+                                curMdn[sName] = 'H';
+                            } else if (isSesiBelumLewatBatas(tglKey, sName, 'mdnu')) {
+                                curMdn[sName] = '-';
                             } else {
-                                curMdn[sName] = curMdn[`${sName}_time`] ? 'H' : 'A';
+                                curMdn[sName] = 'A';
                             }
                         }
                     });
@@ -1906,13 +1936,17 @@
                     const ovrAsr = (manualCellOverrides && manualCellOverrides[`${pin}__${tglKey}__malam__asrama`]);
                     if (defAsr.malam === 'LIBUR') {
                         curAsr.malam = 'LIBUR';
-                    } else if (curAsr.malam === 'LIBUR') {
+                    } else if (curAsr.malam === 'LIBUR' || curAsr.malam === 'A') {
                         if (ovrAsr !== undefined) {
                             curAsr.malam = ovrAsr;
                         } else if (hasIzinAsr) {
                             curAsr.malam = 'I';
+                        } else if (curAsr.malam_time) {
+                            curAsr.malam = 'H';
+                        } else if (isSesiBelumLewatBatas(tglKey, 'malam', 'asrama')) {
+                            curAsr.malam = '-';
                         } else {
-                            curAsr.malam = curAsr.malam_time ? 'H' : 'A';
+                            curAsr.malam = 'A';
                         }
                     }
                     asramaMatrix[pin][tglKey] = curAsr;
@@ -3335,7 +3369,12 @@
             const dataAttrs = `data-cell-pin="${pin}" data-cell-tgl="${tgl}" data-cell-sesi="${sesi}" data-cell-tab="${tab}"`;
             const cursorClass = isModeAdmin ? "is-admin-cell cursor-pointer" : "cursor-pointer";
 
-            if (val === 'BELUM_MULAI') {
+            // Proteksi Mutlak Cutoff Sesi (Rule 3 GEMINI.md):
+            // Jika sesi belum lewat cutoff dan tidak ada override manual admin, status WAJIB strip netral (-)
+            // Dilarang keras memvonis santri Alpha (A) sebelum jam cutoff sesi bersangkutan habis!
+            const ovrVal = (manualCellOverrides && manualCellOverrides[`${pin}__${tgl}__${sesi}__${tab}`]);
+            const isBelumCutoff = (typeof isSesiBelumLewatBatas === 'function') && isSesiBelumLewatBatas(tgl, sesi, tab);
+            if (val === 'BELUM_MULAI' || (ovrVal === undefined && isBelumCutoff && (val === '-' || val === 'A' || !val))) {
                 const info = getSesiProgressInfo(sesi, tab);
                 const hint = isModeAdmin ? " (Admin: Klik untuk set Hadir/Izin lebih awal)" : "";
                 const isOngoing = (info.status === 'sedang_berlangsung');
