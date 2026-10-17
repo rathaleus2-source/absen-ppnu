@@ -2290,6 +2290,19 @@
                 };
             }
 
+            // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
+            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-')
+            const tglMulaiAsr = (tanggalMulaiSantri && tanggalMulaiSantri[pin]);
+            if (tglMulaiAsr && tgl < tglMulaiAsr) {
+                return {
+                    subuh: 'BELUM',
+                    malam: 'BELUM',
+                    subuh_time: '',
+                    malam_time: '',
+                    isBelum: true
+                };
+            }
+
             const defItem = getAsramaDefault(pin, day, tgl);
             const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
             
@@ -2351,6 +2364,23 @@
         }
 
         function getMDNUCell(pin, day, tgl) {
+            // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
+            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-')
+            const tglMulaiMDNU = (tanggalMulaiSantri && tanggalMulaiSantri[pin]);
+            if (tglMulaiMDNU && tgl < tglMulaiMDNU) {
+                return {
+                    sore: 'BELUM',
+                    pel1: 'BELUM',
+                    pel2: 'BELUM',
+                    pel3: 'BELUM',
+                    sore_time: '',
+                    pel1_time: '',
+                    pel2_time: '',
+                    pel3_time: '',
+                    isBelum: true
+                };
+            }
+
             const defItem = getMDNUDefault(pin, day, tgl);
             const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
             const disp = getDispensasiSantri(pin, tgl);
