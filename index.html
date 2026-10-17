@@ -1789,14 +1789,14 @@
                 {
                     key: 'pel1',
                     title: 'Jam 1 (Sesi Awal)',
-                    jam: '18:30 - 19:39',
+                    jam: '18:30 - 19:40',
                     asrama: 'Asrama mengambil Jam 1',
                     mdnu: 'MDNU: Pel 2 & Pel 3 Aktif'
                 },
                 {
                     key: 'pel2',
                     title: 'Jam 2 (Sesi Tengah)',
-                    jam: '19:40 - 20:59',
+                    jam: '19:40 - 21:00',
                     asrama: 'Asrama mengambil Jam 2',
                     mdnu: 'MDNU: Pel 1 & Pel 3 Aktif'
                 },
@@ -3395,8 +3395,8 @@
                                     <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 rounded leading-tight mb-0.5">Malam Sabtu</span>
                                     <select onchange="ubahSettingMalamSabtuTanggal('${d.displayDate}', this.value)"
                                         class="text-[10px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500 max-w-[90px] truncate">
-                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:39)</option>
-                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40-20:59)</option>
+                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:40)</option>
+                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40-21:00)</option>
                                         <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (21:00-22:30)</option>
                                     </select>
                                 </div>
@@ -5200,7 +5200,7 @@
                 };
             }
 
-            // 5. Malam Pel 1 (18:30 - 19:39 WIB)
+            // 5. Malam Pel 1 (18:30 - 19:40 WIB)
             if (totalMenit >= (18 * 60 + 30) && totalMenit < (19 * 60 + 40)) {
                 if (day === 4) {
                     return {
@@ -5213,15 +5213,15 @@
                 }
                 return {
                     icon: '📖',
-                    title: 'Sesi Pelajaran 1 (18:30 - 19:39 WIB)',
+                    title: 'Sesi Pelajaran 1 (18:30 - 19:40 WIB)',
                     badge: '🟢 Sedang Berlangsung',
                     badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
                     desc: 'KBM MDNU Pelajaran 1 sedang berlangsung.'
                 };
             }
 
-            // 7. Malam Pel 2 (19:40 - 20:59 WIB)
-            if (totalMenit >= (19 * 60 + 40) && totalMenit <= (20 * 60 + 59)) {
+            // 7. Malam Pel 2 (19:40 - 21:00 WIB)
+            if (totalMenit >= (19 * 60 + 40) && totalMenit < (21 * 60)) {
                 if (day === 4) {
                     return {
                         icon: '🕌',
@@ -5233,7 +5233,7 @@
                 }
                 return {
                     icon: '📖',
-                    title: 'Sesi Pelajaran 2 (19:40 - 20:59 WIB)',
+                    title: 'Sesi Pelajaran 2 (19:40 - 21:00 WIB)',
                     badge: '🟢 Sedang Berlangsung',
                     badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
                     desc: 'KBM MDNU Pelajaran 2 sedang berlangsung.'
