@@ -1472,6 +1472,7 @@
 
         let manualIzinData = {};
         let activeTab = 'asrama';
+        let menuUtamaAktif = 'absen'; // 'absen' | 'santri'
         let rawUploadedRows = null;
         let availableMonths = [];
         let selectedMonthKey = ''; // Default dinamis ke bulan aktif/terakhir agar render cepat
@@ -2318,18 +2319,20 @@
             const disp = getDispensasiSantri(pin, tgl);
 
             let subuh = defItem.subuh;
-            if (defItem.subuh === 'LIBUR') {
-                subuh = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
+            if (specialLiburAsrama && specialLiburAsrama[tgl]) {
+                subuh = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
             } else if (ovrSubuh !== undefined) {
                 subuh = ovrSubuh;
-            } else if (raw.subuh_time) {
-                subuh = 'H'; // Scan fisik mesin selalu hadir!
+            } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== '') {
+                subuh = raw.subuh; // Ambil nilai riil database (H, A, I, LIBUR)
             } else if (hasIzinSubuh) {
                 subuh = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (disp) {
                 subuh = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
-            } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== '') {
-                subuh = raw.subuh; // Ambil nilai database (termasuk 'LIBUR' sebelum santri mondok)
+            } else if (defItem.subuh === 'LIBUR') {
+                subuh = 'LIBUR'; // Putihkan jika jadwal rutin memang LIBUR
+            } else if (raw.subuh_time) {
+                subuh = 'H'; // Scan fisik mesin selalu hadir!
             } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
                 subuh = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
             } else {
@@ -2337,18 +2340,20 @@
             }
 
             let malam = defItem.malam;
-            if (defItem.malam === 'LIBUR') {
-                malam = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
+            if (specialLiburAsrama && specialLiburAsrama[tgl]) {
+                malam = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
             } else if (ovrMalam !== undefined) {
                 malam = ovrMalam;
-            } else if (raw.malam_time) {
-                malam = 'H'; // Scan fisik mesin selalu hadir!
+            } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== '') {
+                malam = raw.malam; // Ambil nilai riil database (H, A, I, LIBUR)
             } else if (hasIzinMalam) {
                 malam = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (disp) {
                 malam = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
-            } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== '') {
-                malam = raw.malam; // Ambil nilai database (termasuk 'LIBUR' sebelum santri mondok)
+            } else if (defItem.malam === 'LIBUR') {
+                malam = 'LIBUR'; // Putihkan jika jadwal rutin memang LIBUR
+            } else if (raw.malam_time) {
+                malam = 'H'; // Scan fisik mesin selalu hadir!
             } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
                 malam = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
             } else {
@@ -2398,18 +2403,20 @@
                     : undefined;
                 const hasIzin = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__${sesi}__mdnu`] !== undefined);
 
-                if (defItem[sesi] === 'LIBUR') {
-                    res[sesi] = 'LIBUR'; // Putihkan total jika jadwal resmi sesi ini LIBUR!
+                if (specialLiburMDNU && specialLiburMDNU[tgl]) {
+                    res[sesi] = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
                 } else if (ovr !== undefined) {
                     res[sesi] = ovr;
-                } else if (res[`${sesi}_time`]) {
-                    res[sesi] = 'H'; // Scan fisik mesin selalu hadir!
+                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== '') {
+                    res[sesi] = raw[sesi]; // Ambil nilai riil database (H, A, I, LIBUR)
                 } else if (hasIzin) {
                     res[sesi] = 'I'; // Ada surat izin resmi -> WAJIB IZIN
                 } else if (disp) {
                     res[sesi] = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
-                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== '') {
-                    res[sesi] = raw[sesi]; // Ambil nilai riil database (termasuk 'LIBUR' sebelum santri mondok)
+                } else if (defItem[sesi] === 'LIBUR') {
+                    res[sesi] = 'LIBUR'; // Putihkan jika jadwal rutin sesi ini LIBUR
+                } else if (res[`${sesi}_time`]) {
+                    res[sesi] = 'H'; // Scan fisik mesin selalu hadir!
                 } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
                     res[sesi] = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
                 } else {
@@ -5509,7 +5516,6 @@
         // ========================================================
         // MODUL MENU UTAMA 2: DATA INDUK SANTRI & SINKRONISASI
         // ========================================================
-        let menuUtamaAktif = 'absen'; // 'absen' | 'santri'
         let filterStatusSantriInduk = 'all'; // 'all' | 'mukim' | 'laju' | 'boyong' | 'unregistered'
         let searchSantriIndukQuery = '';
 
