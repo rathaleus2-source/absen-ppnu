@@ -417,6 +417,17 @@
                     <span id="badgeNavSantriBelumMesin" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white animate-pulse"></span>
                     <span id="dockIndicatorSantri" class="hidden absolute -left-2 top-3 bottom-3 w-1.5 rounded-r-full bg-indigo-600"></span>
                 </button>
+
+                <!-- Tab 3: Izin (Perizinan Santri & Google Form) -->
+                <button type="button" id="btnDockIzin" onclick="gantiMenuUtama('izin')"
+                    class="sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+                    title="Menu Perizinan Santri & Form Online">
+                    <svg class="w-6 h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="text-[10px] font-bold mt-0.5">Izin</span>
+                    <span id="dockIndicatorIzin" class="hidden absolute -left-2 top-3 bottom-3 w-1.5 rounded-r-full bg-purple-600"></span>
+                </button>
             </nav>
         </div>
 
@@ -945,6 +956,180 @@
                         </thead>
                         <tbody id="tbodySantriInduk" class="divide-y divide-slate-200 text-xs sm:text-sm">
                             <!-- Populated dynamically via renderTabelSantriInduk() -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTAINER MENU 3: PERIZINAN SANTRI & GOOGLE FORM -->
+        <div id="containerMenuIzin" class="hidden space-y-8">
+            <!-- Hero Card: QR Code & Form Online Link -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-purple-500/30">
+                <div class="absolute -right-16 -top-16 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                    <!-- Left: QR Code Preview Frame -->
+                    <div class="flex flex-col items-center shrink-0">
+                        <div class="p-3 bg-white rounded-2xl shadow-2xl border-2 border-purple-400/50 flex flex-col items-center group relative">
+                            <img src="assets/qr_perizinan.png" alt="QR Code Perizinan Santri Nurul Ummah" class="w-36 h-36 sm:w-44 sm:h-44 object-contain rounded-xl" />
+                            <div class="mt-2 text-[10px] font-mono text-slate-600 font-bold tracking-tight text-center">
+                                bit.ly/PerizinanSantri...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Info & Action Buttons -->
+                    <div class="flex-1 space-y-3.5 text-center md:text-left">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold tracking-wide">
+                            <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                            LAYANAN PERIZINAN RESMI PPNU PUTRA
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Formulir &amp; Rekap Perizinan Santri</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                            Scan kode QR dengan kamera HP atau buka tautan di bawah untuk mengajukan perizinan santri secara online. Data perizinan otomatis terintegrasi dengan sistem presensi harian.
+                        </p>
+
+                        <!-- Buttons Row -->
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-1">
+                            <button type="button" onclick="bukaFormIzinOnline()"
+                                class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-purple-600/30 cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                <span>Buka Form Online</span>
+                            </button>
+                            <button type="button" onclick="salinLinkIzinOnline()"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-200 border border-purple-500/30 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <span>Salin Tautan</span>
+                            </button>
+                            <button type="button" onclick="unduhGambarQRIzin()"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <span>Unduh Gambar QR</span>
+                            </button>
+                            <button type="button" onclick="muatDataPerizinanGoogleForm(true)"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-purple-900/40 text-purple-300 border border-purple-500/40 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer active:scale-95" title="Perbarui data terbaru dari Google Form">
+                                <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span>Perbarui Data</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric Cards Perizinan -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        📋
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Izin Terdata</p>
+                        <h4 id="statTotalPengajuanIzin" class="text-2xl font-black text-slate-900 mt-0.5">0</h4>
+                        <span class="text-[11px] text-purple-700 font-semibold">Seluruh Rekap Form</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🟢
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Aktif Hari Ini</p>
+                        <h4 id="statIzinHariIni" class="text-2xl font-black text-emerald-600 mt-0.5">0</h4>
+                        <span class="text-[11px] text-emerald-700 font-semibold">Sedang Masa Izin</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        📅
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Izin Bulan Ini</p>
+                        <h4 id="statIzinBulanIni" class="text-2xl font-black text-indigo-600 mt-0.5">0</h4>
+                        <span class="text-[11px] text-indigo-700 font-semibold">Bulan Berjalan</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🏥
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Alasan Sakit</p>
+                        <h4 id="statIzinSakit" class="text-2xl font-black text-rose-600 mt-0.5">0</h4>
+                        <span class="text-[11px] text-rose-700 font-semibold">Perawatan / Sakit</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Data Perizinan Realtime -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5 sm:p-6">
+                <!-- Toolbar Tabel -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-100">
+                    <!-- Filter Chips -->
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button type="button" id="btnFilterIzin_all" onclick="setFilterIzinKategori('all')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-purple-700 text-white shadow-xs cursor-pointer">
+                            <span>Semua Data</span>
+                        </button>
+                        <button type="button" id="btnFilterIzin_today" onclick="setFilterIzinKategori('today')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Aktif Hari Ini</span>
+                        </button>
+                        <button type="button" id="btnFilterIzin_month" onclick="setFilterIzinKategori('month')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Bulan Ini</span>
+                        </button>
+                    </div>
+
+                    <!-- Search Input Izin & Status -->
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-72">
+                            <input type="text" id="inputSearchIzin" placeholder="Cari nama, kelas, atau alasan..."
+                                oninput="handleSearchIzin(this.value)" autocomplete="off" spellcheck="false"
+                                class="w-full pl-9 pr-7 py-2 bg-slate-50 hover:bg-white focus:bg-white text-slate-900 placeholder-slate-400 font-semibold border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs transition">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <button id="btnClearSearchIzin" type="button" onclick="clearSearchIzin()" class="hidden absolute right-2.5 top-2.5 text-slate-400 hover:text-rose-600 transition" title="Hapus">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Bar & Status Fetch -->
+                <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+                    <div class="flex items-center gap-2">
+                        <span id="statusIzinDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span id="statusIzinText" class="font-medium">Terkoneksi langsung ke Google Form Perizinan</span>
+                    </div>
+                    <span id="labelTotalIzinTampil" class="font-mono font-bold text-slate-600">0 data ditemukan</span>
+                </div>
+
+                <!-- Container Tabel -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-700 text-xs font-extrabold uppercase tracking-wider">
+                                <th class="py-3 px-3.5 w-12 text-center">No</th>
+                                <th class="py-3 px-3.5 min-w-[190px]">Nama Santri</th>
+                                <th class="py-3 px-3.5 w-32">Kelas Diniyah</th>
+                                <th class="py-3 px-3.5 w-44">Rentang Tanggal</th>
+                                <th class="py-3 px-3.5 w-36">Sesi Kegiatan</th>
+                                <th class="py-3 px-3.5 min-w-[200px]">Keperluan / Alasan</th>
+                                <th class="py-3 px-3.5 w-32 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyPerizinan" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                            <tr>
+                                <td colspan="7" class="py-12 text-center text-slate-400">
+                                    <span class="animate-pulse font-medium">Memuat data perizinan Google Form...</span>
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -3265,6 +3450,10 @@
                     if (santriInp && santriInp.value !== val) santriInp.value = val;
                     searchSantriIndukQuery = (val || '').toLowerCase().trim();
                     renderTabelSantriInduk();
+                } else if (menuUtamaAktif === 'izin') {
+                    const izinInp = document.getElementById('inputSearchIzin');
+                    if (izinInp && izinInp.value !== val) izinInp.value = val;
+                    if (typeof handleSearchIzin === 'function') handleSearchIzin(val);
                 } else {
                     terapkanFilter();
                 }
@@ -5543,6 +5732,7 @@
             menuUtamaAktif = menu;
             const secAbsen = document.getElementById('containerMenuAbsen');
             const secSantri = document.getElementById('containerMenuSantri');
+            const secIzin = document.getElementById('containerMenuIzin');
             const titleEl = document.getElementById('headerMainTitle');
             const searchInput = document.getElementById('filterSearch');
             const mobSearchInput = document.getElementById('mobileFilterSearch');
@@ -5552,47 +5742,72 @@
             // Dock buttons
             const dockAbsen = document.getElementById('btnDockAbsen');
             const dockSantri = document.getElementById('btnDockSantri');
+            const dockIzin = document.getElementById('btnDockIzin');
             const dockIndAbsen = document.getElementById('dockIndicatorAbsen');
             const dockIndSantri = document.getElementById('dockIndicatorSantri');
+            const dockIndIzin = document.getElementById('dockIndicatorIzin');
 
             // Mobile drawer buttons
             const mobBtnAbsen = document.getElementById('mobileNavBtnAbsen');
             const mobBtnSantri = document.getElementById('mobileNavBtnSantri');
+            const mobBtnIzin = document.getElementById('mobileNavBtnIzin');
+
+            // Reset all dock buttons
+            if (dockAbsen) dockAbsen.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+            if (dockSantri) dockSantri.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+            if (dockIzin) dockIzin.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+
+            if (dockIndAbsen) dockIndAbsen.classList.add('hidden');
+            if (dockIndSantri) dockIndSantri.classList.add('hidden');
+            if (dockIndIzin) dockIndIzin.classList.add('hidden');
+
+            if (mobBtnAbsen) mobBtnAbsen.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
+            if (mobBtnSantri) mobBtnSantri.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
+            if (mobBtnIzin) mobBtnIzin.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
+
+            if (secAbsen) secAbsen.classList.add('hidden');
+            if (secSantri) secSantri.classList.add('hidden');
+            if (secIzin) secIzin.classList.add('hidden');
 
             if (menu === 'absen') {
                 if (titleEl) titleEl.innerText = "Absen";
                 if (catPills) catPills.classList.remove('hidden');
                 if (mobCatBar) mobCatBar.classList.remove('hidden');
                 if (secAbsen) secAbsen.classList.remove('hidden');
-                if (secSantri) secSantri.classList.add('hidden');
                 if (searchInput) searchInput.placeholder = "Cari PIN atau Nama Santri...";
                 if (mobSearchInput) mobSearchInput.placeholder = "Cari PIN atau Nama Santri...";
 
                 if (dockAbsen) dockAbsen.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 bg-emerald-600 text-white shadow-md shadow-emerald-600/30 cursor-pointer';
-                if (dockSantri) dockSantri.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
                 if (dockIndAbsen) dockIndAbsen.classList.remove('hidden');
-                if (dockIndSantri) dockIndSantri.classList.add('hidden');
-
                 if (mobBtnAbsen) mobBtnAbsen.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold bg-emerald-600 text-white shadow-sm transition';
-                if (mobBtnSantri) mobBtnSantri.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
-            } else {
+            } else if (menu === 'santri') {
                 if (titleEl) titleEl.innerText = "Data Santri";
                 if (catPills) catPills.classList.add('hidden');
                 if (mobCatBar) mobCatBar.classList.add('hidden');
-                if (secAbsen) secAbsen.classList.add('hidden');
                 if (secSantri) secSantri.classList.remove('hidden');
                 if (searchInput) searchInput.placeholder = "Cari PIN, Nama, Kelas di Data Induk...";
                 if (mobSearchInput) mobSearchInput.placeholder = "Cari PIN, Nama, Kelas di Data Induk...";
 
                 if (dockSantri) dockSantri.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/30 cursor-pointer';
-                if (dockAbsen) dockAbsen.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
                 if (dockIndSantri) dockIndSantri.classList.remove('hidden');
-                if (dockIndAbsen) dockIndAbsen.classList.add('hidden');
-
                 if (mobBtnSantri) mobBtnSantri.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold bg-indigo-600 text-white shadow-sm transition';
-                if (mobBtnAbsen) mobBtnAbsen.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
 
                 renderMenuDataSantri();
+            } else if (menu === 'izin') {
+                if (titleEl) titleEl.innerText = "Perizinan Santri";
+                if (catPills) catPills.classList.add('hidden');
+                if (mobCatBar) mobCatBar.classList.add('hidden');
+                if (secIzin) secIzin.classList.remove('hidden');
+                if (searchInput) searchInput.placeholder = "Cari Nama, Kelas, Alasan Izin...";
+                if (mobSearchInput) mobSearchInput.placeholder = "Cari Nama, Kelas, Alasan Izin...";
+
+                if (dockIzin) dockIzin.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 bg-purple-700 text-white shadow-md shadow-purple-700/30 cursor-pointer';
+                if (dockIndIzin) dockIndIzin.classList.remove('hidden');
+                if (mobBtnIzin) mobBtnIzin.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold bg-purple-700 text-white shadow-sm transition';
+
+                if (typeof renderMenuPerizinan === 'function') {
+                    renderMenuPerizinan();
+                }
             }
         }
 
@@ -7069,6 +7284,15 @@
                         <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         <span>Data Santri</span>
                     </button>
+
+                    <button type="button" onclick="gantiMenuUtama('izin'); toggleMobileNavDrawer(false)"
+                        id="mobileNavBtnIzin"
+                        class="w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Perizinan Santri</span>
+                    </button>
                 </div>
             </div>
 
@@ -7206,10 +7430,11 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 
+    <!-- Modul Eksternal Terpisah: Perizinan Santri & Google Form -->
+    <script src="js/perizinan.js"></script>
 </body>
 
 <!-- Build Timestamp: 2026-10-15 23:44:00 -->
