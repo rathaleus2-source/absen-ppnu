@@ -1422,6 +1422,9 @@
             frozenUntilDate = data.frozenUntilDate || '2026-09-30';
             updateFreezeUI();
             dataSantriInduk = data.dataSantriInduk || [];
+            if (Array.isArray(dataSantriInduk) && typeof compareSantriInduk === 'function') {
+                dataSantriInduk.sort(compareSantriInduk);
+            }
             if (data.meta && data.meta.lastSantriSync) {
                 const elLast = document.getElementById('labelLastSantriSync');
                 if (elLast) elLast.innerText = `Terakhir disinkronkan: ${data.meta.lastSantriSync}`;
@@ -1664,6 +1667,7 @@
         let rawUploadedRows = null;
         let availableMonths = [];
         let selectedMonthKey = ''; // Default dinamis ke bulan aktif/terakhir agar render cepat
+        let dataSantriInduk = []; // Direktori Data Induk Santri PPNU
 
         // Konfigurasi Admin: Jam Malam Sabtu yang dialokasikan untuk Asrama per tanggal ('pel1' atau 'pel2')
         let settingMalamSabtuPerTanggal = {}; // Contoh: { '9/4/2026': 'pel1', '9/11/2026': 'pel2' }
@@ -1683,32 +1687,45 @@
         let hideEmptyLiburColumns = localStorage.getItem('ppnu_hide_empty_libur') !== 'false'; // Default: true
 
         function toggleHideEmptyLibur() {
-            if (!isAdmin) {
-                bukaModalLoginAdmin();
-                return;
-            }
             hideEmptyLiburColumns = !hideEmptyLiburColumns;
             try { localStorage.setItem('ppnu_hide_empty_libur', hideEmptyLiburColumns ? 'true' : 'false'); } catch (e) {}
             updateToggleHideLiburUI();
             terapkanFilter();
-            simpanKeLocalStorage();
-            simpanKeCloud();
-            tampilkanToast(hideEmptyLiburColumns 
-                ? "Kolom libur kosong disembunyikan (berlaku untuk Publik & Admin)." 
-                : "Seluruh kolom libur ditampilkan penuh (berlaku untuk Publik & Admin).");
+            if (isAdmin) {
+                simpanKeLocalStorage();
+                simpanKeCloud();
+                tampilkanToast(hideEmptyLiburColumns 
+                    ? "Kolom libur kosong disembunyikan (disimpan ke Cloud)." 
+                    : "Seluruh kolom libur ditampilkan penuh (disimpan ke Cloud).");
+            } else {
+                tampilkanToast(hideEmptyLiburColumns 
+                    ? "Kolom libur kosong disembunyikan." 
+                    : "Seluruh kolom libur ditampilkan penuh.");
+            }
         }
 
         function updateToggleHideLiburUI() {
             const btn = document.getElementById('btnToggleHideLibur');
             const lbl = document.getElementById('labelToggleHideLibur');
-            if (!btn || !lbl) return;
-
-            if (hideEmptyLiburColumns) {
-                btn.className = "px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
-                lbl.innerText = "Kolom Libur: Disembunyikan";
-            } else {
-                btn.className = "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
-                lbl.innerText = "Kolom Libur: Tampil Penuh";
+            if (btn && lbl) {
+                if (hideEmptyLiburColumns) {
+                    btn.className = "px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
+                    lbl.innerText = "Kolom Libur: Disembunyikan";
+                } else {
+                    btn.className = "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
+                    lbl.innerText = "Kolom Libur: Tampil Penuh";
+                }
+            }
+            const btnRekap = document.getElementById('btnToggleHideLiburRekap');
+            const lblRekap = document.getElementById('labelToggleHideLiburRekap');
+            if (btnRekap && lblRekap) {
+                if (hideEmptyLiburColumns) {
+                    btnRekap.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border-emerald-300";
+                    lblRekap.innerText = "Kolom Libur: Sembunyi";
+                } else {
+                    btnRekap.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border bg-white hover:bg-slate-50 text-slate-700 border-slate-300";
+                    lblRekap.innerText = "Kolom Libur: Tampil Semua";
+                }
             }
         }
 
@@ -4017,7 +4034,15 @@
             }
 
             const isModeAdmin = (currentInterface === 'admin' && isAdmin);
-            const activeSantriAsr = santriArr.filter(s => !hiddenSantriAsrama[s.pin]);
+            const activeSantriAsr = santriArr.filter(s => {
+                if (hiddenSantriAsrama[s.pin]) return false;
+                if (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin') {
+                    const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
+                    if (!tglLaju) return false;
+                    return dateList.some(d => d.displayDate < tglLaju);
+                }
+                return true;
+            });
             const activeSantriMdn = santriArr.filter(s => !hiddenSantriMDNU[s.pin]);
 
             const tglAwal = dateList[0].displayDate;
@@ -4025,27 +4050,56 @@
 
             // Navigasi Sub-Tab Rekapitulasi
             let navSubTabs = `
-                <div class="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-2 flex-wrap border border-slate-300 mb-4">
-                    <button onclick="gantiSubTabRekap('asrama_semua')"
-                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
-                        <span>Asrama Putra (Awal s.d Akhir)</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriAsr.length} Santri</span>
-                    </button>
-                    <button onclick="gantiSubTabRekap('mdnu_semua')"
-                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
-                        <span>MDNU Putra (Awal s.d Akhir)</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriMdn.length} Santri</span>
-                    </button>
-                    <button onclick="gantiSubTabRekap('analisis')"
-                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'analisis' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
-                        <span>Analisis Ketidakhadiran (&gt;15%)</span>
-                    </button>
+                <div class="bg-slate-100 p-1.5 rounded-2xl flex items-center justify-between gap-2 flex-wrap border border-slate-300 mb-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="gantiSubTabRekap('asrama_semua')"
+                            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
+                            <span>Asrama Putra (Awal s.d Akhir)</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriAsr.length} Santri</span>
+                        </button>
+                        <button onclick="gantiSubTabRekap('mdnu_semua')"
+                            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
+                            <span>MDNU Putra (Awal s.d Akhir)</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriMdn.length} Santri</span>
+                        </button>
+                        <button onclick="gantiSubTabRekap('analisis')"
+                            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'analisis' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
+                            <span>Analisis Ketidakhadiran (&gt;15%)</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btnToggleHideLiburRekap" onclick="toggleHideEmptyLibur()" 
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border ${hideEmptyLiburColumns ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border-emerald-300' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}"
+                            title="Sembunyikan atau tampilkan kolom libur kosong">
+                            <svg class="w-3.5 h-3.5 ${hideEmptyLiburColumns ? 'text-emerald-700' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                            <span id="labelToggleHideLiburRekap">${hideEmptyLiburColumns ? 'Kolom Libur: Sembunyi' : 'Kolom Libur: Tampil Semua'}</span>
+                        </button>
+                    </div>
                 </div>
             `;
             let contentHtml = '';
 
             // 1. KONTEN TAB: REKAP ASRAMA SEMUA BULAN
             if (activeSubTabRekap === 'asrama_semua') {
+                // Peta Sesi Aktif per Tanggal (sembunyikan kolom/tanggal libur jika hideEmptyLiburColumns = true)
+                const activePinsAsr = activeSantriAsr.map(s => s.pin);
+                const activeDateSessionsMapAsr = new Map();
+                dateList.forEach(d => {
+                    let sessList = ['subuh', 'malam'];
+                    if (hideEmptyLiburColumns) {
+                        sessList = sessList.filter(sess => {
+                            return activePinsAsr.some(pin => {
+                                const row = getAsramaCell(pin, d.dayIndex, d.displayDate);
+                                const v = row[sess];
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S' || v === 'BELUM_MULAI';
+                            });
+                        });
+                    }
+                    if (sessList.length > 0) {
+                        activeDateSessionsMapAsr.set(d.displayDate, sessList);
+                    }
+                });
+
                 let h1 = `<tr>
                     <th rowspan="2" class="col-pin sticky-col-pin bg-emerald-100 text-emerald-950 font-black">PIN</th>
                     <th rowspan="2" class="col-nama sticky-col-nama bg-emerald-100 text-emerald-950 font-black border-r-thick">NAMA SANTRI</th>
@@ -4060,17 +4114,26 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Total Jam Pelajaran">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
+                let countRenderedDates = 0;
                 dateList.forEach(d => {
+                    const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                    if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
+                    countRenderedDates++;
+
                     const bgH = specialLiburAsrama[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-emerald-100");
-                    h1 += `<th colspan="2" class="${bgH} py-1.5 px-1">
+                    h1 += `<th colspan="${sessList.length}" class="${bgH} py-1.5 px-1">
                         <span class="block text-xs font-black text-emerald-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-emerald-800 font-semibold">${d.displayDate}</span>
                     </th>`;
+
                     let mlm = (d.dayIndex === 5) ? (getMalamSabtuSetting(d.displayDate) === 'pel1' ? "Malam (Jam 1)" : "Malam (Jam 2)") : "Malam";
-                    h2 += `
-                        <th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>
-                        <th class="col-sesi bg-emerald-50 text-emerald-950">${mlm}</th>
-                    `;
+                    sessList.forEach(sess => {
+                        if (sess === 'subuh') {
+                            h2 += `<th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>`;
+                        } else {
+                            h2 += `<th class="col-sesi bg-emerald-50 text-emerald-950">${mlm}</th>`;
+                        }
+                    });
                 });
                 h1 += `</tr>`;
                 h2 += `</tr>`;
@@ -4084,7 +4147,12 @@
 
                     tbody += `<tr class="${rowBg}">
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
-                        <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick truncate" title="${s.nama}">${s.nama}</td>
+                        <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick truncate" title="${s.nama}">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="truncate" title="${s.nama}">${s.nama}</span>
+                                ${(statusSantriAsrama[s.pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin]) ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0" title="Santri Laju mulai ${tglMulaiLajuSantri[s.pin]}">LAJU</span>` : ''}
+                            </div>
+                        </td>
                         <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${stat.h}</td>
                         <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${stat.a}</td>
                         <td class="col-stat font-mono font-bold text-amber-900 bg-amber-50/40">${stat.i}</td>
@@ -4092,20 +4160,26 @@
                         <td class="col-pct font-mono border-r-thick ${cellPct}">${stat.persen}%</td>`;
 
                     dateList.forEach(d => {
+                        const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
                         const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
-                        tbody += `
-                            <td class="col-sesi">${renderBadge(item.subuh, s.pin, d.displayDate, 'subuh', 'asrama', item.subuh_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.malam, s.pin, d.displayDate, 'malam', 'asrama', item.malam_time)}</td>
-                        `;
+                        sessList.forEach(sess => {
+                            tbody += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'asrama', item[sess + '_time'])}</td>`;
+                        });
                     });
                     tbody += `</tr>`;
                 });
+
+                const infoTanggalAsr = hideEmptyLiburColumns
+                    ? `${countRenderedDates} Hari Aktif (${dateList.length} Total Hari)`
+                    : `${dateList.length} Tanggal Keseluruhan (Termasuk Libur)`;
 
                 contentHtml = `
                     <div class="space-y-2">
                         <div class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-900 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-xs flex items-center justify-between">
                             <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI ASRAMA PUTRA - DARI ${tglAwal} S.D ${tglAkhir}</span>
-                            <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${dateList.length} Tanggal Keseluruhan</span>
+                            <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${infoTanggalAsr}</span>
                         </div>
                         <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
@@ -4126,6 +4200,25 @@
                 const tglAwalMdn = mdnuDateList.length > 0 ? mdnuDateList[0].displayDate : '-';
                 const tglAkhirMdn = mdnuDateList.length > 0 ? mdnuDateList[mdnuDateList.length - 1].displayDate : '-';
 
+                // Peta Sesi Aktif per Tanggal MDNU
+                const activePinsMDN = activeSantriMdn.map(s => s.pin);
+                const activeDateSessionsMapMDNU = new Map();
+                mdnuDateList.forEach(d => {
+                    let sessList = ['sore', 'pel1', 'pel2', 'pel3'];
+                    if (hideEmptyLiburColumns) {
+                        sessList = sessList.filter(sess => {
+                            return activePinsMDN.some(pin => {
+                                const row = getMDNUCell(pin, d.dayIndex, d.displayDate);
+                                const v = row[sess];
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S' || v === 'BELUM_MULAI';
+                            });
+                        });
+                    }
+                    if (sessList.length > 0) {
+                        activeDateSessionsMapMDNU.set(d.displayDate, sessList);
+                    }
+                });
+
                 let h1 = `<tr>
                     <th rowspan="2" class="col-pin sticky-col-pin bg-indigo-100 text-indigo-950 font-black">PIN</th>
                     <th rowspan="2" class="col-nama sticky-col-nama bg-indigo-100 text-indigo-950 font-black border-r-thick">NAMA SANTRI</th>
@@ -4140,9 +4233,14 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Total Jam Pelajaran">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
+                let countRenderedDatesMdn = 0;
                 mdnuDateList.forEach(d => {
+                    const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                    if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
+                    countRenderedDatesMdn++;
+
                     const bgH = specialLiburMDNU[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-indigo-100");
-                    h1 += `<th colspan="4" class="${bgH} py-1.5 px-1">
+                    h1 += `<th colspan="${sessList.length}" class="${bgH} py-1.5 px-1">
                         <span class="block text-xs font-black text-indigo-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-indigo-800 font-semibold">${d.displayDate}</span>
                     </th>`;
@@ -4153,12 +4251,13 @@
                         if (cur === 'pel1') p1 = '<span class="text-rose-700">Pel 1 (Asr)</span>';
                         else p2 = '<span class="text-rose-700">Pel 2 (Asr)</span>';
                     }
-                    h2 += `
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">${p1}</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">${p2}</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>
-                    `;
+
+                    sessList.forEach(sess => {
+                        if (sess === 'sore') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>`;
+                        else if (sess === 'pel1') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p1}</th>`;
+                        else if (sess === 'pel2') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p2}</th>`;
+                        else if (sess === 'pel3') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>`;
+                    });
                 });
                 h1 += `</tr>`;
                 h2 += `</tr>`;
@@ -4180,22 +4279,26 @@
                         <td class="col-pct font-mono border-r-thick ${cellPct}">${stat.persen}%</td>`;
 
                     mdnuDateList.forEach(d => {
+                        const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
                         const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
-                        tbody += `
-                            <td class="col-sesi">${renderBadge(item.sore, s.pin, d.displayDate, 'sore', 'mdnu', item.sore_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel1, s.pin, d.displayDate, 'pel1', 'mdnu', item.pel1_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel2, s.pin, d.displayDate, 'pel2', 'mdnu', item.pel2_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel3, s.pin, d.displayDate, 'pel3', 'mdnu', item.pel3_time)}</td>
-                        `;
+                        sessList.forEach(sess => {
+                            tbody += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'mdnu', item[sess + '_time'])}</td>`;
+                        });
                     });
                     tbody += `</tr>`;
                 });
+
+                const infoTanggalMdn = hideEmptyLiburColumns
+                    ? `${countRenderedDatesMdn} Hari Aktif (${mdnuDateList.length} Total Hari)`
+                    : `${mdnuDateList.length} Tanggal Keseluruhan (Termasuk Libur)`;
 
                 contentHtml = `
                     <div class="space-y-2">
                         <div class="bg-gradient-to-r from-indigo-800 via-indigo-700 to-slate-900 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-xs flex items-center justify-between">
                             <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI MDNU PUTRA - DARI ${tglAwalMdn} S.D ${tglAkhirMdn}</span>
-                            <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${mdnuDateList.length} Tanggal Keseluruhan</span>
+                            <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${infoTanggalMdn}</span>
                         </div>
                         <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
@@ -5852,6 +5955,98 @@
             }, 100);
         }
 
+        // ========================================================
+        // LOGIKA SORTING DATA SANTRI INDUK (KELAS & BOYONG)
+        // Urutan: 2 Ulya > 1 Ulya > 2 Wustho > 1 Wustho > 2 Awaliyah > Boyong (Paling Bawah)
+        // ========================================================
+        function getInferredClassName(pin) {
+            const p = String(pin || '').toUpperCase().trim();
+            if (p.startsWith('2UA') || p.startsWith('2UB')) return '2 Ulya';
+            if (p.startsWith('1UA') || p.startsWith('1UB')) return '1 Ulya';
+            if (p.startsWith('2WA') || p.startsWith('2WB')) return '2 Wustho';
+            if (p.startsWith('1WA') || p.startsWith('1WB')) return '1 Wustho';
+            if (p.startsWith('2AA') || p.startsWith('2AW')) return '2 Awaliyah';
+            if (p.startsWith('1AA') || p.startsWith('1AW')) return '1 Awaliyah';
+            return null;
+        }
+
+        function getKelasPrioritySantriInduk(kelas, pin) {
+            const k = String(kelas || '').toLowerCase().trim();
+            const p = String(pin || '').toUpperCase().trim();
+
+            // 1. Kelas 2 Ulya
+            if ((k.includes('ulya') && k.includes('2')) || p.startsWith('2UA') || p.startsWith('2UB') || k.includes('2ua')) {
+                return 1;
+            }
+            // 2. Kelas 1 Ulya
+            if ((k.includes('ulya') && k.includes('1')) || p.startsWith('1UA') || p.startsWith('1UB') || k.includes('1ua')) {
+                return 2;
+            }
+            // 3. Kelas 2 Wustho (Wajib hindari false match k.includes('wa') karena 'awaliyah' mengandung 'wa')
+            if ((k.includes('wustho') && k.includes('2')) || p.startsWith('2WA') || p.startsWith('2WB') || /\b2\s*w/i.test(k)) {
+                return 3;
+            }
+            // 4. Kelas 1 Wustho
+            if ((k.includes('wustho') && k.includes('1')) || p.startsWith('1WA') || p.startsWith('1WB') || /\b1\s*w/i.test(k)) {
+                return 4;
+            }
+            // 5. Kelas 2 Awaliyah
+            if (((k.includes('awaliyah') || k.includes('ula')) && k.includes('2')) || p.startsWith('2AA') || p.startsWith('2AW') || /\b2\s*(aa|aw|awaliyah)\b/i.test(k)) {
+                return 5;
+            }
+            // 6. Kelas 1 Awaliyah
+            if (((k.includes('awaliyah') || k.includes('ula')) && k.includes('1')) || p.startsWith('1AA') || p.startsWith('1AW') || /\b1\s*(aa|aw|awaliyah)\b/i.test(k)) {
+                return 6;
+            }
+
+            // Fallback nama jenjang tanpa angka tingkat
+            if (k.includes('ulya')) return 1.9;
+            if (k.includes('wustho')) return 3.9;
+            if (k.includes('awaliyah') || k.includes('ula')) return 5.9;
+
+            return 99;
+        }
+
+        // Fungsi pembanding santri induk:
+        // 1. Santri Boyong selalu ditempatkan paling bawah
+        // 2. Santri aktif diurutkan: 2 Ulya > 1 Ulya > 2 Wustho > 1 Wustho > 2 Awaliyah
+        // 3. Dalam jenjang yang sama, santri ber-PIN resmi didahulukan (natural numeric PIN)
+        // 4. Fallback nama santri alfabetis
+        function compareSantriInduk(a, b) {
+            const isBoyongA = (String(a.status || '').toLowerCase() === 'boyong') ? 1 : 0;
+            const isBoyongB = (String(b.status || '').toLowerCase() === 'boyong') ? 1 : 0;
+
+            // Boyong dibawah sendiri
+            if (isBoyongA !== isBoyongB) {
+                return isBoyongA - isBoyongB;
+            }
+
+            // Urutan jenjang kelas
+            const prioA = getKelasPrioritySantriInduk(a.kelas, a.pin);
+            const prioB = getKelasPrioritySantriInduk(b.kelas, b.pin);
+            if (prioA !== prioB) {
+                return prioA - prioB;
+            }
+
+            // Prioritaskan yang sudah memiliki PIN mesin
+            const pinA = String(a.pin || '').trim();
+            const pinB = String(b.pin || '').trim();
+            const hasPinA = (pinA && pinA !== '-') ? 1 : 0;
+            const hasPinB = (pinB && pinB !== '-') ? 1 : 0;
+
+            if (hasPinA !== hasPinB) {
+                return hasPinB - hasPinA;
+            }
+
+            if (hasPinA && hasPinB) {
+                const cmpPin = pinA.localeCompare(pinB, undefined, { numeric: true, sensitivity: 'base' });
+                if (cmpPin !== 0) return cmpPin;
+            }
+
+            // Fallback nama santri
+            return String(a.nama || '').localeCompare(String(b.nama || ''), undefined, { sensitivity: 'base' });
+        }
+
         function renderMenuDataSantri() {
             if (!dataSantriInduk || dataSantriInduk.length === 0) {
                 // Fallback otomatis dari santriList jika dataSantriInduk belum ditarik
@@ -5866,13 +6061,18 @@
                             namaMesin: s.nama,
                             status: st,
                             kamar: '-',
-                            kelas: '-',
+                            kelas: getInferredClassName(s.pin) || '-',
                             terdaftarMesin: true,
                             tglBoyong: '',
                             source: 'Santri List Mesin'
                         };
                     });
                 }
+            }
+
+            // Urutkan data santri induk secara konsisten
+            if (Array.isArray(dataSantriInduk)) {
+                dataSantriInduk.sort(compareSantriInduk);
             }
 
             // Hitung ringkasan status
@@ -5925,6 +6125,7 @@
             const q = searchSantriIndukQuery;
             const fStatus = filterStatusSantriInduk;
 
+            // Filter data sesuai kriteria, kemudian urutkan: 2 Ulya > 1 Ulya > 2 Wustho > 1 Wustho > 2 Awaliyah > Boyong (bawah)
             const filtered = (dataSantriInduk || []).filter(s => {
                 // Filter status
                 if (fStatus === 'mukim' && s.status !== 'mukim') return false;
@@ -5941,7 +6142,7 @@
                     if (!matchNama && !matchPin && !matchKamar && !matchKelas) return false;
                 }
                 return true;
-            });
+            }).sort(compareSantriInduk);
 
             const lblSummary = document.getElementById('labelSummarySantriInduk');
             if (lblSummary) {
@@ -6006,6 +6207,24 @@
                     ? `<span class="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md border border-slate-200">${s.pin}</span>`
                     : `<span class="font-mono text-xs text-slate-400 italic">-</span>`;
 
+                // Badge Kelas Diniyah dengan warna hierarki
+                const rawKelas = (s.kelas && s.kelas !== '-') ? s.kelas : (getInferredClassName(s.pin) || '-');
+                const prioKelas = getKelasPrioritySantriInduk(rawKelas, s.pin);
+                let badgeKelas = '';
+                if (prioKelas === 1 || prioKelas === 1.9) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">${rawKelas}</span>`;
+                } else if (prioKelas === 2) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">${rawKelas}</span>`;
+                } else if (prioKelas === 3 || prioKelas === 3.9) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">${rawKelas}</span>`;
+                } else if (prioKelas === 4) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">${rawKelas}</span>`;
+                } else if (prioKelas === 5 || prioKelas === 5.9 || prioKelas === 6) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">${rawKelas}</span>`;
+                } else {
+                    badgeKelas = `<span class="font-mono text-xs text-slate-400 italic">-</span>`;
+                }
+
                 const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
                 // Admin Action Buttons: M (Mukim), L (Laju), B (Boyong), 🏷️ Dispen
@@ -6036,7 +6255,7 @@
                             ${(s.namaMesin && s.namaMesin !== '-' && s.namaMesin !== s.nama) ? `<div class="text-[11px] text-slate-400">Nama Mesin: ${s.namaMesin}</div>` : ''}
                         </td>
                         <td class="py-2.5 px-4 font-mono font-medium text-slate-700">${s.kamar || '-'}</td>
-                        <td class="py-2.5 px-4 text-slate-700 font-medium">${s.kelas || '-'}</td>
+                        <td class="py-2.5 px-4">${badgeKelas}</td>
                         <td class="py-2.5 px-4">
                             <div class="flex flex-col items-start gap-1">
                                 ${badgeStatus}
@@ -6070,6 +6289,9 @@
                     const val = snap.val();
                     if (val && Array.isArray(val)) {
                         dataSantriInduk = val;
+                        if (typeof compareSantriInduk === 'function') {
+                            dataSantriInduk.sort(compareSantriInduk);
+                        }
                         renderMenuDataSantri();
                     }
                 }
@@ -6097,13 +6319,19 @@
                 ["NO", "PIN MESIN", "NAMA SANTRI", "KAMAR", "KELAS DINIYAH", "STATUS", "STATUS BIOMETRIK MESIN", "TANGGAL BOYONG"]
             ];
 
-            dataSantriInduk.forEach((s, idx) => {
+            const listExport = [...dataSantriInduk];
+            if (typeof compareSantriInduk === 'function') {
+                listExport.sort(compareSantriInduk);
+            }
+
+            listExport.forEach((s, idx) => {
+                const curKelas = (s.kelas && s.kelas !== '-') ? s.kelas : (getInferredClassName(s.pin) || "-");
                 rows.push([
                     idx + 1,
                     s.pin || "-",
                     s.nama || "-",
                     s.kamar || "-",
-                    s.kelas || "-",
+                    curKelas,
                     (s.status || "mukim").toUpperCase(),
                     s.terdaftarMesin ? "TERDAFTAR DI MESIN" : "BELUM MASUK MESIN",
                     s.tglBoyong || "-"

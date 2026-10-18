@@ -341,28 +341,6 @@
             }
         }
 
-        /* Floating Quick-Jump Navigator */
-        #floatingScrollNavigator {
-            position: fixed;
-            bottom: 1.25rem;
-            right: 1.25rem;
-            z-index: 45;
-            display: flex;
-            align-items: center;
-            gap: 0.375rem;
-            padding: 0.375rem 0.625rem;
-            background: rgba(15, 23, 42, 0.94);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 9999px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
-            transition: all 0.25s ease;
-        }
-        @media (min-width: 769px) {
-            #floatingScrollNavigator {
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
-            }
-        }
     
         /* Sidebar Dock & Drawer Utilities */
         .no-scrollbar::-webkit-scrollbar {
@@ -438,6 +416,17 @@
                     <span class="text-[10px] font-bold mt-0.5">Data</span>
                     <span id="badgeNavSantriBelumMesin" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white animate-pulse"></span>
                     <span id="dockIndicatorSantri" class="hidden absolute -left-2 top-3 bottom-3 w-1.5 rounded-r-full bg-indigo-600"></span>
+                </button>
+
+                <!-- Tab 3: Izin (Perizinan Santri & Google Form) -->
+                <button type="button" id="btnDockIzin" onclick="gantiMenuUtama('izin')"
+                    class="sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+                    title="Menu Perizinan Santri & Form Online">
+                    <svg class="w-6 h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="text-[10px] font-bold mt-0.5">Izin</span>
+                    <span id="dockIndicatorIzin" class="hidden absolute -left-2 top-3 bottom-3 w-1.5 rounded-r-full bg-purple-600"></span>
                 </button>
             </nav>
         </div>
@@ -689,11 +678,13 @@
                             </div>
 
                             <div class="flex items-center gap-2">
-                                <select id="liveWidgetPilihTanggal" onchange="gantiTanggalMonitorWidget(this.value)"
-                                    class="bg-slate-900 text-slate-200 border border-slate-700 text-xs font-bold rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[150px] truncate"
-                                    title="Pilih tanggal yang ingin dipantau">
-                                    <!-- Diisi otomatis oleh JavaScript -->
-                                </select>
+                                <div class="relative flex items-center">
+                                    <input type="date" id="liveWidgetPilihTanggal" onchange="gantiTanggalMonitorWidget(this.value)"
+                                        onclick="try{this.showPicker()}catch(e){}"
+                                        class="bg-slate-900 text-slate-100 border border-slate-700 text-xs font-bold rounded-lg pl-8 pr-2.5 py-1.5 focus:ring-2 focus:ring-emerald-500 focus:outline-none cursor-pointer shadow-xs [color-scheme:dark]"
+                                        title="Klik untuk memilih tanggal lewat kalender">
+                                    <span class="absolute left-2.5 pointer-events-none text-emerald-400 text-xs">📅</span>
+                                </div>
                                 <button onclick="lompatKeKolomTanggalWidget()"
                                     class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-sm whitespace-nowrap cursor-pointer active:scale-95"
                                     title="Lompat dan sorot kolom tanggal ini di tabel">
@@ -731,10 +722,10 @@
                     </div>
                 </div>
 
-                <!-- Action Download Buttons -->
-                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                <!-- Action Download Buttons (Khusus Pengurus / Admin) -->
+                <div id="containerActionExportAbsen" class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end hidden">
                     <button onclick="salinDataAktif()"
-                        class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-600 transition shadow-sm">
+                        class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-600 transition shadow-sm cursor-pointer">
                         <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -743,7 +734,7 @@
                     </button>
 
                     <button onclick="unduhExcel()"
-                        class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition transform hover:-translate-y-0.5">
+                        class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition transform hover:-translate-y-0.5 cursor-pointer">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -838,7 +829,8 @@
                         </p>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-3 shrink-0">
+                    <!-- Action Sync & Export Santri (Khusus Pengurus / Admin) -->
+                    <div id="containerActionExportSantri" class="flex flex-wrap items-center gap-3 shrink-0 hidden">
                         <button type="button" onclick="sinkronkanDataSantriManual()" id="btnSyncSantriSheets"
                             class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-95">
                             <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -970,6 +962,180 @@
             </div>
         </div>
 
+        <!-- CONTAINER MENU 3: PERIZINAN SANTRI & GOOGLE FORM -->
+        <div id="containerMenuIzin" class="hidden space-y-8">
+            <!-- Hero Card: QR Code & Form Online Link -->
+            <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-purple-500/30">
+                <div class="absolute -right-16 -top-16 w-64 h-64 bg-purple-500/15 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-16 -bottom-16 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+                <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                    <!-- Left: QR Code Preview Frame -->
+                    <div class="flex flex-col items-center shrink-0">
+                        <div class="p-3 bg-white rounded-2xl shadow-2xl border-2 border-purple-400/50 flex flex-col items-center group relative">
+                            <img src="assets/qr_perizinan.png" alt="QR Code Perizinan Santri Nurul Ummah" class="w-36 h-36 sm:w-44 sm:h-44 object-contain rounded-xl" />
+                            <div class="mt-2 text-[10px] font-mono text-slate-600 font-bold tracking-tight text-center">
+                                bit.ly/PerizinanSantri...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Info & Action Buttons -->
+                    <div class="flex-1 space-y-3.5 text-center md:text-left">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold tracking-wide">
+                            <span class="w-2 h-2 rounded-full bg-purple-400 animate-pulse"></span>
+                            LAYANAN PERIZINAN RESMI PPNU PUTRA
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Formulir &amp; Rekap Perizinan Santri</h2>
+                        <p class="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                            Scan kode QR dengan kamera HP atau buka tautan di bawah untuk mengajukan perizinan santri secara online. Data perizinan otomatis terintegrasi dengan sistem presensi harian.
+                        </p>
+
+                        <!-- Buttons Row -->
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2.5 pt-1">
+                            <button type="button" onclick="bukaFormIzinOnline()"
+                                class="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-lg shadow-purple-600/30 cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                <span>Buka Form Online</span>
+                            </button>
+                            <button type="button" onclick="salinLinkIzinOnline()"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-purple-200 border border-purple-500/30 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <span>Salin Tautan</span>
+                            </button>
+                            <button type="button" onclick="unduhGambarQRIzin()"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer active:scale-95">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <span>Unduh Gambar QR</span>
+                            </button>
+                            <button type="button" onclick="muatDataPerizinanGoogleForm(true)"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800/90 hover:bg-purple-900/40 text-purple-300 border border-purple-500/40 font-bold text-xs sm:text-sm flex items-center gap-2 transition shadow-sm cursor-pointer active:scale-95" title="Perbarui data terbaru dari Google Form">
+                                <svg class="w-4 h-4 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                <span>Perbarui Data</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric Cards Perizinan -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        📋
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Izin Terdata</p>
+                        <h4 id="statTotalPengajuanIzin" class="text-2xl font-black text-slate-900 mt-0.5">0</h4>
+                        <span class="text-[11px] text-purple-700 font-semibold">Seluruh Rekap Form</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🟢
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Aktif Hari Ini</p>
+                        <h4 id="statIzinHariIni" class="text-2xl font-black text-emerald-600 mt-0.5">0</h4>
+                        <span class="text-[11px] text-emerald-700 font-semibold">Sedang Masa Izin</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        📅
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Izin Bulan Ini</p>
+                        <h4 id="statIzinBulanIni" class="text-2xl font-black text-indigo-600 mt-0.5">0</h4>
+                        <span class="text-[11px] text-indigo-700 font-semibold">Bulan Berjalan</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-xl shrink-0">
+                        🏥
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Alasan Sakit</p>
+                        <h4 id="statIzinSakit" class="text-2xl font-black text-rose-600 mt-0.5">0</h4>
+                        <span class="text-[11px] text-rose-700 font-semibold">Perawatan / Sakit</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Data Perizinan Realtime -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-5 sm:p-6">
+                <!-- Toolbar Tabel -->
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-100">
+                    <!-- Filter Chips -->
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button type="button" id="btnFilterIzin_all" onclick="setFilterIzinKategori('all')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-purple-700 text-white shadow-xs cursor-pointer">
+                            <span>Semua Data</span>
+                        </button>
+                        <button type="button" id="btnFilterIzin_today" onclick="setFilterIzinKategori('today')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Aktif Hari Ini</span>
+                        </button>
+                        <button type="button" id="btnFilterIzin_month" onclick="setFilterIzinKategori('month')"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">
+                            <span>Bulan Ini</span>
+                        </button>
+                    </div>
+
+                    <!-- Search Input Izin & Status -->
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <div class="relative w-full sm:w-72">
+                            <input type="text" id="inputSearchIzin" placeholder="Cari nama, kelas, atau alasan..."
+                                oninput="handleSearchIzin(this.value)" autocomplete="off" spellcheck="false"
+                                class="w-full pl-9 pr-7 py-2 bg-slate-50 hover:bg-white focus:bg-white text-slate-900 placeholder-slate-400 font-semibold border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-2xs transition">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <button id="btnClearSearchIzin" type="button" onclick="clearSearchIzin()" class="hidden absolute right-2.5 top-2.5 text-slate-400 hover:text-rose-600 transition" title="Hapus">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Bar & Status Fetch -->
+                <div class="flex items-center justify-between text-xs text-slate-500 px-1">
+                    <div class="flex items-center gap-2">
+                        <span id="statusIzinDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span id="statusIzinText" class="font-medium">Terkoneksi langsung ke Google Form Perizinan</span>
+                    </div>
+                    <span id="labelTotalIzinTampil" class="font-mono font-bold text-slate-600">0 data ditemukan</span>
+                </div>
+
+                <!-- Container Tabel -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100/90 border-b border-slate-200 text-slate-700 text-xs font-extrabold uppercase tracking-wider">
+                                <th class="py-3 px-3.5 w-12 text-center">No</th>
+                                <th class="py-3 px-3.5 min-w-[190px]">Nama Santri</th>
+                                <th class="py-3 px-3.5 w-32">Kelas Diniyah</th>
+                                <th class="py-3 px-3.5 w-44">Rentang Tanggal</th>
+                                <th class="py-3 px-3.5 w-36">Sesi Kegiatan</th>
+                                <th class="py-3 px-3.5 min-w-[200px]">Keperluan / Alasan</th>
+                                <th class="py-3 px-3.5 w-32 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyPerizinan" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                            <tr>
+                                <td colspan="7" class="py-12 text-center text-slate-400">
+                                    <span class="animate-pulse font-medium">Memuat data perizinan Google Form...</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <!-- Footer -->
@@ -988,22 +1154,6 @@
 
     <!-- SCRIPT LOGIKA REKAP OTOMATIS -->
     <script>
-        // Drag and Drop Helpers
-        function handleDragOver(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.add('border-emerald-500', 'bg-emerald-50/70');
-        }
-        function handleDragLeave(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.remove('border-emerald-500', 'bg-emerald-50/70');
-        }
-        function handleDrop(e) {
-            e.preventDefault();
-            document.getElementById('dropZone').classList.remove('border-emerald-500', 'bg-emerald-50/70');
-            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                prosesFile(e.dataTransfer.files[0]);
-            }
-        }
         function handleFileSelect(e) {
             if (e.target.files && e.target.files[0]) {
                 prosesFile(e.target.files[0]);
@@ -1144,14 +1294,6 @@
         let isAdmin = sessionStorage.getItem("ppnu_admin_logged") === "true";
         let currentInterface = isAdmin ? 'admin' : 'publik';
 
-        function setInterface(target) {
-            if (target === 'admin' && !isAdmin) {
-                bukaModalLoginAdmin();
-                return;
-            }
-            currentInterface = target;
-            updateUIAksesAdmin();
-        }
 
         // ========================================================
         // INTEGRASI FIREBASE REALTIME DATABASE (TAHAP 2)
@@ -1280,6 +1422,9 @@
             frozenUntilDate = data.frozenUntilDate || '2026-09-30';
             updateFreezeUI();
             dataSantriInduk = data.dataSantriInduk || [];
+            if (Array.isArray(dataSantriInduk) && typeof compareSantriInduk === 'function') {
+                dataSantriInduk.sort(compareSantriInduk);
+            }
             if (data.meta && data.meta.lastSantriSync) {
                 const elLast = document.getElementById('labelLastSantriSync');
                 if (elLast) elLast.innerText = `Terakhir disinkronkan: ${data.meta.lastSantriSync}`;
@@ -1518,9 +1663,11 @@
 
         let manualIzinData = {};
         let activeTab = 'asrama';
+        let menuUtamaAktif = 'absen'; // 'absen' | 'santri'
         let rawUploadedRows = null;
         let availableMonths = [];
         let selectedMonthKey = ''; // Default dinamis ke bulan aktif/terakhir agar render cepat
+        let dataSantriInduk = []; // Direktori Data Induk Santri PPNU
 
         // Konfigurasi Admin: Jam Malam Sabtu yang dialokasikan untuk Asrama per tanggal ('pel1' atau 'pel2')
         let settingMalamSabtuPerTanggal = {}; // Contoh: { '9/4/2026': 'pel1', '9/11/2026': 'pel2' }
@@ -1540,32 +1687,45 @@
         let hideEmptyLiburColumns = localStorage.getItem('ppnu_hide_empty_libur') !== 'false'; // Default: true
 
         function toggleHideEmptyLibur() {
-            if (!isAdmin) {
-                bukaModalLoginAdmin();
-                return;
-            }
             hideEmptyLiburColumns = !hideEmptyLiburColumns;
             try { localStorage.setItem('ppnu_hide_empty_libur', hideEmptyLiburColumns ? 'true' : 'false'); } catch (e) {}
             updateToggleHideLiburUI();
             terapkanFilter();
-            simpanKeLocalStorage();
-            simpanKeCloud();
-            tampilkanToast(hideEmptyLiburColumns 
-                ? "Kolom libur kosong disembunyikan (berlaku untuk Publik & Admin)." 
-                : "Seluruh kolom libur ditampilkan penuh (berlaku untuk Publik & Admin).");
+            if (isAdmin) {
+                simpanKeLocalStorage();
+                simpanKeCloud();
+                tampilkanToast(hideEmptyLiburColumns 
+                    ? "Kolom libur kosong disembunyikan (disimpan ke Cloud)." 
+                    : "Seluruh kolom libur ditampilkan penuh (disimpan ke Cloud).");
+            } else {
+                tampilkanToast(hideEmptyLiburColumns 
+                    ? "Kolom libur kosong disembunyikan." 
+                    : "Seluruh kolom libur ditampilkan penuh.");
+            }
         }
 
         function updateToggleHideLiburUI() {
             const btn = document.getElementById('btnToggleHideLibur');
             const lbl = document.getElementById('labelToggleHideLibur');
-            if (!btn || !lbl) return;
-
-            if (hideEmptyLiburColumns) {
-                btn.className = "px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
-                lbl.innerText = "Kolom Libur: Disembunyikan";
-            } else {
-                btn.className = "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
-                lbl.innerText = "Kolom Libur: Tampil Penuh";
+            if (btn && lbl) {
+                if (hideEmptyLiburColumns) {
+                    btn.className = "px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border border-emerald-400 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
+                    lbl.innerText = "Kolom Libur: Disembunyikan";
+                } else {
+                    btn.className = "px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold text-xs flex items-center gap-1.5 transition shadow-2xs";
+                    lbl.innerText = "Kolom Libur: Tampil Penuh";
+                }
+            }
+            const btnRekap = document.getElementById('btnToggleHideLiburRekap');
+            const lblRekap = document.getElementById('labelToggleHideLiburRekap');
+            if (btnRekap && lblRekap) {
+                if (hideEmptyLiburColumns) {
+                    btnRekap.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border-emerald-300";
+                    lblRekap.innerText = "Kolom Libur: Sembunyi";
+                } else {
+                    btnRekap.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border bg-white hover:bg-slate-50 text-slate-700 border-slate-300";
+                    lblRekap.innerText = "Kolom Libur: Tampil Semua";
+                }
             }
         }
 
@@ -1627,8 +1787,6 @@
             }
         }
 
-        let modalSantriActiveTab = 'asrama';
-        let modalSantriFilterStatus = 'all';
 
         // Ambil setting malam sabtu untuk tanggal tertentu (default 'pel1')
         function getMalamSabtuSetting(tglKey) {
@@ -1836,14 +1994,14 @@
                 {
                     key: 'pel1',
                     title: 'Jam 1 (Sesi Awal)',
-                    jam: '18:30 - 19:39',
+                    jam: '18:30 - 19:40',
                     asrama: 'Asrama mengambil Jam 1',
                     mdnu: 'MDNU: Pel 2 & Pel 3 Aktif'
                 },
                 {
                     key: 'pel2',
                     title: 'Jam 2 (Sesi Tengah)',
-                    jam: '19:40 - 20:59',
+                    jam: '19:40 - 21:00',
                     asrama: 'Asrama mengambil Jam 2',
                     mdnu: 'MDNU: Pel 1 & Pel 3 Aktif'
                 },
@@ -1987,83 +2145,8 @@
                 terapkanTanggalMulaiDanDispensasiKeMatriks();
                 terapkanFilter();
                 renderEvaluasi();
-                if (!document.getElementById('modalKelolaSantri').classList.contains('hidden')) {
-                    renderModalKelolaSantriList();
-                }
             }
             if (typeof simpanKeCloud === 'function') simpanKeCloud();
-        }
-
-        function setTanggalMulaiSantri(pin, val) {
-            val = String(val || '').trim();
-            if (val) {
-                tanggalMulaiSantri[pin] = val;
-                tampilkanToast(`Tanggal masuk ${pin} diatur: ${val}. Hari sebelumnya otomatis diabaikan.`);
-            } else {
-                delete tanggalMulaiSantri[pin];
-                tampilkanToast(`Tanggal masuk ${pin} direset ke awal periode.`);
-            }
-            reOlahDanRenderSemua();
-        }
-
-        function cariTanggalScanPertama(pin) {
-            for (const d of dateList) {
-                const tgl = d.displayDate;
-                const asr = asramaMatrix[pin] && asramaMatrix[pin][tgl];
-                const mdn = mdnuMatrix[pin] && mdnuMatrix[pin][tgl];
-                const hasAsrScan = asr && (asr.subuh === 'H' || asr.malam === 'H' || asr.subuh_time || asr.malam_time);
-                const hasMdnScan = mdn && (mdn.sore === 'H' || mdn.pel1 === 'H' || mdn.pel2 === 'H' || mdn.pel3 === 'H');
-                if (hasAsrScan || hasMdnScan) {
-                    return tgl;
-                }
-            }
-            return null;
-        }
-
-        function autoSetTanggalMulaiSantri(pin) {
-            const firstScan = cariTanggalScanPertama(pin);
-            if (!firstScan) {
-                alert("Santri ini belum memiliki riwayat scan hadir pada data absensi.");
-                return;
-            }
-            tanggalMulaiSantri[pin] = firstScan;
-            tampilkanToast(`Tanggal masuk ${pin} otomatis diset ke ${firstScan} (scan pertama)`);
-            reOlahDanRenderSemua();
-        }
-
-        function bukaDialogTambahDispensasi(pin) {
-            const santri = santriList.find(s => s.pin === pin);
-            const nama = santri ? santri.nama : pin;
-            const tglMin = dateList.length > 0 ? dateList[0].displayDate : '';
-            const tglMax = dateList.length > 0 ? dateList[dateList.length - 1].displayDate : '';
-
-            const dari = prompt(`[Tambah Dispensasi KKN / Tugas Pondok]\nNama: ${nama} (${pin})\n\nMasukkan Tanggal Mulai (Format YYYY-MM-DD):`, tglMin);
-            if (!dari) return;
-
-            const sampai = prompt(`Masukkan Tanggal Selesai (Format YYYY-MM-DD):`, tglMax);
-            if (!sampai) return;
-
-            const ket = prompt(`Keterangan Dispensasi (contoh: KKN, Tugas Pondok, Sakit Panjang):`, "KKN");
-            if (!ket) return;
-
-            if (!dispensasiSantri[pin]) dispensasiSantri[pin] = [];
-            dispensasiSantri[pin].push({
-                id: 'disp_' + Date.now(),
-                dari: dari.trim(),
-                sampai: sampai.trim(),
-                ket: ket.trim()
-            });
-
-            tampilkanToast(`Dispensasi ${ket} (${dari} s.d ${sampai}) berhasil ditambahkan untuk ${nama}!`);
-            reOlahDanRenderSemua();
-        }
-
-        function hapusDispensasiSantri(pin, dispId) {
-            if (!dispensasiSantri[pin]) return;
-            dispensasiSantri[pin] = dispensasiSantri[pin].filter(d => d.id !== dispId);
-            if (dispensasiSantri[pin].length === 0) delete dispensasiSantri[pin];
-            tampilkanToast("Periode dispensasi berhasil dihapus.");
-            reOlahDanRenderSemua();
         }
 
         function sinkronkanHiddenSantri() {
@@ -2099,42 +2182,6 @@
             }
         }
 
-        function setStatusSantri(pin, status, tab) {
-            const currentObj = (tab === 'asrama') ? statusSantriAsrama : statusSantriMDNU;
-            if (currentObj[pin] === status) {
-                delete currentObj[pin];
-            } else {
-                currentObj[pin] = status;
-            }
-
-            sinkronkanHiddenSantri();
-            updateHiddenBadges();
-            terapkanFilter();
-            renderEvaluasi();
-            if (!document.getElementById('modalKelolaSantri').classList.contains('hidden')) {
-                renderModalKelolaSantriList();
-            }
-            if (typeof simpanKeCloud === 'function') {
-                simpanKeCloud();
-            }
-        }
-
-        function resetStatusSantri(tab) {
-            if (tab === 'asrama') {
-                statusSantriAsrama = {};
-            } else {
-                statusSantriMDNU = {};
-            }
-            sinkronkanHiddenSantri();
-            updateHiddenBadges();
-            terapkanFilter();
-            renderEvaluasi();
-            renderModalKelolaSantriList();
-            if (typeof simpanKeCloud === 'function') {
-                simpanKeCloud();
-            }
-        }
-
         function toggleHideSantri(pin, tab) {
             const currentObj = (tab === 'asrama') ? statusSantriAsrama : statusSantriMDNU;
             if (currentObj[pin]) {
@@ -2146,46 +2193,12 @@
             updateHiddenBadges();
             terapkanFilter();
             renderEvaluasi();
-            if (!document.getElementById('modalKelolaSantri').classList.contains('hidden')) {
-                renderModalKelolaSantriList();
-            }
             if (typeof simpanKeCloud === 'function') {
                 simpanKeCloud();
             }
         }
 
         function updateHiddenBadges() {
-            let lajuAsr = 0, boyongAsr = 0;
-            for (const p in statusSantriAsrama) {
-                if (statusSantriAsrama[p] === 'laju' || statusSantriAsrama[p] === 'kantin') lajuAsr++;
-                else if (statusSantriAsrama[p] === 'boyong') boyongAsr++;
-            }
-            const countHiddenAsr = Object.keys(hiddenSantriAsrama).length;
-
-            let lajuMdn = 0, boyongMdn = 0;
-            for (const p in statusSantriMDNU) {
-                if (statusSantriMDNU[p] === 'laju') lajuMdn++;
-                else if (statusSantriMDNU[p] === 'boyong') boyongMdn++;
-            }
-            const countHiddenMdn = Object.keys(hiddenSantriMDNU).length;
-
-            const totalHidden = countHiddenAsr + countHiddenMdn;
-
-            const badgeTotal = document.getElementById('badgeHiddenCountTotal');
-            if (badgeTotal) {
-                badgeTotal.innerText = totalHidden;
-                badgeTotal.classList.toggle('hidden', totalHidden === 0);
-            }
-
-            const badgeModalAsr = document.getElementById('badgeModalHiddenAsrama');
-            if (badgeModalAsr) {
-                badgeModalAsr.innerText = `${countHiddenAsr} disembunyikan (${lajuAsr} laju, ${boyongAsr} boyong)`;
-            }
-            const badgeModalMdn = document.getElementById('badgeModalHiddenMDNU');
-            if (badgeModalMdn) {
-                badgeModalMdn.innerText = `${countHiddenMdn} disembunyikan (${boyongMdn} boyong${lajuMdn > 0 ? `, ${lajuMdn} laju aktif` : ''})`;
-            }
-
             if (santriList && santriList.length > 0) {
                 const countAktifAsr = santriList.filter(s => !hiddenSantriAsrama[s.pin]).length;
                 const countAktifMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]).length;
@@ -2199,199 +2212,6 @@
                 const mobMdn = document.getElementById('mobileBadgeCountMDNU');
                 if (mobMdn) mobMdn.innerText = countAktifMdn;
             }
-        }
-
-        function bukaModalKelolaSantri(defaultTab) {
-            if (defaultTab) modalSantriActiveTab = defaultTab;
-            else modalSantriActiveTab = activeTab === 'mdnu' ? 'mdnu' : 'asrama';
-            gantiTabModalSantri(modalSantriActiveTab);
-            document.getElementById('modalKelolaSantri').classList.remove('hidden');
-        }
-
-        function tutupModalKelolaSantri() {
-            document.getElementById('modalKelolaSantri').classList.add('hidden');
-        }
-
-        function gantiTabModalSantri(tab) {
-            modalSantriActiveTab = tab;
-            const btnAsr = document.getElementById('modalSantriTabAsrama');
-            const btnMdn = document.getElementById('modalSantriTabMDNU');
-
-            if (tab === 'asrama') {
-                btnAsr.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-emerald-600 text-white shadow-xs";
-                btnMdn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200";
-            } else {
-                btnAsr.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200";
-                btnMdn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-indigo-600 text-white shadow-xs";
-            }
-
-            renderModalKelolaSantriList();
-        }
-
-        function filterStatusModalSantri(status) {
-            modalSantriFilterStatus = status;
-            ['all', 'laju', 'boyong', 'mukim'].forEach(s => {
-                const btn = document.getElementById('btnFilterModal_' + s);
-                if (btn) {
-                    if (s === status) {
-                        btn.className = "px-2.5 py-1 rounded-lg font-bold bg-indigo-600 text-white shadow-xs";
-                    } else {
-                        btn.className = "px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300";
-                    }
-                }
-            });
-            renderModalKelolaSantriList();
-        }
-
-        function renderModalKelolaSantriList() {
-            const container = document.getElementById('modalSantriListContainer');
-            if (!container) return;
-
-            const query = (document.getElementById('modalSantriSearch').value || '').toLowerCase().trim();
-            const tab = modalSantriActiveTab;
-            const statusMap = tab === 'asrama' ? statusSantriAsrama : statusSantriMDNU;
-
-            const filtered = santriList.filter(s => {
-                const matchQuery = !query || s.pin.toLowerCase().includes(query) || s.nama.toLowerCase().includes(query);
-                if (!matchQuery) return false;
-                const st = statusMap[s.pin] || 'mukim';
-                if (modalSantriFilterStatus === 'all') return true;
-                if (modalSantriFilterStatus === 'laju') return st === 'laju';
-                if (modalSantriFilterStatus === 'boyong') return st === 'boyong';
-                if (modalSantriFilterStatus === 'mukim') return st === 'mukim';
-                return true;
-            });
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-slate-400 italic">Tidak ada santri yang cocok dengan filter.</div>`;
-                document.getElementById('modalSantriSummaryText').innerText = `Menampilkan 0 dari ${santriList.length} santri`;
-                return;
-            }
-
-            let html = '';
-            filtered.forEach(s => {
-                const st = statusMap[s.pin] || 'mukim';
-                const isLaju = st === 'laju';
-                const isBoyong = st === 'boyong';
-                const curTglMulai = tanggalMulaiSantri[s.pin] || '';
-                const listDisp = (dispensasiSantri[s.pin] && Array.isArray(dispensasiSantri[s.pin])) ? dispensasiSantri[s.pin] : [];
-
-                let statusBadge = '';
-                let rowBg = 'border border-slate-200 bg-white hover:bg-slate-50/70';
-
-                if (tab === 'asrama') {
-                    if (isLaju) {
-                        statusBadge = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-mono">Laju &bull; Sembunyi di Asrama</span>';
-                        rowBg = 'border border-amber-300 bg-amber-50/50';
-                    } else if (isBoyong) {
-                        statusBadge = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full font-mono">Boyong &bull; Sembunyi di Asrama</span>';
-                        rowBg = 'border border-rose-300 bg-rose-50/50';
-                    } else {
-                        statusBadge = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-mono">Mukim / Aktif</span>';
-                    }
-                } else {
-                    if (isLaju) {
-                        statusBadge = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-mono">Laju &bull; Tampil di MDNU</span>';
-                        rowBg = 'border border-blue-300 bg-blue-50/50';
-                    } else if (isBoyong) {
-                        statusBadge = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full font-mono">Boyong &bull; Sembunyi di MDNU</span>';
-                        rowBg = 'border border-rose-300 bg-rose-50/50';
-                    } else {
-                        statusBadge = '<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-mono">Mukim / Aktif</span>';
-                    }
-                }
-
-                // Render dispensasi tags jika ada
-                let dispBadgesHtml = '';
-                if (listDisp.length > 0) {
-                    dispBadgesHtml = `
-                        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-                            ${listDisp.map(d => `
-                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-900 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-lg">
-                                    <span>KKN: ${d.ket || 'KKN'} (${d.dari} s.d ${d.sampai})</span>
-                                    <button onclick="hapusDispensasiSantri('${s.pin}', '${d.id}')" class="text-rose-600 hover:text-rose-800 font-black ml-1" title="Hapus dispensasi ini">&times;</button>
-                                </span>
-                            `).join('')}
-                        </div>
-                    `;
-                }
-
-                html += `
-                    <div class="p-3 rounded-xl transition shadow-2xs space-y-2.5 ${rowBg}">
-                        <!-- Baris Atas: Info Santri & Tombol Laju / Boyong -->
-                        <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <span class="font-mono text-xs font-bold text-slate-600 w-14 shrink-0">${s.pin}</span>
-                                <div class="min-w-0">
-                                    <span class="font-bold text-xs sm:text-sm text-slate-900 truncate block">${s.nama}</span>
-                                    <div class="mt-0.5">${statusBadge}</div>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center gap-1.5 shrink-0">
-                                <button onclick="setStatusSantri('${s.pin}', 'laju', '${tab}')"
-                                    title="${isLaju ? 'Klik untuk membatalkan status Laju' : 'Tandai sebagai Santri Laju'}"
-                                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${isLaju ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300' : 'bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-800 border border-slate-300'}">
-                                    <span>Laju</span>
-                                </button>
-
-                                <button onclick="setStatusSantri('${s.pin}', 'boyong', '${tab}')"
-                                    title="${isBoyong ? 'Klik untuk membatalkan status Boyong' : 'Tandai sebagai Santri Boyong'}"
-                                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${isBoyong ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs ring-2 ring-rose-300' : 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-800 border border-slate-300'}">
-                                    <span>Boyong</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Baris Bawah: Pengaturan Tanggal Masuk (Santri Baru) & Dispensasi KKN -->
-                        <div class="pt-2 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2 text-xs">
-                            <!-- Tanggal Mulai Masuk Pondok -->
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="text-slate-600 font-semibold text-[11px] flex items-center gap-1">
-                                    <span>Mulai Absen:</span>
-                                </span>
-                                <input type="date" value="${curTglMulai}"
-                                    onchange="setTanggalMulaiSantri('${s.pin}', this.value)"
-                                    title="Pilih tanggal resmi mulai aktif absensi di pondok"
-                                    class="px-2 py-0.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold text-slate-800 focus:ring-1 focus:ring-indigo-500">
-                                <button onclick="autoSetTanggalMulaiSantri('${s.pin}')"
-                                    title="Otomatis gunakan tanggal scan hadir pertama santri ini"
-                                    class="px-2 py-0.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[10px] transition flex items-center gap-1">
-                                    <span>Scan Pertama</span>
-                                </button>
-                                ${curTglMulai ? `<button onclick="setTanggalMulaiSantri('${s.pin}', '')" class="text-rose-600 hover:underline text-[10px] font-bold" title="Hapus tanggal mulai (kembali ke awal)">Reset</button>` : ''}
-                            </div>
-
-                            <!-- Tombol Tambah Dispensasi KKN -->
-                            <div class="flex items-center gap-1.5">
-                                <button onclick="bukaDialogTambahDispensasi('${s.pin}')"
-                                    title="Tambah rentang tanggal izin dinas / KKN"
-                                    class="px-2.5 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300 font-bold text-[10px] transition flex items-center gap-1">
-                                    <span>+ Dispensasi KKN / Izin</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        ${dispBadgesHtml}
-                    </div>
-                `;
-            });
-
-            container.innerHTML = html;
-
-            let countLaju = 0, countBoyong = 0;
-            for (const p in statusMap) {
-                if (statusMap[p] === 'laju') countLaju++;
-                else if (statusMap[p] === 'boyong') countBoyong++;
-            }
-
-            const hiddenCount = tab === 'asrama' ? (countLaju + countBoyong) : countBoyong;
-            const santriBaruCount = Object.keys(tanggalMulaiSantri).length;
-            const kknCount = Object.keys(dispensasiSantri).length;
-
-            document.getElementById('modalSantriSummaryText').innerText =
-                `Menampilkan ${filtered.length} santri | Status ${tab.toUpperCase()}: ${countLaju} Laju, ${countBoyong} Boyong | ${santriBaruCount} Santri Baru (Mulai Khusus) | ${kknCount} Santri KKN`;
-            updateHiddenBadges();
         }
 
         // ========================================================
@@ -2515,6 +2335,10 @@
         //   * Jumat (5, Malam Sabtu): 2 jam untuk MDNU. Jam yang dipakai Asrama menjadi LIBUR.
         //   * Hari lain (0, 1, 2, 3, 6): Pel 1, 2, 3 aktif semua ('A').
         function getMDNUDefault(pin, day, tgl) {
+            // MDNU Putra resmi dimulai per 18 Juli 2026 (tanggal sebelumnya libur total)
+            if (tgl && tgl < '2026-07-18') {
+                return { sore: 'LIBUR', pel1: 'LIBUR', pel2: 'LIBUR', pel3: 'LIBUR', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
+            }
             if (specialLiburMDNU[tgl]) {
                 return { sore: 'LIBUR', pel1: 'LIBUR', pel2: 'LIBUR', pel3: 'LIBUR', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
             }
@@ -2672,6 +2496,19 @@
                 };
             }
 
+            // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
+            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-')
+            const tglMulaiAsr = (tanggalMulaiSantri && tanggalMulaiSantri[pin]);
+            if (tglMulaiAsr && tgl < tglMulaiAsr) {
+                return {
+                    subuh: 'BELUM',
+                    malam: 'BELUM',
+                    subuh_time: '',
+                    malam_time: '',
+                    isBelum: true
+                };
+            }
+
             const defItem = getAsramaDefault(pin, day, tgl);
             const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
             
@@ -2687,39 +2524,43 @@
             const disp = getDispensasiSantri(pin, tgl);
 
             let subuh = defItem.subuh;
-            if (defItem.subuh === 'LIBUR') {
-                subuh = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
+            if (specialLiburAsrama && specialLiburAsrama[tgl]) {
+                subuh = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
             } else if (ovrSubuh !== undefined) {
                 subuh = ovrSubuh;
-            } else if (raw.subuh_time) {
-                subuh = 'H'; // Scan fisik mesin selalu hadir!
+            } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== '') {
+                subuh = raw.subuh; // Ambil nilai riil database (H, A, I, LIBUR)
             } else if (hasIzinSubuh) {
                 subuh = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (disp) {
                 subuh = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
+            } else if (defItem.subuh === 'LIBUR') {
+                subuh = 'LIBUR'; // Putihkan jika jadwal rutin memang LIBUR
+            } else if (raw.subuh_time) {
+                subuh = 'H'; // Scan fisik mesin selalu hadir!
             } else if (isSesiBelumLewatBatas(tgl, 'subuh', 'asrama')) {
                 subuh = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
-            } else if (raw.subuh !== undefined && raw.subuh !== '-' && raw.subuh !== 'LIBUR') {
-                subuh = raw.subuh;
             } else {
                 subuh = defItem.subuh;
             }
 
             let malam = defItem.malam;
-            if (defItem.malam === 'LIBUR') {
-                malam = 'LIBUR'; // Putihkan total jika jadwal resmi LIBUR!
+            if (specialLiburAsrama && specialLiburAsrama[tgl]) {
+                malam = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
             } else if (ovrMalam !== undefined) {
                 malam = ovrMalam;
-            } else if (raw.malam_time) {
-                malam = 'H'; // Scan fisik mesin selalu hadir!
+            } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== '') {
+                malam = raw.malam; // Ambil nilai riil database (H, A, I, LIBUR)
             } else if (hasIzinMalam) {
                 malam = 'I'; // Ada surat izin resmi -> WAJIB IZIN
             } else if (disp) {
                 malam = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
+            } else if (defItem.malam === 'LIBUR') {
+                malam = 'LIBUR'; // Putihkan jika jadwal rutin memang LIBUR
+            } else if (raw.malam_time) {
+                malam = 'H'; // Scan fisik mesin selalu hadir!
             } else if (isSesiBelumLewatBatas(tgl, 'malam', 'asrama')) {
                 malam = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
-            } else if (raw.malam !== undefined && raw.malam !== '-' && raw.malam !== 'LIBUR') {
-                malam = raw.malam;
             } else {
                 malam = defItem.malam;
             }
@@ -2733,6 +2574,23 @@
         }
 
         function getMDNUCell(pin, day, tgl) {
+            // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
+            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-')
+            const tglMulaiMDNU = (tanggalMulaiSantri && tanggalMulaiSantri[pin]);
+            if (tglMulaiMDNU && tgl < tglMulaiMDNU) {
+                return {
+                    sore: 'BELUM',
+                    pel1: 'BELUM',
+                    pel2: 'BELUM',
+                    pel3: 'BELUM',
+                    sore_time: '',
+                    pel1_time: '',
+                    pel2_time: '',
+                    pel3_time: '',
+                    isBelum: true
+                };
+            }
+
             const defItem = getMDNUDefault(pin, day, tgl);
             const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
             const disp = getDispensasiSantri(pin, tgl);
@@ -2750,20 +2608,22 @@
                     : undefined;
                 const hasIzin = (permissionDetailsMap && permissionDetailsMap[`${pin}__${tgl}__${sesi}__mdnu`] !== undefined);
 
-                if (defItem[sesi] === 'LIBUR') {
-                    res[sesi] = 'LIBUR'; // Putihkan total jika jadwal resmi sesi ini LIBUR!
+                if (specialLiburMDNU && specialLiburMDNU[tgl]) {
+                    res[sesi] = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
                 } else if (ovr !== undefined) {
                     res[sesi] = ovr;
-                } else if (res[`${sesi}_time`]) {
-                    res[sesi] = 'H'; // Scan fisik mesin selalu hadir!
+                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== '') {
+                    res[sesi] = raw[sesi]; // Ambil nilai riil database (H, A, I, LIBUR)
                 } else if (hasIzin) {
                     res[sesi] = 'I'; // Ada surat izin resmi -> WAJIB IZIN
                 } else if (disp) {
                     res[sesi] = 'K'; // Dispensasi aktif (KKN / Tugas Pondok): otomatis K jika tidak scan
+                } else if (defItem[sesi] === 'LIBUR') {
+                    res[sesi] = 'LIBUR'; // Putihkan jika jadwal rutin sesi ini LIBUR
+                } else if (res[`${sesi}_time`]) {
+                    res[sesi] = 'H'; // Scan fisik mesin selalu hadir!
                 } else if (isSesiBelumLewatBatas(tgl, sesi, 'mdnu')) {
                     res[sesi] = 'BELUM_MULAI'; // Sesi belum berakhir / belum lewat cutoff -> status netral (-)
-                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== 'LIBUR') {
-                    res[sesi] = raw[sesi];
                 } else {
                     res[sesi] = defItem[sesi];
                 }
@@ -3098,6 +2958,16 @@
                 }
             }
 
+            // 5. Toggle Tombol Export/Download & Sinkron (Hanya Tampil Jika Mode Admin)
+            const boxExportAbsen = document.getElementById('containerActionExportAbsen');
+            if (boxExportAbsen) {
+                boxExportAbsen.classList.toggle('hidden', !isAdmin);
+            }
+            const boxExportSantri = document.getElementById('containerActionExportSantri');
+            if (boxExportSantri) {
+                boxExportSantri.classList.toggle('hidden', !isAdmin);
+            }
+
             // 7. Update status toggle hide libur
             updateToggleHideLiburUI();
             if (dateList.length > 0) {
@@ -3281,8 +3151,7 @@
 
                     // Cek apakah sudah ada data aktif sebelumnya
                     const adaDataSebelumnya = (rawUploadedRows && rawUploadedRows.length > 1);
-                    const radioAppend = document.getElementById('radioModeAppend');
-                    const isAppendMode = radioAppend ? radioAppend.checked : true;
+                    const isAppendMode = true;
 
                     let finalRows = [];
 
@@ -3598,6 +3467,10 @@
                     if (santriInp && santriInp.value !== val) santriInp.value = val;
                     searchSantriIndukQuery = (val || '').toLowerCase().trim();
                     renderTabelSantriInduk();
+                } else if (menuUtamaAktif === 'izin') {
+                    const izinInp = document.getElementById('inputSearchIzin');
+                    if (izinInp && izinInp.value !== val) izinInp.value = val;
+                    if (typeof handleSearchIzin === 'function') handleSearchIzin(val);
                 } else {
                     terapkanFilter();
                 }
@@ -3622,6 +3495,9 @@
             if (selectedMonthKey && selectedMonthKey !== 'all') {
                 const mObj = availableMonths.find(m => m.key === selectedMonthKey);
                 if (mObj && mObj.dates && mObj.dates.length > 0) currentMonthDates = mObj.dates;
+            }
+            if (isMDNU) {
+                currentMonthDates = currentMonthDates.filter(d => d.displayDate >= '2026-07-18');
             }
 
             const activeFiltered = filteredSantri.filter(s => {
@@ -3738,8 +3614,8 @@
                                     <span class="text-[9px] font-bold text-amber-900 bg-amber-200 px-1 rounded leading-tight mb-0.5">Malam Sabtu</span>
                                     <select onchange="ubahSettingMalamSabtuTanggal('${d.displayDate}', this.value)"
                                         class="text-[10px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500 max-w-[90px] truncate">
-                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:39)</option>
-                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40-20:59)</option>
+                                        <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30-19:40)</option>
+                                        <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40-21:00)</option>
                                         <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (21:00-22:30)</option>
                                     </select>
                                 </div>
@@ -3906,7 +3782,8 @@
             let htmlFull = '';
 
             monthsToRender.forEach(mObj => {
-                const datesInMonth = mObj.dates;
+                const datesInMonth = mObj.dates.filter(d => d.displayDate >= '2026-07-18');
+                if (datesInMonth.length === 0) return;
                 const namaBulanLabel = mObj.label ? mObj.label.toUpperCase() : 'REKAPITULASI';
 
                 let h1MDNU = `<tr>
@@ -4107,7 +3984,7 @@
             activeTab = tab;
             const btnAsrama = document.getElementById('tabBtnAsrama');
             const btnMDNU = document.getElementById('tabBtnMDNU');
-            const btnRekap = document.getElementById('tabBtnRekapitulasi') || document.getElementById('tabBtnEvaluasi');
+            const btnRekap = document.getElementById('tabBtnRekapitulasi');
 
             const mobAsrama = document.getElementById('mobileTabBtnAsrama');
             const mobMDNU = document.getElementById('mobileTabBtnMDNU');
@@ -4157,7 +4034,15 @@
             }
 
             const isModeAdmin = (currentInterface === 'admin' && isAdmin);
-            const activeSantriAsr = santriArr.filter(s => !hiddenSantriAsrama[s.pin]);
+            const activeSantriAsr = santriArr.filter(s => {
+                if (hiddenSantriAsrama[s.pin]) return false;
+                if (statusSantriAsrama[s.pin] === 'laju' || statusSantriAsrama[s.pin] === 'kantin') {
+                    const tglLaju = tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin];
+                    if (!tglLaju) return false;
+                    return dateList.some(d => d.displayDate < tglLaju);
+                }
+                return true;
+            });
             const activeSantriMdn = santriArr.filter(s => !hiddenSantriMDNU[s.pin]);
 
             const tglAwal = dateList[0].displayDate;
@@ -4165,27 +4050,56 @@
 
             // Navigasi Sub-Tab Rekapitulasi
             let navSubTabs = `
-                <div class="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-2 flex-wrap border border-slate-300 mb-4">
-                    <button onclick="gantiSubTabRekap('asrama_semua')"
-                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
-                        <span>Asrama Putra (Awal s.d Akhir)</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriAsr.length} Santri</span>
-                    </button>
-                    <button onclick="gantiSubTabRekap('mdnu_semua')"
-                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
-                        <span>MDNU Putra (Awal s.d Akhir)</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriMdn.length} Santri</span>
-                    </button>
-                    <button onclick="gantiSubTabRekap('analisis')"
-                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'analisis' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
-                        <span>Analisis Ketidakhadiran (&gt;15%)</span>
-                    </button>
+                <div class="bg-slate-100 p-1.5 rounded-2xl flex items-center justify-between gap-2 flex-wrap border border-slate-300 mb-4">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button onclick="gantiSubTabRekap('asrama_semua')"
+                            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
+                            <span>Asrama Putra (Awal s.d Akhir)</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'asrama_semua' ? 'bg-emerald-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriAsr.length} Santri</span>
+                        </button>
+                        <button onclick="gantiSubTabRekap('mdnu_semua')"
+                            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
+                            <span>MDNU Putra (Awal s.d Akhir)</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full ${activeSubTabRekap === 'mdnu_semua' ? 'bg-indigo-800 text-white' : 'bg-slate-100 text-slate-700'}">${activeSantriMdn.length} Santri</span>
+                        </button>
+                        <button onclick="gantiSubTabRekap('analisis')"
+                            class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 ${activeSubTabRekap === 'analisis' ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'}">
+                            <span>Analisis Ketidakhadiran (&gt;15%)</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="btnToggleHideLiburRekap" onclick="toggleHideEmptyLibur()" 
+                            class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-2xs border ${hideEmptyLiburColumns ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-950 border-emerald-300' : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'}"
+                            title="Sembunyikan atau tampilkan kolom libur kosong">
+                            <svg class="w-3.5 h-3.5 ${hideEmptyLiburColumns ? 'text-emerald-700' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                            <span id="labelToggleHideLiburRekap">${hideEmptyLiburColumns ? 'Kolom Libur: Sembunyi' : 'Kolom Libur: Tampil Semua'}</span>
+                        </button>
+                    </div>
                 </div>
             `;
             let contentHtml = '';
 
             // 1. KONTEN TAB: REKAP ASRAMA SEMUA BULAN
             if (activeSubTabRekap === 'asrama_semua') {
+                // Peta Sesi Aktif per Tanggal (sembunyikan kolom/tanggal libur jika hideEmptyLiburColumns = true)
+                const activePinsAsr = activeSantriAsr.map(s => s.pin);
+                const activeDateSessionsMapAsr = new Map();
+                dateList.forEach(d => {
+                    let sessList = ['subuh', 'malam'];
+                    if (hideEmptyLiburColumns) {
+                        sessList = sessList.filter(sess => {
+                            return activePinsAsr.some(pin => {
+                                const row = getAsramaCell(pin, d.dayIndex, d.displayDate);
+                                const v = row[sess];
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S' || v === 'BELUM_MULAI';
+                            });
+                        });
+                    }
+                    if (sessList.length > 0) {
+                        activeDateSessionsMapAsr.set(d.displayDate, sessList);
+                    }
+                });
+
                 let h1 = `<tr>
                     <th rowspan="2" class="col-pin sticky-col-pin bg-emerald-100 text-emerald-950 font-black">PIN</th>
                     <th rowspan="2" class="col-nama sticky-col-nama bg-emerald-100 text-emerald-950 font-black border-r-thick">NAMA SANTRI</th>
@@ -4200,17 +4114,26 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Total Jam Pelajaran">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
+                let countRenderedDates = 0;
                 dateList.forEach(d => {
+                    const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                    if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
+                    countRenderedDates++;
+
                     const bgH = specialLiburAsrama[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-emerald-100");
-                    h1 += `<th colspan="2" class="${bgH} py-1.5 px-1">
+                    h1 += `<th colspan="${sessList.length}" class="${bgH} py-1.5 px-1">
                         <span class="block text-xs font-black text-emerald-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-emerald-800 font-semibold">${d.displayDate}</span>
                     </th>`;
+
                     let mlm = (d.dayIndex === 5) ? (getMalamSabtuSetting(d.displayDate) === 'pel1' ? "Malam (Jam 1)" : "Malam (Jam 2)") : "Malam";
-                    h2 += `
-                        <th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>
-                        <th class="col-sesi bg-emerald-50 text-emerald-950">${mlm}</th>
-                    `;
+                    sessList.forEach(sess => {
+                        if (sess === 'subuh') {
+                            h2 += `<th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>`;
+                        } else {
+                            h2 += `<th class="col-sesi bg-emerald-50 text-emerald-950">${mlm}</th>`;
+                        }
+                    });
                 });
                 h1 += `</tr>`;
                 h2 += `</tr>`;
@@ -4224,7 +4147,12 @@
 
                     tbody += `<tr class="${rowBg}">
                         <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
-                        <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick truncate" title="${s.nama}">${s.nama}</td>
+                        <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick truncate" title="${s.nama}">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="truncate" title="${s.nama}">${s.nama}</span>
+                                ${(statusSantriAsrama[s.pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin]) ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0" title="Santri Laju mulai ${tglMulaiLajuSantri[s.pin]}">LAJU</span>` : ''}
+                            </div>
+                        </td>
                         <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${stat.h}</td>
                         <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${stat.a}</td>
                         <td class="col-stat font-mono font-bold text-amber-900 bg-amber-50/40">${stat.i}</td>
@@ -4232,20 +4160,26 @@
                         <td class="col-pct font-mono border-r-thick ${cellPct}">${stat.persen}%</td>`;
 
                     dateList.forEach(d => {
+                        const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
                         const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
-                        tbody += `
-                            <td class="col-sesi">${renderBadge(item.subuh, s.pin, d.displayDate, 'subuh', 'asrama', item.subuh_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.malam, s.pin, d.displayDate, 'malam', 'asrama', item.malam_time)}</td>
-                        `;
+                        sessList.forEach(sess => {
+                            tbody += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'asrama', item[sess + '_time'])}</td>`;
+                        });
                     });
                     tbody += `</tr>`;
                 });
+
+                const infoTanggalAsr = hideEmptyLiburColumns
+                    ? `${countRenderedDates} Hari Aktif (${dateList.length} Total Hari)`
+                    : `${dateList.length} Tanggal Keseluruhan (Termasuk Libur)`;
 
                 contentHtml = `
                     <div class="space-y-2">
                         <div class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-900 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-xs flex items-center justify-between">
                             <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI ASRAMA PUTRA - DARI ${tglAwal} S.D ${tglAkhir}</span>
-                            <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${dateList.length} Tanggal Keseluruhan</span>
+                            <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${infoTanggalAsr}</span>
                         </div>
                         <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
@@ -4262,6 +4196,29 @@
             }
             // 2. KONTEN TAB: REKAP MDNU SEMUA BULAN
             else if (activeSubTabRekap === 'mdnu_semua') {
+                const mdnuDateList = dateList.filter(d => d.displayDate >= '2026-07-18');
+                const tglAwalMdn = mdnuDateList.length > 0 ? mdnuDateList[0].displayDate : '-';
+                const tglAkhirMdn = mdnuDateList.length > 0 ? mdnuDateList[mdnuDateList.length - 1].displayDate : '-';
+
+                // Peta Sesi Aktif per Tanggal MDNU
+                const activePinsMDN = activeSantriMdn.map(s => s.pin);
+                const activeDateSessionsMapMDNU = new Map();
+                mdnuDateList.forEach(d => {
+                    let sessList = ['sore', 'pel1', 'pel2', 'pel3'];
+                    if (hideEmptyLiburColumns) {
+                        sessList = sessList.filter(sess => {
+                            return activePinsMDN.some(pin => {
+                                const row = getMDNUCell(pin, d.dayIndex, d.displayDate);
+                                const v = row[sess];
+                                return v === 'H' || v === 'A' || v === 'I' || v === 'S' || v === 'BELUM_MULAI';
+                            });
+                        });
+                    }
+                    if (sessList.length > 0) {
+                        activeDateSessionsMapMDNU.set(d.displayDate, sessList);
+                    }
+                });
+
                 let h1 = `<tr>
                     <th rowspan="2" class="col-pin sticky-col-pin bg-indigo-100 text-indigo-950 font-black">PIN</th>
                     <th rowspan="2" class="col-nama sticky-col-nama bg-indigo-100 text-indigo-950 font-black border-r-thick">NAMA SANTRI</th>
@@ -4276,9 +4233,14 @@
                     <th class="col-stat bg-slate-100 text-slate-800" title="Total Jam Pelajaran">JP</th>
                     <th class="col-pct border-r-thick bg-red-100 text-red-900" title="Persentase Alpha">%</th>`;
 
-                dateList.forEach(d => {
+                let countRenderedDatesMdn = 0;
+                mdnuDateList.forEach(d => {
+                    const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                    if (!sessList || sessList.length === 0) return; // Lewati tanggal yang 100% libur kosong
+                    countRenderedDatesMdn++;
+
                     const bgH = specialLiburMDNU[d.displayDate] ? "bg-amber-200" : (d.dayIndex === 5 ? "bg-amber-100" : "bg-indigo-100");
-                    h1 += `<th colspan="4" class="${bgH} py-1.5 px-1">
+                    h1 += `<th colspan="${sessList.length}" class="${bgH} py-1.5 px-1">
                         <span class="block text-xs font-black text-indigo-950 uppercase">${d.namaHari}</span>
                         <span class="block text-[11px] font-mono text-indigo-800 font-semibold">${d.displayDate}</span>
                     </th>`;
@@ -4289,19 +4251,20 @@
                         if (cur === 'pel1') p1 = '<span class="text-rose-700">Pel 1 (Asr)</span>';
                         else p2 = '<span class="text-rose-700">Pel 2 (Asr)</span>';
                     }
-                    h2 += `
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">${p1}</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">${p2}</th>
-                        <th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>
-                    `;
+
+                    sessList.forEach(sess => {
+                        if (sess === 'sore') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">Sore</th>`;
+                        else if (sess === 'pel1') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p1}</th>`;
+                        else if (sess === 'pel2') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">${p2}</th>`;
+                        else if (sess === 'pel3') h2 += `<th class="col-sesi bg-indigo-50 text-indigo-950">Pel 3</th>`;
+                    });
                 });
                 h1 += `</tr>`;
                 h2 += `</tr>`;
 
                 let tbody = '';
                 activeSantriMdn.forEach((s, idx) => {
-                    const stat = hitungStatistikSantri(s.pin, 'mdnu', dateList);
+                    const stat = hitungStatistikSantri(s.pin, 'mdnu', mdnuDateList);
                     const isOver = stat.persen >= 15;
                     const cellPct = isOver ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
                     const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
@@ -4315,23 +4278,27 @@
                         <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${stat.jp}</td>
                         <td class="col-pct font-mono border-r-thick ${cellPct}">${stat.persen}%</td>`;
 
-                    dateList.forEach(d => {
+                    mdnuDateList.forEach(d => {
+                        const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
                         const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
-                        tbody += `
-                            <td class="col-sesi">${renderBadge(item.sore, s.pin, d.displayDate, 'sore', 'mdnu', item.sore_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel1, s.pin, d.displayDate, 'pel1', 'mdnu', item.pel1_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel2, s.pin, d.displayDate, 'pel2', 'mdnu', item.pel2_time)}</td>
-                            <td class="col-sesi">${renderBadge(item.pel3, s.pin, d.displayDate, 'pel3', 'mdnu', item.pel3_time)}</td>
-                        `;
+                        sessList.forEach(sess => {
+                            tbody += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'mdnu', item[sess + '_time'])}</td>`;
+                        });
                     });
                     tbody += `</tr>`;
                 });
 
+                const infoTanggalMdn = hideEmptyLiburColumns
+                    ? `${countRenderedDatesMdn} Hari Aktif (${mdnuDateList.length} Total Hari)`
+                    : `${mdnuDateList.length} Tanggal Keseluruhan (Termasuk Libur)`;
+
                 contentHtml = `
                     <div class="space-y-2">
                         <div class="bg-gradient-to-r from-indigo-800 via-indigo-700 to-slate-900 text-white font-extrabold px-4 py-2.5 rounded-xl shadow-xs flex items-center justify-between">
-                            <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI MDNU PUTRA - DARI ${tglAwal} S.D ${tglAkhir}</span>
-                            <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${dateList.length} Tanggal Keseluruhan</span>
+                            <span class="text-xs sm:text-sm tracking-wide">TABEL REKAPITULASI MDNU PUTRA - DARI ${tglAwalMdn} S.D ${tglAkhirMdn}</span>
+                            <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold">${infoTanggalMdn}</span>
                         </div>
                         <div class="table-scroll-container overflow-x-auto rounded-xl border border-slate-300 max-h-[72vh] sm:max-h-[650px] overflow-y-auto shadow-sm">
                             <table class="app-table whitespace-nowrap">
@@ -4353,9 +4320,10 @@
                     stat: hitungStatistikSantri(s.pin, 'asrama', dateList)
                 })).filter(item => item.stat.persen >= 15).sort((a, b) => b.stat.persen - a.stat.persen);
 
+                const mdnuDateList = dateList.filter(d => d.displayDate >= '2026-07-18');
                 const listOverMdn = activeSantriMdn.map(s => ({
                     s: s,
-                    stat: hitungStatistikSantri(s.pin, 'mdnu', dateList)
+                    stat: hitungStatistikSantri(s.pin, 'mdnu', mdnuDateList)
                 })).filter(item => item.stat.persen >= 15).sort((a, b) => b.stat.persen - a.stat.persen);
 
                 const renderOverTable = (list, colorTheme, title) => {
@@ -4430,6 +4398,10 @@
 
         // Salin Data Mendatar ke Clipboard Format Spreadsheet (TSV) lengkap dengan H, A, I, JP, %
         function salinDataAktif() {
+            if (!isAdmin) {
+                tampilkanToast("⚠️ Akses Dibatasi: Fitur Salin Spreadsheet hanya untuk Pengurus / Admin.");
+                return;
+            }
             const namaBulan = getNamaBulanRekap();
             let tsv = '';
 
@@ -4461,15 +4433,16 @@
                 });
             } else {
                 // Header 1: Tanggal & Hari MDNU
+                const mdnuDateList = dateList.filter(d => d.displayDate >= '2026-07-18');
                 tsv += `PIN\tNama\t${namaBulan}\t\t\t\t`;
-                dateList.forEach(d => {
+                mdnuDateList.forEach(d => {
                     tsv += `\t${d.namaHari} (${d.displayDate})\t\t\t`;
                 });
                 tsv += "\n";
 
                 // Header 2: Sesi MDNU
                 tsv += "\t\tH\tA\tI\tJP\t%";
-                dateList.forEach(() => {
+                mdnuDateList.forEach(() => {
                     tsv += "\tSore\tPel 1 (18:30)\tPel 2 (19:40)\tPel 3 (21:00)";
                 });
                 tsv += "\n";
@@ -4477,9 +4450,9 @@
                 // Data Santri Mendatar
                 const exportSantriMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]);
                 exportSantriMdn.forEach(s => {
-                    const stat = hitungStatistikSantri(s.pin, 'mdnu');
+                    const stat = hitungStatistikSantri(s.pin, 'mdnu', mdnuDateList);
                     tsv += `${s.pin}\t${s.nama}\t${stat.h}\t${stat.a}\t${stat.i}\t${stat.jp}\t${stat.persen}%`;
-                    dateList.forEach(d => {
+                    mdnuDateList.forEach(d => {
                         const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
                         tsv += `\t${item.sore}\t${item.pel1}\t${item.pel2}\t${item.pel3}`;
                     });
@@ -4496,6 +4469,10 @@
 
         // Unduh File Excel Matriks (.xlsx) lengkap dengan Kolom Rekap (H, A, I, JP, %)
         function unduhExcel() {
+            if (!isAdmin) {
+                tampilkanToast("⚠️ Akses Dibatasi: Fitur Unduh Excel Matriks hanya untuk Pengurus / Admin.");
+                return;
+            }
             if (santriList.length === 0 || dateList.length === 0) {
                 alert("Belum ada data untuk diunduh!");
                 return;
@@ -4551,38 +4528,41 @@
                 XLSX.utils.book_append_sheet(wb, wsAsrama, `Asrama${sheetSuffix}`);
 
                 // Sheet 2: MDNU
-                const row1MDNU = ["PIN", "NAMA", mObj.label.toUpperCase(), "", "", "", ""];
-                const row2MDNU = ["", "", "H", "A", "I", "JP", "%"];
-                const mergesMDNU = [
-                    { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } },
-                    { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } },
-                    { s: { r: 0, c: 2 }, e: { r: 0, c: 6 } }
-                ];
+                const datesInMonthMDNU = datesInMonth.filter(d => d.displayDate >= '2026-07-18');
+                if (datesInMonthMDNU.length > 0) {
+                    const row1MDNU = ["PIN", "NAMA", mObj.label.toUpperCase(), "", "", "", ""];
+                    const row2MDNU = ["", "", "H", "A", "I", "JP", "%"];
+                    const mergesMDNU = [
+                        { s: { r: 0, c: 0 }, e: { r: 1, c: 0 } },
+                        { s: { r: 0, c: 1 }, e: { r: 1, c: 1 } },
+                        { s: { r: 0, c: 2 }, e: { r: 0, c: 6 } }
+                    ];
 
-                let colIdxMdn = 7;
-                datesInMonth.forEach(d => {
-                    row1MDNU.push(`${d.namaHari} (${d.displayDate})`, "", "", "");
-                    row2MDNU.push("Sore", "Pel 1", "Pel 2", "Pel 3");
-                    mergesMDNU.push({ s: { r: 0, c: colIdxMdn }, e: { r: 0, c: colIdxMdn + 3 } });
-                    colIdxMdn += 4;
-                });
-
-                const aoaMDNU = [row1MDNU, row2MDNU];
-                const exportSantriMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]);
-                exportSantriMdn.forEach(s => {
-                    const stat = hitungStatistikSantri(s.pin, 'mdnu', datesInMonth);
-                    const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
-                    const fmtCell = (val, time) => (val === 'H' && time && time.length >= 4) ? time.substring(0, 5) : val;
-                    datesInMonth.forEach(d => {
-                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
-                        row.push(fmtCell(item.sore, item.sore_time), fmtCell(item.pel1, item.pel1_time), fmtCell(item.pel2, item.pel2_time), fmtCell(item.pel3, item.pel3_time));
+                    let colIdxMdn = 7;
+                    datesInMonthMDNU.forEach(d => {
+                        row1MDNU.push(`${d.namaHari} (${d.displayDate})`, "", "", "");
+                        row2MDNU.push("Sore", "Pel 1", "Pel 2", "Pel 3");
+                        mergesMDNU.push({ s: { r: 0, c: colIdxMdn }, e: { r: 0, c: colIdxMdn + 3 } });
+                        colIdxMdn += 4;
                     });
-                    aoaMDNU.push(row);
-                });
 
-                const wsMDNU = XLSX.utils.aoa_to_sheet(aoaMDNU);
-                wsMDNU['!merges'] = mergesMDNU;
-                XLSX.utils.book_append_sheet(wb, wsMDNU, `MDNU${sheetSuffix}`);
+                    const aoaMDNU = [row1MDNU, row2MDNU];
+                    const exportSantriMdn = santriList.filter(s => !hiddenSantriMDNU[s.pin]);
+                    exportSantriMdn.forEach(s => {
+                        const stat = hitungStatistikSantri(s.pin, 'mdnu', datesInMonthMDNU);
+                        const row = [s.pin, s.nama, stat.h, stat.a, stat.i, stat.jp, stat.persen + "%"];
+                        const fmtCell = (val, time) => (val === 'H' && time && time.length >= 4) ? time.substring(0, 5) : val;
+                        datesInMonthMDNU.forEach(d => {
+                            const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
+                            row.push(fmtCell(item.sore, item.sore_time), fmtCell(item.pel1, item.pel1_time), fmtCell(item.pel2, item.pel2_time), fmtCell(item.pel3, item.pel3_time));
+                        });
+                        aoaMDNU.push(row);
+                    });
+
+                    const wsMDNU = XLSX.utils.aoa_to_sheet(aoaMDNU);
+                    wsMDNU['!merges'] = mergesMDNU;
+                    XLSX.utils.book_append_sheet(wb, wsMDNU, `MDNU${sheetSuffix}`);
+                }
             });
 
             // Unduh File
@@ -4598,21 +4578,12 @@
             const viewAsrama = document.getElementById('viewAsrama');
             const viewMDNU = document.getElementById('viewMDNU');
             const viewRekap = document.getElementById('viewRekapitulasi');
-            const flNav = document.getElementById('floatingScrollNavigator');
 
             if (viewAsrama) viewAsrama.classList.toggle('hidden', activeTab !== 'asrama');
             if (viewMDNU) viewMDNU.classList.toggle('hidden', activeTab !== 'mdnu');
             if (viewRekap) viewRekap.classList.toggle('hidden', activeTab !== 'rekapitulasi');
 
-            if (flNav) {
-                if (dateList && dateList.length > 0) flNav.classList.remove('hidden');
-                else flNav.classList.add('hidden');
-            }
             terapkanFilter();
-        }
-
-        function setViewMode(mode) {
-            syncTableView();
         }
 
         // Inisialisasi status hak akses UI saat pertama kali dimuat
@@ -4892,8 +4863,6 @@
             const containerFilterBulan = document.getElementById('containerFilterBulan');
             if (containerFilterBulan) containerFilterBulan.classList.add('hidden');
 
-            const flNav = document.getElementById('floatingScrollNavigator');
-            if (flNav) flNav.classList.add('hidden');
 
             tutupModalHapusData();
             tampilkanToast("Seluruh data absensi telah berhasil di-reset bersih dari sistem dan Cloud!");
@@ -5017,10 +4986,6 @@
                 }
             }
             return false;
-        }
-
-        function normalizeSantriName(str) {
-            return cleanSantriStr(str);
         }
 
         const MANUAL_NAME_MAP_JS = {
@@ -5548,7 +5513,7 @@
                 };
             }
 
-            // 5. Malam Pel 1 (18:30 - 19:39 WIB)
+            // 5. Malam Pel 1 (18:30 - 19:40 WIB)
             if (totalMenit >= (18 * 60 + 30) && totalMenit < (19 * 60 + 40)) {
                 if (day === 4) {
                     return {
@@ -5561,15 +5526,15 @@
                 }
                 return {
                     icon: '📖',
-                    title: 'Sesi Pelajaran 1 (18:30 - 19:39 WIB)',
+                    title: 'Sesi Pelajaran 1 (18:30 - 19:40 WIB)',
                     badge: '🟢 Sedang Berlangsung',
                     badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
                     desc: 'KBM MDNU Pelajaran 1 sedang berlangsung.'
                 };
             }
 
-            // 7. Malam Pel 2 (19:40 - 20:59 WIB)
-            if (totalMenit >= (19 * 60 + 40) && totalMenit <= (20 * 60 + 59)) {
+            // 7. Malam Pel 2 (19:40 - 21:00 WIB)
+            if (totalMenit >= (19 * 60 + 40) && totalMenit < (21 * 60)) {
                 if (day === 4) {
                     return {
                         icon: '🕌',
@@ -5581,7 +5546,7 @@
                 }
                 return {
                     icon: '📖',
-                    title: 'Sesi Pelajaran 2 (19:40 - 20:59 WIB)',
+                    title: 'Sesi Pelajaran 2 (19:40 - 21:00 WIB)',
                     badge: '🟢 Sedang Berlangsung',
                     badgeClass: 'bg-emerald-500/30 text-emerald-200 border-emerald-400/40 animate-pulse',
                     desc: 'KBM MDNU Pelajaran 2 sedang berlangsung.'
@@ -5683,22 +5648,15 @@
                 }
             }
 
-            // Isi / update dropdown pilihan tanggal jika opsi berbeda
-            const selectEl = document.getElementById('liveWidgetPilihTanggal');
-            if (selectEl) {
-                const currentVal = widgetSelectedDate;
-                if (selectEl.children.length !== dateList.length) {
-                    let optHtml = '';
-                    // Tampilkan urutan mundur (terbaru di atas)
-                    for (let i = dateList.length - 1; i >= 0; i--) {
-                        const d = dateList[i];
-                        const isTdy = (d.displayDate === todayISO);
-                        const labelTgl = isTdy ? `⭐ Hari Ini (${d.displayDate})` : `${d.namaHari}, ${d.displayDate}`;
-                        optHtml += `<option value="${d.displayDate}" ${d.displayDate === currentVal ? 'selected' : ''}>${labelTgl}</option>`;
-                    }
-                    selectEl.innerHTML = optHtml;
-                } else if (selectEl.value !== currentVal) {
-                    selectEl.value = currentVal;
+            // Update input tanggal kalender
+            const inputDateEl = document.getElementById('liveWidgetPilihTanggal');
+            if (inputDateEl) {
+                if (dateList.length > 0) {
+                    inputDateEl.min = dateList[0].displayDate;
+                    inputDateEl.max = dateList[dateList.length - 1].displayDate;
+                }
+                if (inputDateEl.value !== widgetSelectedDate) {
+                    inputDateEl.value = widgetSelectedDate;
                 }
             }
 
@@ -5774,7 +5732,13 @@
         }
 
         function gantiTanggalMonitorWidget(tglVal) {
+            if (!tglVal) return;
             widgetSelectedDate = tglVal;
+            // Jika tanggal target berada di bulan lain, otomatis alihkan ke bulan tersebut
+            const targetMonthKey = tglVal.substring(0, 7);
+            if (selectedMonthKey !== targetMonthKey && selectedMonthKey !== 'all') {
+                ubahFilterBulan(targetMonthKey);
+            }
             renderLiveTodayWidget();
         }
 
@@ -5864,16 +5828,14 @@
         // ========================================================
         // MODUL MENU UTAMA 2: DATA INDUK SANTRI & SINKRONISASI
         // ========================================================
-        let menuUtamaAktif = 'absen'; // 'absen' | 'santri'
         let filterStatusSantriInduk = 'all'; // 'all' | 'mukim' | 'laju' | 'boyong' | 'unregistered'
         let searchSantriIndukQuery = '';
 
         function gantiMenuUtama(menu) {
             menuUtamaAktif = menu;
-            const btnAbsen = document.getElementById('btnNavMenuAbsen');
-            const btnSantri = document.getElementById('btnNavMenuSantri');
             const secAbsen = document.getElementById('containerMenuAbsen');
             const secSantri = document.getElementById('containerMenuSantri');
+            const secIzin = document.getElementById('containerMenuIzin');
             const titleEl = document.getElementById('headerMainTitle');
             const searchInput = document.getElementById('filterSearch');
             const mobSearchInput = document.getElementById('mobileFilterSearch');
@@ -5883,47 +5845,72 @@
             // Dock buttons
             const dockAbsen = document.getElementById('btnDockAbsen');
             const dockSantri = document.getElementById('btnDockSantri');
+            const dockIzin = document.getElementById('btnDockIzin');
             const dockIndAbsen = document.getElementById('dockIndicatorAbsen');
             const dockIndSantri = document.getElementById('dockIndicatorSantri');
+            const dockIndIzin = document.getElementById('dockIndicatorIzin');
 
             // Mobile drawer buttons
             const mobBtnAbsen = document.getElementById('mobileNavBtnAbsen');
             const mobBtnSantri = document.getElementById('mobileNavBtnSantri');
+            const mobBtnIzin = document.getElementById('mobileNavBtnIzin');
+
+            // Reset all dock buttons
+            if (dockAbsen) dockAbsen.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+            if (dockSantri) dockSantri.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+            if (dockIzin) dockIzin.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+
+            if (dockIndAbsen) dockIndAbsen.classList.add('hidden');
+            if (dockIndSantri) dockIndSantri.classList.add('hidden');
+            if (dockIndIzin) dockIndIzin.classList.add('hidden');
+
+            if (mobBtnAbsen) mobBtnAbsen.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
+            if (mobBtnSantri) mobBtnSantri.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
+            if (mobBtnIzin) mobBtnIzin.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
+
+            if (secAbsen) secAbsen.classList.add('hidden');
+            if (secSantri) secSantri.classList.add('hidden');
+            if (secIzin) secIzin.classList.add('hidden');
 
             if (menu === 'absen') {
                 if (titleEl) titleEl.innerText = "Absen";
                 if (catPills) catPills.classList.remove('hidden');
                 if (mobCatBar) mobCatBar.classList.remove('hidden');
                 if (secAbsen) secAbsen.classList.remove('hidden');
-                if (secSantri) secSantri.classList.add('hidden');
                 if (searchInput) searchInput.placeholder = "Cari PIN atau Nama Santri...";
                 if (mobSearchInput) mobSearchInput.placeholder = "Cari PIN atau Nama Santri...";
 
                 if (dockAbsen) dockAbsen.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 bg-emerald-600 text-white shadow-md shadow-emerald-600/30 cursor-pointer';
-                if (dockSantri) dockSantri.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
                 if (dockIndAbsen) dockIndAbsen.classList.remove('hidden');
-                if (dockIndSantri) dockIndSantri.classList.add('hidden');
-
                 if (mobBtnAbsen) mobBtnAbsen.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold bg-emerald-600 text-white shadow-sm transition';
-                if (mobBtnSantri) mobBtnSantri.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
-            } else {
+            } else if (menu === 'santri') {
                 if (titleEl) titleEl.innerText = "Data Santri";
                 if (catPills) catPills.classList.add('hidden');
                 if (mobCatBar) mobCatBar.classList.add('hidden');
-                if (secAbsen) secAbsen.classList.add('hidden');
                 if (secSantri) secSantri.classList.remove('hidden');
                 if (searchInput) searchInput.placeholder = "Cari PIN, Nama, Kelas di Data Induk...";
                 if (mobSearchInput) mobSearchInput.placeholder = "Cari PIN, Nama, Kelas di Data Induk...";
 
                 if (dockSantri) dockSantri.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/30 cursor-pointer';
-                if (dockAbsen) dockAbsen.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
                 if (dockIndSantri) dockIndSantri.classList.remove('hidden');
-                if (dockIndAbsen) dockIndAbsen.classList.add('hidden');
-
                 if (mobBtnSantri) mobBtnSantri.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold bg-indigo-600 text-white shadow-sm transition';
-                if (mobBtnAbsen) mobBtnAbsen.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition';
 
                 renderMenuDataSantri();
+            } else if (menu === 'izin') {
+                if (titleEl) titleEl.innerText = "Perizinan Santri";
+                if (catPills) catPills.classList.add('hidden');
+                if (mobCatBar) mobCatBar.classList.add('hidden');
+                if (secIzin) secIzin.classList.remove('hidden');
+                if (searchInput) searchInput.placeholder = "Cari Nama, Kelas, Alasan Izin...";
+                if (mobSearchInput) mobSearchInput.placeholder = "Cari Nama, Kelas, Alasan Izin...";
+
+                if (dockIzin) dockIzin.className = 'sidebar-dock-btn group relative flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all duration-200 bg-purple-700 text-white shadow-md shadow-purple-700/30 cursor-pointer';
+                if (dockIndIzin) dockIndIzin.classList.remove('hidden');
+                if (mobBtnIzin) mobBtnIzin.className = 'w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold bg-purple-700 text-white shadow-sm transition';
+
+                if (typeof renderMenuPerizinan === 'function') {
+                    renderMenuPerizinan();
+                }
             }
         }
 
@@ -5968,6 +5955,98 @@
             }, 100);
         }
 
+        // ========================================================
+        // LOGIKA SORTING DATA SANTRI INDUK (KELAS & BOYONG)
+        // Urutan: 2 Ulya > 1 Ulya > 2 Wustho > 1 Wustho > 2 Awaliyah > Boyong (Paling Bawah)
+        // ========================================================
+        function getInferredClassName(pin) {
+            const p = String(pin || '').toUpperCase().trim();
+            if (p.startsWith('2UA') || p.startsWith('2UB')) return '2 Ulya';
+            if (p.startsWith('1UA') || p.startsWith('1UB')) return '1 Ulya';
+            if (p.startsWith('2WA') || p.startsWith('2WB')) return '2 Wustho';
+            if (p.startsWith('1WA') || p.startsWith('1WB')) return '1 Wustho';
+            if (p.startsWith('2AA') || p.startsWith('2AW')) return '2 Awaliyah';
+            if (p.startsWith('1AA') || p.startsWith('1AW')) return '1 Awaliyah';
+            return null;
+        }
+
+        function getKelasPrioritySantriInduk(kelas, pin) {
+            const k = String(kelas || '').toLowerCase().trim();
+            const p = String(pin || '').toUpperCase().trim();
+
+            // 1. Kelas 2 Ulya
+            if ((k.includes('ulya') && k.includes('2')) || p.startsWith('2UA') || p.startsWith('2UB') || k.includes('2ua')) {
+                return 1;
+            }
+            // 2. Kelas 1 Ulya
+            if ((k.includes('ulya') && k.includes('1')) || p.startsWith('1UA') || p.startsWith('1UB') || k.includes('1ua')) {
+                return 2;
+            }
+            // 3. Kelas 2 Wustho (Wajib hindari false match k.includes('wa') karena 'awaliyah' mengandung 'wa')
+            if ((k.includes('wustho') && k.includes('2')) || p.startsWith('2WA') || p.startsWith('2WB') || /\b2\s*w/i.test(k)) {
+                return 3;
+            }
+            // 4. Kelas 1 Wustho
+            if ((k.includes('wustho') && k.includes('1')) || p.startsWith('1WA') || p.startsWith('1WB') || /\b1\s*w/i.test(k)) {
+                return 4;
+            }
+            // 5. Kelas 2 Awaliyah
+            if (((k.includes('awaliyah') || k.includes('ula')) && k.includes('2')) || p.startsWith('2AA') || p.startsWith('2AW') || /\b2\s*(aa|aw|awaliyah)\b/i.test(k)) {
+                return 5;
+            }
+            // 6. Kelas 1 Awaliyah
+            if (((k.includes('awaliyah') || k.includes('ula')) && k.includes('1')) || p.startsWith('1AA') || p.startsWith('1AW') || /\b1\s*(aa|aw|awaliyah)\b/i.test(k)) {
+                return 6;
+            }
+
+            // Fallback nama jenjang tanpa angka tingkat
+            if (k.includes('ulya')) return 1.9;
+            if (k.includes('wustho')) return 3.9;
+            if (k.includes('awaliyah') || k.includes('ula')) return 5.9;
+
+            return 99;
+        }
+
+        // Fungsi pembanding santri induk:
+        // 1. Santri Boyong selalu ditempatkan paling bawah
+        // 2. Santri aktif diurutkan: 2 Ulya > 1 Ulya > 2 Wustho > 1 Wustho > 2 Awaliyah
+        // 3. Dalam jenjang yang sama, santri ber-PIN resmi didahulukan (natural numeric PIN)
+        // 4. Fallback nama santri alfabetis
+        function compareSantriInduk(a, b) {
+            const isBoyongA = (String(a.status || '').toLowerCase() === 'boyong') ? 1 : 0;
+            const isBoyongB = (String(b.status || '').toLowerCase() === 'boyong') ? 1 : 0;
+
+            // Boyong dibawah sendiri
+            if (isBoyongA !== isBoyongB) {
+                return isBoyongA - isBoyongB;
+            }
+
+            // Urutan jenjang kelas
+            const prioA = getKelasPrioritySantriInduk(a.kelas, a.pin);
+            const prioB = getKelasPrioritySantriInduk(b.kelas, b.pin);
+            if (prioA !== prioB) {
+                return prioA - prioB;
+            }
+
+            // Prioritaskan yang sudah memiliki PIN mesin
+            const pinA = String(a.pin || '').trim();
+            const pinB = String(b.pin || '').trim();
+            const hasPinA = (pinA && pinA !== '-') ? 1 : 0;
+            const hasPinB = (pinB && pinB !== '-') ? 1 : 0;
+
+            if (hasPinA !== hasPinB) {
+                return hasPinB - hasPinA;
+            }
+
+            if (hasPinA && hasPinB) {
+                const cmpPin = pinA.localeCompare(pinB, undefined, { numeric: true, sensitivity: 'base' });
+                if (cmpPin !== 0) return cmpPin;
+            }
+
+            // Fallback nama santri
+            return String(a.nama || '').localeCompare(String(b.nama || ''), undefined, { sensitivity: 'base' });
+        }
+
         function renderMenuDataSantri() {
             if (!dataSantriInduk || dataSantriInduk.length === 0) {
                 // Fallback otomatis dari santriList jika dataSantriInduk belum ditarik
@@ -5982,13 +6061,18 @@
                             namaMesin: s.nama,
                             status: st,
                             kamar: '-',
-                            kelas: '-',
+                            kelas: getInferredClassName(s.pin) || '-',
                             terdaftarMesin: true,
                             tglBoyong: '',
                             source: 'Santri List Mesin'
                         };
                     });
                 }
+            }
+
+            // Urutkan data santri induk secara konsisten
+            if (Array.isArray(dataSantriInduk)) {
+                dataSantriInduk.sort(compareSantriInduk);
             }
 
             // Hitung ringkasan status
@@ -5998,7 +6082,8 @@
                 if (st === 'mukim') cMukim++;
                 else if (st === 'laju') cLaju++;
                 else if (st === 'boyong') cBoyong++;
-                if (!s.terdaftarMesin) cUnregistered++;
+                // Hanya hitung santri yang belum masuk mesin jika masih aktif mondok (bukan boyong)
+                if (!s.terdaftarMesin && st !== 'boyong') cUnregistered++;
             });
 
             // Update stats cards
@@ -6040,12 +6125,13 @@
             const q = searchSantriIndukQuery;
             const fStatus = filterStatusSantriInduk;
 
+            // Filter data sesuai kriteria, kemudian urutkan: 2 Ulya > 1 Ulya > 2 Wustho > 1 Wustho > 2 Awaliyah > Boyong (bawah)
             const filtered = (dataSantriInduk || []).filter(s => {
                 // Filter status
                 if (fStatus === 'mukim' && s.status !== 'mukim') return false;
                 if (fStatus === 'laju' && s.status !== 'laju') return false;
                 if (fStatus === 'boyong' && s.status !== 'boyong') return false;
-                if (fStatus === 'unregistered' && s.terdaftarMesin) return false;
+                if (fStatus === 'unregistered' && (s.terdaftarMesin || s.status === 'boyong')) return false;
 
                 // Search query
                 if (q) {
@@ -6056,7 +6142,7 @@
                     if (!matchNama && !matchPin && !matchKamar && !matchKelas) return false;
                 }
                 return true;
-            });
+            }).sort(compareSantriInduk);
 
             const lblSummary = document.getElementById('labelSummarySantriInduk');
             if (lblSummary) {
@@ -6121,6 +6207,24 @@
                     ? `<span class="font-mono font-bold text-xs bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md border border-slate-200">${s.pin}</span>`
                     : `<span class="font-mono text-xs text-slate-400 italic">-</span>`;
 
+                // Badge Kelas Diniyah dengan warna hierarki
+                const rawKelas = (s.kelas && s.kelas !== '-') ? s.kelas : (getInferredClassName(s.pin) || '-');
+                const prioKelas = getKelasPrioritySantriInduk(rawKelas, s.pin);
+                let badgeKelas = '';
+                if (prioKelas === 1 || prioKelas === 1.9) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">${rawKelas}</span>`;
+                } else if (prioKelas === 2) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">${rawKelas}</span>`;
+                } else if (prioKelas === 3 || prioKelas === 3.9) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">${rawKelas}</span>`;
+                } else if (prioKelas === 4) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">${rawKelas}</span>`;
+                } else if (prioKelas === 5 || prioKelas === 5.9 || prioKelas === 6) {
+                    badgeKelas = `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">${rawKelas}</span>`;
+                } else {
+                    badgeKelas = `<span class="font-mono text-xs text-slate-400 italic">-</span>`;
+                }
+
                 const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
                 // Admin Action Buttons: M (Mukim), L (Laju), B (Boyong), 🏷️ Dispen
@@ -6151,7 +6255,7 @@
                             ${(s.namaMesin && s.namaMesin !== '-' && s.namaMesin !== s.nama) ? `<div class="text-[11px] text-slate-400">Nama Mesin: ${s.namaMesin}</div>` : ''}
                         </td>
                         <td class="py-2.5 px-4 font-mono font-medium text-slate-700">${s.kamar || '-'}</td>
-                        <td class="py-2.5 px-4 text-slate-700 font-medium">${s.kelas || '-'}</td>
+                        <td class="py-2.5 px-4">${badgeKelas}</td>
                         <td class="py-2.5 px-4">
                             <div class="flex flex-col items-start gap-1">
                                 ${badgeStatus}
@@ -6168,6 +6272,10 @@
         }
 
         async function sinkronkanDataSantriManual() {
+            if (!isAdmin) {
+                tampilkanToast("⚠️ Akses Dibatasi: Fitur Sinkronkan Data hanya untuk Pengurus / Admin.");
+                return;
+            }
             const btn = document.getElementById('btnSyncSantriSheets');
             const btnText = document.getElementById('btnSyncSantriSheetsText');
             if (btn) btn.disabled = true;
@@ -6181,6 +6289,9 @@
                     const val = snap.val();
                     if (val && Array.isArray(val)) {
                         dataSantriInduk = val;
+                        if (typeof compareSantriInduk === 'function') {
+                            dataSantriInduk.sort(compareSantriInduk);
+                        }
                         renderMenuDataSantri();
                     }
                 }
@@ -6195,6 +6306,10 @@
         }
 
         function unduhExcelDataSantri() {
+            if (!isAdmin) {
+                tampilkanToast("⚠️ Akses Dibatasi: Fitur Unduh Excel hanya untuk Pengurus / Admin.");
+                return;
+            }
             if (!dataSantriInduk || dataSantriInduk.length === 0) {
                 alert("Data santri belum tersedia untuk diunduh.");
                 return;
@@ -6204,13 +6319,19 @@
                 ["NO", "PIN MESIN", "NAMA SANTRI", "KAMAR", "KELAS DINIYAH", "STATUS", "STATUS BIOMETRIK MESIN", "TANGGAL BOYONG"]
             ];
 
-            dataSantriInduk.forEach((s, idx) => {
+            const listExport = [...dataSantriInduk];
+            if (typeof compareSantriInduk === 'function') {
+                listExport.sort(compareSantriInduk);
+            }
+
+            listExport.forEach((s, idx) => {
+                const curKelas = (s.kelas && s.kelas !== '-') ? s.kelas : (getInferredClassName(s.pin) || "-");
                 rows.push([
                     idx + 1,
                     s.pin || "-",
                     s.nama || "-",
                     s.kamar || "-",
-                    s.kelas || "-",
+                    curKelas,
                     (s.status || "mukim").toUpperCase(),
                     s.terdaftarMesin ? "TERDAFTAR DI MESIN" : "BELUM MASUK MESIN",
                     s.tglBoyong || "-"
@@ -6535,12 +6656,6 @@
             tampilkanToast(`Dispensasi berhasil dihapus.`);
         }
 
-        // Fallback untuk backward compatibility
-        function ubahStatusSantriInduk(encodedPinOrNama, newStatus) {
-            if (newStatus === 'mukim') setSantriMukimInduk(encodedPinOrNama);
-            else if (newStatus === 'laju') bukaModalAturLaju(encodedPinOrNama);
-            else if (newStatus === 'boyong') bukaModalAturBoyong(encodedPinOrNama);
-        }
 
         // ==========================================
         // DRAWER & MOBILE APP BAR HELPER FUNCTIONS
@@ -6665,11 +6780,6 @@
             const modalFreeze = document.getElementById('modalFreezeData');
             if (modalFreeze && !modalFreeze.classList.contains('hidden')) {
                 tutupModalFreezeData();
-                return;
-            }
-            const modalSantri = document.getElementById('modalKelolaSantri');
-            if (modalSantri && !modalSantri.classList.contains('hidden')) {
-                tutupModalKelolaSantri();
                 return;
             }
             const modalLibur = document.getElementById('modalKelolaLibur');
@@ -6932,106 +7042,6 @@
                 <button type="button" onclick="tutupModalDispensasiInduk()"
                     class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs transition cursor-pointer">
                     Selesai / Tutup
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ======================================================== -->
-    <!-- MODAL 1: KELOLA STATUS SANTRI (MUKIM, LAJU & BOYONG) -->
-    <!-- ======================================================== -->
-    <div id="modalKelolaSantri" class="fixed inset-0 z-[70] hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 overflow-y-auto app-modal-overlay">
-        <div
-            class="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[92dvh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 app-modal-sheet">
-            <!-- Modal Header -->
-            <div class="p-4 sm:p-5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div
-                        class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-indigo-600/30">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900">Kelola Status Santri (Laju & Boyong)</h3>
-                        <p class="text-xs text-slate-500">Pilih <b>Laju</b> atau <b>Boyong</b> per kategori Asrama dan MDNU.</p>
-                    </div>
-                </div>
-                <button onclick="tutupModalKelolaSantri()"
-                    class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-200 transition">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Category Tab Inside Modal: Asrama vs MDNU -->
-            <div
-                class="px-4 sm:px-5 pt-3 pb-2 border-b border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <button id="modalSantriTabAsrama" onclick="gantiTabModalSantri('asrama')"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-emerald-600 text-white shadow-xs">
-                        <span>Asrama Putra</span>
-                        <span id="badgeModalHiddenAsrama"
-                            class="bg-emerald-800 text-white text-[10px] px-1.5 py-0.2 rounded-full">0 disembunyikan</span>
-                    </button>
-                    <button id="modalSantriTabMDNU" onclick="gantiTabModalSantri('mdnu')"
-                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200">
-                        <span>MDNU Putra</span>
-                        <span id="badgeModalHiddenMDNU"
-                            class="bg-slate-300 text-slate-800 text-[10px] px-1.5 py-0.2 rounded-full">0 disembunyikan</span>
-                    </button>
-                </div>
-
-                <button onclick="resetStatusSantri(modalSantriActiveTab)"
-                    class="text-xs font-bold text-slate-500 hover:text-rose-600 underline">
-                    Tampilkan Semua (Reset ke Mukim)
-                </button>
-            </div>
-
-            <!-- Petunjuk Ringkas Aturan -->
-            <div class="px-4 sm:px-5 py-2 bg-amber-50/80 border-b border-amber-200 text-[11px] text-amber-900 flex items-center gap-2">
-                <span class="font-bold text-amber-600">[INFO]</span> <span><b>Aturan Otomatis:</b> Di <b>Asrama</b>, pilihan <i>Laju</i> atau <i>Boyong</i> otomatis menyembunyikan santri dari tabel absen. Di <b>MDNU</b>, hanya <i>Boyong</i> yang menyembunyikan santri; santri <i>Laju</i> tetap tampil di tabel absen MDNU.</span>
-            </div>
-
-            <!-- Search & Filter Controls Inside Modal -->
-            <div
-                class="p-4 sm:px-5 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-center gap-2.5">
-                <div class="relative w-full sm:flex-1">
-                    <input type="text" id="modalSantriSearch" placeholder="Cari PIN atau Nama santri..."
-                        oninput="renderModalKelolaSantriList()"
-                        autocomplete="off"
-                        spellcheck="false"
-                        class="w-full pl-8 pr-3 py-1.5 bg-white text-slate-900 placeholder-slate-400 font-semibold border border-slate-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-
-                <!-- Filter Tabs: Semua, Laju, Boyong, Mukim -->
-                <div class="flex items-center gap-1.5 w-full sm:w-auto justify-end text-xs flex-wrap">
-                    <button onclick="filterStatusModalSantri('all')" id="btnFilterModal_all"
-                        class="px-2.5 py-1 rounded-lg font-bold bg-indigo-600 text-white shadow-xs">Semua</button>
-                    <button onclick="filterStatusModalSantri('laju')" id="btnFilterModal_laju" class="px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300">Laju</button>
-                    <button onclick="filterStatusModalSantri('boyong')" id="btnFilterModal_boyong" class="px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300">Boyong</button>
-                    <button onclick="filterStatusModalSantri('mukim')" id="btnFilterModal_mukim"
-                        class="px-2.5 py-1 rounded-lg font-bold bg-slate-200 text-slate-700 hover:bg-slate-300">Mukim / Aktif</button>
-                </div>
-            </div>
-
-            <!-- Student List Container -->
-            <div id="modalSantriListContainer"
-                class="flex-1 overflow-y-auto p-4 sm:p-5 divide-y divide-slate-100 space-y-1">
-                <!-- Rendered dynamically -->
-            </div>
-
-            <!-- Modal Footer -->
-            <div class="p-3 sm:p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs">
-                <span id="modalSantriSummaryText" class="text-slate-600 font-medium">Memuat data santri...</span>
-                <button onclick="tutupModalKelolaSantri()"
-                    class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition">
-                    Selesai
                 </button>
             </div>
         </div>
@@ -7502,6 +7512,15 @@
                         <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         <span>Data Santri</span>
                     </button>
+
+                    <button type="button" onclick="gantiMenuUtama('izin'); toggleMobileNavDrawer(false)"
+                        id="mobileNavBtnIzin"
+                        class="w-full p-3 rounded-xl flex items-center gap-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Perizinan Santri</span>
+                    </button>
                 </div>
             </div>
 
@@ -7639,10 +7658,11 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 
+    <!-- Modul Eksternal Terpisah: Perizinan Santri & Google Form -->
+    <script src="js/perizinan.js"></script>
 </body>
 
 <!-- Build Timestamp: 2026-10-15 23:44:00 -->
