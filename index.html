@@ -6195,12 +6195,25 @@
                     `;
                 }
 
+                const encodedNamaSantri = encodeURIComponent(s.nama);
+
                 // Status Mesin Biometrik
                 let badgeMesin = '';
                 if (s.terdaftarMesin && s.pin && s.pin !== '-') {
-                    badgeMesin = '<span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">✅ Terdaftar di Mesin</span>';
+                    badgeMesin = `
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg">✅ Terdaftar di Mesin</span>
+                            ${isAdmin ? `<button onclick="tautkanPinSantriInduk('${encodedNamaSantri}')" class="text-[10px] text-slate-400 hover:text-indigo-600 underline cursor-pointer" title="Ubah nomor PIN mesin">Ubah PIN</button>` : ''}
+                        </div>
+                    `;
                 } else {
-                    badgeMesin = '<span class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-lg animate-pulse">⚠️ Belum Masuk Mesin</span>';
+                    badgeMesin = `
+                        <button onclick="tautkanPinSantriInduk('${encodedNamaSantri}')" 
+                            class="inline-flex items-center gap-1 text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 border border-amber-300 px-2.5 py-1 rounded-lg transition shadow-2xs cursor-pointer animate-pulse" 
+                            title="Klik untuk menautkan nomor PIN mesin fingerprint ke santri ini">
+                            ⚠️ Belum Masuk Mesin &bull; <span class="underline">Tautkan PIN</span>
+                        </button>
+                    `;
                 }
 
                 const pinBadge = (s.pin && s.pin !== '-')
@@ -6227,11 +6240,16 @@
 
                 const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
-                // Admin Action Buttons: M (Mukim), L (Laju), B (Boyong), 🏷️ Dispen
+                // Admin Action Buttons: M (Mukim), L (Laju), B (Boyong), 🏷️ Dispen, 🔗 PIN
                 let adminActions = '';
                 if (isAdmin) {
+                    const btnPinAction = (!cleanPin)
+                        ? `<button onclick="tautkanPinSantriInduk('${encodedNamaSantri}')" title="Tautkan nomor PIN Mesin Fingerprint"
+                            class="px-2 py-1 rounded text-[10px] font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs cursor-pointer">🔗 PIN</button>`
+                        : '';
                     adminActions = `
                         <div class="flex items-center justify-center gap-1">
+                            ${btnPinAction}
                             <button onclick="setSantriMukimInduk('${encodedPin}')" title="Set Mukim Penuh (Asrama & MDNU)"
                                 class="px-2 py-1 rounded text-[10px] font-bold ${isMukim ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 border border-slate-200'} cursor-pointer">M</button>
                             <button onclick="bukaModalAturLaju('${encodedPin}')" title="Atur Laju (Awal Semester atau Mulai Tengah Semester)"
@@ -6269,6 +6287,71 @@
             });
 
             tbody.innerHTML = html;
+        }
+
+        // Tautkan nomor PIN dari Mesin Fingerprint ke Santri Induk
+        function tautkanPinSantriInduk(encodedNama) {
+            if (!isAdmin) {
+                bukaModalLoginAdmin();
+                return;
+            }
+            const targetNama = decodeURIComponent(encodedNama);
+            const s = (dataSantriInduk || []).find(item => item.nama === targetNama || item.pin === targetNama);
+            if (!s) return;
+
+            const defaultPinVal = (s.pin && s.pin !== '-') ? s.pin : '';
+            const inputPin = prompt(`Masukkan nomor PIN dari mesin fingerprint untuk santri:\n"${s.nama}" (Kelas: ${s.kelas || '-'})\n\nContoh: 2AA21`, defaultPinVal);
+            if (inputPin === null) return; // User batalkan prompt
+            const cleanPin = inputPin.trim().toUpperCase();
+            if (!cleanPin) return;
+
+            // Cek apakah PIN sudah digunakan oleh santri lain
+            const duplikatInduk = (dataSantriInduk || []).find(item => item.pin === cleanPin && item.nama !== s.nama);
+            if (duplikatInduk) {
+                alert(`⚠️ PIN ${cleanPin} sudah digunakan oleh santri: ${duplikatInduk.nama}!\nSilakan gunakan PIN lain.`);
+                return;
+            }
+
+            // Update di dataSantriInduk
+            const oldPin = s.pin;
+            s.pin = cleanPin;
+            s.namaMesin = s.nama;
+            s.terdaftarMesin = true;
+
+            // Update atau tambahkan di santriList
+            let foundInList = false;
+            (santriList || []).forEach(item => {
+                if (item.pin === cleanPin) {
+                    item.nama = s.nama;
+                    item.kelas = s.kelas || getInferredClassName(cleanPin);
+                    foundInList = true;
+                } else if (oldPin && oldPin !== '-' && item.pin === oldPin) {
+                    item.pin = cleanPin;
+                    item.nama = s.nama;
+                    item.kelas = s.kelas || getInferredClassName(cleanPin);
+                    foundInList = true;
+                }
+            });
+            if (!foundInList) {
+                santriList.push({
+                    pin: cleanPin,
+                    nama: s.nama,
+                    kelas: s.kelas || getInferredClassName(cleanPin)
+                });
+                santriList.sort(compareSantri);
+            }
+
+            // Jika status santri laju, sinkronkan statusSantriAsrama
+            if (s.status === 'laju') {
+                statusSantriAsrama[cleanPin] = 'laju';
+            }
+
+            // Simpan perubahan ke penyimpanan lokal & Cloud Firebase
+            simpanKeLocalStorage();
+            simpanKeCloud();
+            renderMenuDataSantri();
+            terapkanFilter();
+            tampilkanToast(`✅ Berhasil! Santri "${s.nama}" kini terhubung dengan PIN ${cleanPin}.`);
         }
 
         async function sinkronkanDataSantriManual() {
