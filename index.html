@@ -2519,10 +2519,13 @@
                 };
             }
 
+            const defItem = getAsramaDefault(pin, day, tgl);
+            const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
+
             // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
-            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-')
+            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-') kecuali jika ada rekaman scan fisik
             const tglMulaiAsr = (tanggalMulaiSantri && tanggalMulaiSantri[pin]);
-            if (tglMulaiAsr && tgl < tglMulaiAsr) {
+            if (tglMulaiAsr && tgl < tglMulaiAsr && !raw.subuh_time && !raw.malam_time) {
                 return {
                     subuh: 'BELUM',
                     malam: 'BELUM',
@@ -2531,9 +2534,6 @@
                     isBelum: true
                 };
             }
-
-            const defItem = getAsramaDefault(pin, day, tgl);
-            const raw = (asramaMatrix[pin] && asramaMatrix[pin][tgl]) ? asramaMatrix[pin][tgl] : {};
             
             const ovrSubuh = (manualCellOverrides && manualCellOverrides[`${pin}__${tgl}__subuh__asrama`] !== undefined) 
                 ? manualCellOverrides[`${pin}__${tgl}__subuh__asrama`] 
@@ -2597,10 +2597,15 @@
         }
 
         function getMDNUCell(pin, day, tgl) {
+            const defItem = getMDNUDefault(pin, day, tgl);
+            const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
+            const disp = getDispensasiSantri(pin, tgl);
+
             // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
-            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-')
+            // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-') kecuali jika ada rekaman scan fisik
             const tglMulaiMDNU = (tanggalMulaiSantri && tanggalMulaiSantri[pin]);
-            if (tglMulaiMDNU && tgl < tglMulaiMDNU) {
+            const hasAnyScanMDNU = Boolean(raw.sore_time || raw.pel1_time || raw.pel2_time || raw.pel3_time);
+            if (tglMulaiMDNU && tgl < tglMulaiMDNU && !hasAnyScanMDNU) {
                 return {
                     sore: 'BELUM',
                     pel1: 'BELUM',
@@ -2613,10 +2618,6 @@
                     isBelum: true
                 };
             }
-
-            const defItem = getMDNUDefault(pin, day, tgl);
-            const raw = (mdnuMatrix[pin] && mdnuMatrix[pin][tgl]) ? mdnuMatrix[pin][tgl] : {};
-            const disp = getDispensasiSantri(pin, tgl);
             
             const res = {
                 sore_time: raw.sore_time || '',
