@@ -95,6 +95,9 @@ function formatIzinDisplayDate(dt) {
 // ==========================================
 
 async function muatDataPerizinanGoogleForm(forceRefresh = false) {
+    if (typeof isAdmin !== 'undefined' && !isAdmin) {
+        return;
+    }
     if (isLoadingIzin) return;
     if (rawIzinData.length > 0 && !forceRefresh) {
         aplikasikanFilterIzin();
@@ -439,8 +442,11 @@ function unduhGambarQRIzin() {
     document.body.removeChild(link);
 }
 
-// Inisialisasi tampilan saat menu perizinan dibuka
+// Inisialisasi tampilan saat menu perizinan dibuka (Khusus Admin)
 function renderMenuPerizinan() {
+    if (typeof isAdmin !== 'undefined' && !isAdmin) {
+        return;
+    }
     muatDataPerizinanGoogleForm(false);
 }
 
