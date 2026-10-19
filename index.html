@@ -310,8 +310,7 @@
             touch-action: pan-x pan-y;
             overscroll-behavior-x: contain;
             overscroll-behavior-y: auto;
-            contain: paint;
-            transform: translateZ(0);
+            will-change: scroll-position;
         }
 
         /* Standar rendering tabel murni tanpa content-visibility pada TR (mencegah layout thrashing pada sticky columns) */
@@ -1383,6 +1382,7 @@
             }
         }
 
+        let _cloudSyncDebounceTimer = null;
         function mulaiSinkronisasiCloud() {
             if (!fbDb) return;
             const ref = fbDb.ref('absensi_ppnu');
@@ -1397,8 +1397,12 @@
 
                 if (isSyncingToCloud) return;
 
-                console.log("Menerima pembaruan data absensi dari Cloud Firebase...");
-                terapkanDataDariCloud(data);
+                // Debounce cerdas (120ms): Mencegah DOM thrashing / UI lag saat mesin mengirim puluhan scan semalam sekaligus
+                if (_cloudSyncDebounceTimer) clearTimeout(_cloudSyncDebounceTimer);
+                _cloudSyncDebounceTimer = setTimeout(() => {
+                    console.log("Menerima pembaruan data absensi dari Cloud Firebase...");
+                    terapkanDataDariCloud(data);
+                }, 120);
             }, (error) => {
                 console.error("Error membaca Realtime Database:", error);
                 updateCloudSyncStatus('error', 'Gagal memuat Cloud');
@@ -3104,7 +3108,7 @@
         // Format Badge Tampilan Cell Standar Presisi (H, A, I, K, LIBUR, -)
         function renderBadge(val, pin, tgl, sesi, tab, time) {
             if (val === 'LIBUR') {
-                return `<span class="inline-flex items-center justify-center px-1.5 h-6 rounded text-[10px] font-bold text-slate-400 bg-white border border-slate-200 select-none shadow-2xs">LIBUR</span>`;
+                return `<span class="inline-flex items-center justify-center px-1.5 h-6 rounded text-[10px] font-bold text-slate-400 bg-white border border-slate-200 select-none">LIBUR</span>`;
             }
             if (val === 'LAJU') {
                 return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default font-mono text-[11px]" title="Santri Laju - Bebas Absen Asrama">-</span>`;
@@ -3113,7 +3117,7 @@
                 return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default" title="Belum Mondok / Belum Wajib Absen">-</span>`;
             }
             if (val === 'K' || val === 'KKN') {
-                return `<span class="badge-cell bg-indigo-100 text-indigo-900 border border-indigo-300 select-none shadow-2xs" title="Dispensasi: KKN / Tugas Pondok">K</span>`;
+                return `<span class="badge-cell bg-indigo-100 text-indigo-900 border border-indigo-300 select-none font-bold" title="Dispensasi: KKN / Tugas Pondok">K</span>`;
             }
             const isModeAdmin = (currentInterface === 'admin' && isAdmin);
             const dataAttrs = `data-cell-pin="${pin}" data-cell-tgl="${tgl}" data-cell-sesi="${sesi}" data-cell-tab="${tab}"`;
@@ -3142,7 +3146,7 @@
                 const durasiInfo = (detail && detail.durasi) ? ` [${detail.durasi}]` : '';
                 const detailText = detail ? ` - ${detail.alasan}${durasiInfo} (ACC: ${detail.pemberiIzin || detail.pemberi || '-'})` : '';
                 return `<span ${dataAttrs} 
-                    class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none shadow-2xs font-bold" 
+                    class="badge-cell bg-amber-100 text-amber-900 border border-amber-300 ${cursorClass} select-none font-bold" 
                     title="Status: IZIN${detailText}${hint}">I</span>`;
             }
 
@@ -3150,13 +3154,13 @@
                 const hint = isModeAdmin ? " (Status: DITANGGUHKAN / TAKZIRAN - Klik untuk ganti: T -> H)" : "";
                 const scanInfo = time ? `Scan: ${time} | ` : '';
                 return `<span ${dataAttrs} 
-                    class="badge-cell bg-amber-500 text-white border border-amber-600 ${cursorClass} select-none shadow-2xs font-bold" 
+                    class="badge-cell bg-amber-500 text-white border border-amber-600 ${cursorClass} select-none font-bold" 
                     title="${scanInfo}Status: DITANGGUHKAN (Finger tapi tidak ngaji)${hint}">T</span>`;
             }
             if (val === 'A' || val === '-' || !val) {
                 const hint = isModeAdmin ? " (Klik untuk ganti: A -> I -> H)" : "";
                 return `<span ${dataAttrs} 
-                    class="badge-cell bg-rose-100 text-rose-800 border border-rose-300 ${cursorClass} select-none shadow-2xs" 
+                    class="badge-cell bg-rose-100 text-rose-800 border border-rose-300 ${cursorClass} select-none font-bold" 
                     title="Status: ALPHA${hint}">A</span>`;
             }
             // Hadir (H) -> Tampilkan Jam Scan (misal 05:46) jika ada log scan
@@ -3165,7 +3169,7 @@
             const displayHadir = (time && time.length >= 4) ? time.substring(0, 5) : 'H';
             const monoClass = (time && time.length >= 4) ? 'font-mono' : '';
             return `<span ${dataAttrs} 
-                class="badge-cell bg-emerald-100 text-emerald-800 border border-emerald-300 ${cursorClass} select-none shadow-2xs ${monoClass}" 
+                class="badge-cell bg-emerald-100 text-emerald-800 border border-emerald-300 ${cursorClass} select-none ${monoClass} font-bold" 
                 title="${scanInfo}Status: HADIR${hint}">${displayHadir}</span>`;
         }
 
@@ -3721,52 +3725,67 @@
                     tbodyRows = `<tr><td colspan="7" class="p-8 text-center text-slate-400 bg-white font-medium">Tidak ada santri mukim aktif pada bulan ${namaBulanLabel}.</td></tr>`;
                 } else {
                     activeSantriInMonth.forEach((s, idx) => {
-                    const stat = hitungStatistikSantri(s.pin, 'asrama', datesInMonth);
-                    const isOverLimit = stat.persen >= 15;
-                    const cellPercentClass = isOverLimit
-                        ? 'bg-red-600 text-white font-black'
-                        : 'bg-white text-slate-800 font-semibold';
+                        let h = 0, cellAlpha = 0, cellIzin = 0, cellKkn = 0, jp = 0;
+                        const manualIzin = (manualIzinData[s.pin] && manualIzinData[s.pin]['asrama'] !== undefined)
+                            ? Number(manualIzinData[s.pin]['asrama']) : 0;
 
-                    const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
+                        let sessionCells = '';
+                        datesInMonth.forEach(d => {
+                            const sessList = activeDateSessionsMapAsr.get(d.displayDate);
+                            if (!sessList || sessList.length === 0) return;
 
-                    tbodyRows += `<tr class="${rowBg}">
-                        <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
-                        <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick">
-                            <div class="flex items-center justify-between gap-1">
-                                <div class="flex items-center gap-1.5 min-w-0">
-                                    <span class="truncate" title="${s.nama}">${s.nama}</span>
-                                    ${(statusSantriAsrama[s.pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin]) ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0" title="Santri Laju mulai ${tglMulaiLajuSantri[s.pin]}">LAJU</span>` : ''}
-                                </div>
-                                ${isModeAdmin ? `<button onclick="toggleHideSantri('${s.pin}', 'asrama')" class="text-slate-400 hover:text-rose-600 transition text-xs p-0.5 rounded hover:bg-rose-50" title="Sembunyikan ${s.nama}">[x]</button>` : ''}
-                            </div>
-                        </td>
-                        <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${stat.h}</td>
-                        <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${stat.a}</td>
-                        <td class="col-stat bg-amber-50/40">
-                            ${isModeAdmin
-                            ? `<input type="number" min="0" value="${stat.i}" 
-                                    onchange="ubahManualIzin('${s.pin}', 'asrama', this.value)"
-                                    class="w-9 text-center text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded py-0.5 focus:ring-1 focus:ring-emerald-500"
-                                    title="Ubah izin santri bulan ini">`
-                            : `<span class="font-bold text-amber-900 font-mono">${stat.i}</span>`
-                        }
-                        </td>
-                        <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${stat.jp}</td>
-                        <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${stat.persen}%</td>`;
+                            const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
 
-                    datesInMonth.forEach(d => {
-                        const sessList = activeDateSessionsMapAsr.get(d.displayDate);
-                        if (!sessList || sessList.length === 0) return;
-
-                        const item = getAsramaCell(s.pin, d.dayIndex, d.displayDate);
-
-                        sessList.forEach(sess => {
-                            tbodyRows += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'asrama', item[sess + '_time'])}</td>`;
+                            sessList.forEach(sess => {
+                                const val = item[sess];
+                                if (val !== 'LIBUR' && val !== 'BELUM' && val !== 'NONAKTIF' && val !== 'BELUM_MULAI' && val !== 'LAJU') {
+                                    if (val === 'K' || val === 'KKN') {
+                                        cellKkn++;
+                                    } else {
+                                        jp++;
+                                        if (val === 'IZIN' || val === 'I') cellIzin++;
+                                        else if (val === 'A' || val === '-' || !val || val === 'T' || val === 'TANGGUH') cellAlpha++;
+                                        else h++;
+                                    }
+                                }
+                                sessionCells += `<td class="col-sesi">${renderBadge(val, s.pin, d.displayDate, sess, 'asrama', item[sess + '_time'])}</td>`;
+                            });
                         });
-                    });
 
-                    tbodyRows += `</tr>`;
-                });
+                        const totalIzin = cellIzin + manualIzin;
+                        const a = Math.max(0, cellAlpha - manualIzin);
+                        const persen = jp > 0 ? Math.round((a / jp) * 100) : 0;
+                        const isOverLimit = persen >= 15;
+                        const cellPercentClass = isOverLimit ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
+                        const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
+
+                        tbodyRows += `<tr class="${rowBg}">
+                            <td class="col-pin sticky-col-pin text-slate-700 font-mono font-bold bg-inherit">${s.pin}</td>
+                            <td class="col-nama sticky-col-nama font-semibold text-slate-900 bg-inherit border-r-thick">
+                                <div class="flex items-center justify-between gap-1">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <span class="truncate" title="${s.nama}">${s.nama}</span>
+                                        ${(statusSantriAsrama[s.pin] === 'laju' && tglMulaiLajuSantri && tglMulaiLajuSantri[s.pin]) ? `<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0" title="Santri Laju mulai ${tglMulaiLajuSantri[s.pin]}">LAJU</span>` : ''}
+                                    </div>
+                                    ${isModeAdmin ? `<button onclick="toggleHideSantri('${s.pin}', 'asrama')" class="text-slate-400 hover:text-rose-600 transition text-xs p-0.5 rounded hover:bg-rose-50" title="Sembunyikan ${s.nama}">[x]</button>` : ''}
+                                </div>
+                            </td>
+                            <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${h}</td>
+                            <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${a}</td>
+                            <td class="col-stat bg-amber-50/40">
+                                ${isModeAdmin
+                                ? `<input type="number" min="0" value="${totalIzin}" 
+                                        onchange="ubahManualIzin('${s.pin}', 'asrama', this.value)"
+                                        class="w-9 text-center text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded py-0.5 focus:ring-1 focus:ring-emerald-500"
+                                        title="Ubah izin santri bulan ini">`
+                                : `<span class="font-bold text-amber-900 font-mono">${totalIzin}</span>`
+                            }
+                            </td>
+                            <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${jp}</td>
+                            <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${persen}%</td>
+                            ${sessionCells}
+                        </tr>`;
+                    });
                 }
 
                 htmlFull += `
@@ -3943,12 +3962,38 @@
 
                 let tbodyRows = '';
                 activeSantriArr.forEach((s, idx) => {
-                    const stat = hitungStatistikSantri(s.pin, 'mdnu', datesInMonth);
-                    const isOverLimit = stat.persen >= 15;
-                    const cellPercentClass = isOverLimit
-                        ? 'bg-red-600 text-white font-black'
-                        : 'bg-white text-slate-800 font-semibold';
+                    let h = 0, cellAlpha = 0, cellIzin = 0, cellKkn = 0, jp = 0;
+                    const manualIzin = (manualIzinData[s.pin] && manualIzinData[s.pin]['mdnu'] !== undefined)
+                        ? Number(manualIzinData[s.pin]['mdnu']) : 0;
 
+                    let sessionCells = '';
+                    datesInMonth.forEach(d => {
+                        const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
+                        if (!sessList || sessList.length === 0) return;
+
+                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
+
+                        sessList.forEach(sesi => {
+                            const val = item[sesi];
+                            if (val !== 'LIBUR' && val !== 'BELUM' && val !== 'NONAKTIF' && val !== 'BELUM_MULAI') {
+                                if (val === 'K' || val === 'KKN') {
+                                    cellKkn++;
+                                } else {
+                                    jp++;
+                                    if (val === 'IZIN' || val === 'I') cellIzin++;
+                                    else if (val === 'A' || val === '-' || !val || val === 'T' || val === 'TANGGUH') cellAlpha++;
+                                    else h++;
+                                }
+                            }
+                            sessionCells += `<td class="col-sesi">${renderBadge(val, s.pin, d.displayDate, sesi, 'mdnu', item[sesi + '_time'])}</td>`;
+                        });
+                    });
+
+                    const totalIzin = cellIzin + manualIzin;
+                    const a = Math.max(0, cellAlpha - manualIzin);
+                    const persen = jp > 0 ? Math.round((a / jp) * 100) : 0;
+                    const isOverLimit = persen >= 15;
+                    const cellPercentClass = isOverLimit ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
                     const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
 
                     tbodyRows += `<tr class="${rowBg}">
@@ -3959,32 +4004,21 @@
                                 ${isModeAdmin ? `<button onclick="toggleHideSantri('${s.pin}', 'mdnu')" class="text-slate-400 hover:text-rose-600 transition text-xs p-0.5 rounded hover:bg-rose-50" title="Sembunyikan ${s.nama}">[x]</button>` : ''}
                             </div>
                         </td>
-                        <td class="col-stat font-mono font-bold text-indigo-900 bg-indigo-50/40">${stat.h}</td>
-                        <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${stat.a}</td>
+                        <td class="col-stat font-mono font-bold text-indigo-900 bg-indigo-50/40">${h}</td>
+                        <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${a}</td>
                         <td class="col-stat bg-amber-50/40">
                             ${isModeAdmin
-                            ? `<input type="number" min="0" value="${stat.i}" 
+                            ? `<input type="number" min="0" value="${totalIzin}" 
                                     onchange="ubahManualIzin('${s.pin}', 'mdnu', this.value)"
                                     class="w-9 text-center text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded py-0.5 focus:ring-1 focus:ring-indigo-500"
                                     title="Ubah izin santri bulan ini">`
-                            : `<span class="font-bold text-amber-900 font-mono">${stat.i}</span>`
+                            : `<span class="font-bold text-amber-900 font-mono">${totalIzin}</span>`
                         }
                         </td>
-                        <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${stat.jp}</td>
-                        <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${stat.persen}%</td>`;
-
-                    datesInMonth.forEach(d => {
-                        const sessList = activeDateSessionsMapMDNU.get(d.displayDate);
-                        if (!sessList || sessList.length === 0) return;
-
-                        const item = getMDNUCell(s.pin, d.dayIndex, d.displayDate);
-
-                        sessList.forEach(sess => {
-                            tbodyRows += `<td class="col-sesi">${renderBadge(item[sess], s.pin, d.displayDate, sess, 'mdnu', item[sess + '_time'])}</td>`;
-                        });
-                    });
-
-                    tbodyRows += `</tr>`;
+                        <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${jp}</td>
+                        <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${persen}%</td>
+                        ${sessionCells}
+                    </tr>`;
                 });
 
                 htmlFull += `
