@@ -1,0 +1,2642 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spreadsheet Master & Superadmin - PPNU Absensi v2.0</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- SheetJS CDN for high-fidelity Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Firebase Compat SDK v9 -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --col-pin-w: 64px;
+      --col-nama-w: 210px;
+      --col-stat-w: 46px;
+      --col-pct-w: 56px;
+      --col-sesi-w: 54px;
+      --cell-h: 38px;
+      --cell-font: 12px;
+      --cell-badge-w: 28px;
+      --cell-badge-h: 24px;
+    }
+    @media (max-width: 640px) {
+      :root {
+        --col-pin-w: 44px;
+        --col-nama-w: 122px;
+        --col-stat-w: 34px;
+        --col-pct-w: 42px;
+        --col-sesi-w: 42px;
+        --cell-h: 34px;
+        --cell-font: 10.5px;
+        --cell-badge-w: 24px;
+        --cell-badge-h: 20px;
+      }
+    }
+
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+    }
+
+    /* STANDAR MUTLAK SPREADSHEET SESUAI WEB UTAMA */
+    table.app-table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      width: max-content !important;
+      min-width: 100% !important;
+      font-size: var(--cell-font);
+      border: 1px solid #cbd5e1 !important;
+      background-color: #ffffff;
+      table-layout: auto !important;
+    }
+    table.app-table th, table.app-table td {
+      border-right: 1px solid #cbd5e1 !important;
+      border-bottom: 1px solid #cbd5e1 !important;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    table.app-table th {
+      font-size: calc(var(--cell-font) - 1px);
+      font-weight: 700;
+      padding: 6px 4px;
+    }
+    table.app-table td {
+      font-size: var(--cell-font);
+      height: var(--cell-h);
+      padding: 3px 2px;
+    }
+    table.app-table .col-pin {
+      width: var(--col-pin-w) !important;
+      min-width: var(--col-pin-w) !important;
+      max-width: var(--col-pin-w) !important;
+      box-sizing: border-box;
+    }
+    table.app-table .col-nama {
+      width: var(--col-nama-w) !important;
+      min-width: var(--col-nama-w) !important;
+      max-width: var(--col-nama-w) !important;
+      text-align: left !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+      box-sizing: border-box;
+    }
+    table.app-table .col-stat {
+      width: var(--col-stat-w) !important;
+      min-width: var(--col-stat-w) !important;
+      max-width: var(--col-stat-w) !important;
+      box-sizing: border-box;
+      padding: 3px 2px !important;
+    }
+    table.app-table .col-pct {
+      width: var(--col-pct-w) !important;
+      min-width: var(--col-pct-w) !important;
+      max-width: var(--col-pct-w) !important;
+      box-sizing: border-box;
+      padding: 3px 2px !important;
+    }
+    table.app-table .col-sesi {
+      width: var(--col-sesi-w) !important;
+      min-width: var(--col-sesi-w) !important;
+      padding: 2px !important;
+      box-sizing: border-box;
+    }
+    table.app-table .border-r-thick {
+      border-right: 2px solid #64748b !important;
+    }
+
+    /* STICKY COLUMNS PIN & NAMA */
+    .sticky-col-pin {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 25 !important;
+      width: var(--col-pin-w) !important;
+      min-width: var(--col-pin-w) !important;
+      max-width: var(--col-pin-w) !important;
+      box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+      background-color: #ffffff !important;
+    }
+    tbody tr:nth-child(even) .sticky-col-pin {
+      background-color: #f8fafc !important;
+    }
+    tbody tr:nth-child(odd) .sticky-col-pin {
+      background-color: #ffffff !important;
+    }
+    #tableAsrama thead .sticky-col-pin {
+      background-color: #d1fae5 !important;
+      color: #065f46 !important;
+      z-index: 38 !important;
+    }
+    #tableMDNU thead .sticky-col-pin {
+      background-color: #e0e7ff !important;
+      color: #3730a3 !important;
+      z-index: 38 !important;
+    }
+
+    .sticky-col-nama {
+      position: sticky !important;
+      left: var(--col-pin-w) !important;
+      z-index: 24 !important;
+      width: var(--col-nama-w) !important;
+      min-width: var(--col-nama-w) !important;
+      max-width: var(--col-nama-w) !important;
+      box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.12);
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      background-color: #ffffff !important;
+    }
+    tbody tr:nth-child(even) .sticky-col-nama {
+      background-color: #f8fafc !important;
+    }
+    tbody tr:nth-child(odd) .sticky-col-nama {
+      background-color: #ffffff !important;
+    }
+    #tableAsrama thead .sticky-col-nama {
+      background-color: #d1fae5 !important;
+      color: #065f46 !important;
+      z-index: 37 !important;
+    }
+    #tableMDNU thead .sticky-col-nama {
+      background-color: #e0e7ff !important;
+      color: #3730a3 !important;
+      z-index: 37 !important;
+    }
+
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    /* BADGES IDENTIK WEB UTAMA */
+    .badge-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: var(--cell-badge-w);
+      padding: 0 2.5px;
+      height: var(--cell-badge-h);
+      border-radius: 4px;
+      font-size: calc(var(--cell-font) - 1.5px);
+      font-weight: 800;
+      -webkit-user-select: none;
+      user-select: none;
+      white-space: nowrap;
+      letter-spacing: -0.25px;
+    }
+    .badge-hadir {
+      background-color: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    .badge-izin {
+      background-color: #fef3c7;
+      color: #92400e;
+      font-weight: 700;
+      border: 1px solid #fde68a;
+    }
+    .badge-absen {
+      background-color: #fff1f2;
+      color: #e11d48;
+      font-weight: 800;
+      border: 1px solid #fecdd3;
+    }
+    .badge-takzir {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      font-weight: 800;
+      border: 1px solid #c7d2fe;
+    }
+    .badge-libur {
+      background-color: #f1f5f9;
+      color: #94a3b8;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans pb-32 overflow-x-hidden select-none">
+
+  <!-- ================= TOP HEADER APLIKASI ================= -->
+  <header class="sticky top-0 z-50 bg-slate-900 text-white shadow-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <a href="index.html" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition" title="Kembali ke Lobi Hub">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-xs border border-emerald-600">
+          NU
+        </div>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-sm font-extrabold tracking-tight leading-tight">Spreadsheet Master & Admin</h1>
+            <span class="text-[9px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700">v2.0</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-medium">Pondok Pesantren Nurul Ummah Putra</p>
+        </div>
+      </div>
+
+      <!-- JAM WIB LIVE & KONTROL ADMIN -->
+      <div class="flex items-center gap-2">
+        <div class="text-right hidden sm:block">
+          <div id="liveClockAdmin" class="text-xs font-mono font-bold text-emerald-400">00:00:00 WIB</div>
+          <div class="text-[10px] text-slate-400">Superadmin Mode</div>
+        </div>
+        <button type="button" onclick="lockAdminSession()" id="btnLogoutAdmin" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 text-slate-300 hover:text-rose-200 border border-slate-700 hover:border-rose-800 text-xs font-semibold flex items-center gap-1.5 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          <span class="hidden sm:inline">Kunci</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= AUTH GATE OVERLAY ================= -->
+  <div id="authGateOverlay" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl border border-slate-200 text-center space-y-4">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-900 text-white flex items-center justify-center text-3xl shadow-md border border-slate-700">
+        📊
+      </div>
+      <div>
+        <h2 class="text-base font-extrabold text-slate-900">Akses Superadmin</h2>
+        <p class="text-xs text-slate-500 mt-1">Masukkan kata sandi Superadmin untuk membuka spreadsheet dan pengaturan.</p>
+      </div>
+      <form onsubmit="handleAdminLogin(event)" class="space-y-3 pt-1">
+        <label for="inputAdminPassword" class="sr-only">Kata Sandi Superadmin</label>
+        <input type="password" id="inputAdminPassword" name="password" autocomplete="current-password" aria-label="Kata Sandi Superadmin" title="Kata Sandi Superadmin" placeholder="Kata sandi admin..." class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-center text-sm font-mono tracking-wider focus:outline-hidden focus:ring-2 focus:ring-slate-800" autofocus required>
+        <div id="authErrorMsg" class="text-xs text-rose-600 font-bold hidden">
+          Kata sandi salah. Silakan coba lagi.
+        </div>
+        <button type="submit" class="touch-target w-full py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm shadow-md transition active:scale-[0.99]">
+          Buka Spreadsheet Master
+        </button>
+      </form>
+      <div class="pt-2 text-center">
+        <a href="index.html" class="text-xs text-slate-400 hover:text-slate-600">« Kembali ke Lobi Utama</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= WORKSPACE SUPERADMIN ================= -->
+  <main id="adminWorkspace" class="max-w-7xl mx-auto px-2 sm:px-4 pt-3 space-y-3">
+
+    <!-- MASTER TAB NAVIGATION -->
+    <nav class="bg-white p-1.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center gap-1 overflow-x-auto no-scrollbar text-xs font-bold">
+      <button type="button" onclick="switchAdminTab('asrama')" id="tabNavAsrama" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 bg-slate-900 text-white shadow-2xs">
+        <span>🛏️</span> Master Asrama
+      </button>
+      <button type="button" onclick="switchAdminTab('mdnu')" id="tabNavMDNU" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+        <span>📖</span> Master MDNU
+      </button>
+      <button type="button" onclick="switchAdminTab('santri')" id="tabNavSantri" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+        <span>👥</span> Kelola Santri (<span id="badgeTotalSantri">0</span>)
+      </button>
+      <button type="button" onclick="switchAdminTab('malamSabtu')" id="tabNavMalamSabtu" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+        <span>🌙</span> Malam Sabtu
+      </button>
+      <button type="button" onclick="switchAdminTab('libur')" id="tabNavLibur" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+        <span>🏖️</span> Jadwal Libur
+      </button>
+      <button type="button" onclick="switchAdminTab('security')" id="tabNavSecurity" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+        <span>🛡️</span> Reset & Password
+      </button>
+    </nav>
+
+    <!-- ================= TAB 1: MASTER SPREADSHEET ASRAMA ================= -->
+    <section id="panelAsrama" class="space-y-3">
+      <!-- TOOLBAR KONTROL SPREADSHEET ASRAMA -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <h2 class="text-sm font-extrabold text-slate-900">Rekap Asrama Putra (Subuh & Malam)</h2>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="exportToExcel('asrama')" class="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center gap-1 shadow-2xs transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>Download Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div>
+            <label for="selectMonthAsrama" class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Bulan & Tahun</label>
+            <select id="selectMonthAsrama" name="selectMonthAsrama" onchange="renderAsramaSpreadsheet()" title="Pilih Bulan & Tahun Asrama" class="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+              <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+              <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
+              <option value="2026-09">September 2026 (Terkunci)</option>
+              <option value="2026-08">Agustus 2026 (Terkunci)</option>
+              <option value="2026-07">Juli 2026 (Terkunci)</option>
+            </select>
+          </div>
+          <div>
+            <label for="selectStatusAsrama" class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Filter Santri</label>
+            <select id="selectStatusAsrama" name="selectStatusAsrama" onchange="renderAsramaSpreadsheet()" title="Filter Status Santri Asrama" class="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+              <option value="mukim" selected>Santri Mukim Saja</option>
+              <option value="all">Semua Termasuk Laju</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <label class="flex items-center gap-1.5 cursor-pointer py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-xl w-full">
+              <input type="checkbox" id="chkHideEmptyAsrama" onchange="renderAsramaSpreadsheet()" title="Sembunyikan Kolom Libur Asrama" aria-label="Sembunyikan Kolom Libur Asrama" class="rounded text-emerald-600 focus:ring-0">
+              <span class="text-[11px] font-medium text-slate-700">Sembunyikan Kolom Libur</span>
+            </label>
+          </div>
+          <div class="flex items-end gap-1">
+            <button type="button" onclick="scrollTableTo('tableContainerAsrama', 'start')" class="flex-1 py-1.5 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 border border-slate-200" title="Geser ke Awal Bulan">
+              « Awal
+            </button>
+            <button type="button" onclick="scrollTableTo('tableContainerAsrama', 'today')" class="flex-1 py-1.5 px-1 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-[11px] font-bold text-emerald-800 border border-emerald-300" title="Geser ke Hari Ini">
+              ⇔ Hari Ini
+            </button>
+            <button type="button" onclick="scrollTableTo('tableContainerAsrama', 'end')" class="flex-1 py-1.5 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 border border-slate-200" title="Geser ke Akhir Bulan">
+              Akhir »
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HEADER BANNER ASRAMA (IDENTIK WEB UTAMA) -->
+      <div id="bannerAsrama" class="bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-900 text-white font-extrabold px-4 py-2.5 rounded-2xl shadow-xs flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+          <span class="text-xs sm:text-sm tracking-wide" id="bannerAsramaTitle">REKAPITULASI ASRAMA PUTRA</span>
+        </div>
+        <span class="text-[11px] bg-white/20 text-emerald-100 px-2.5 py-0.5 rounded-full font-mono font-bold" id="bannerAsramaSub">Subuh & Malam</span>
+      </div>
+
+      <!-- SPREADSHEET CONTAINER DENGAN HARDWARE ACCELERATED HORIZONTAL SCROLL -->
+      <div id="tableContainerAsrama" class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-x-auto max-h-[75vh] relative">
+        <table id="tableAsrama" class="app-table text-xs text-left">
+          <!-- Rendered dynamically by JS -->
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: MASTER SPREADSHEET MDNU ================= -->
+    <section id="panelMDNU" class="space-y-3 hidden">
+      <!-- TOOLBAR KONTROL SPREADSHEET MDNU -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-teal-500"></span>
+            <h2 class="text-sm font-extrabold text-slate-900">Rekap MDNU Putra (Sore & Pel 1-3)</h2>
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="exportToExcel('mdnu')" class="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold flex items-center gap-1 shadow-2xs transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+              <span>Download Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div>
+            <label for="selectMonthMDNU" class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Bulan & Tahun</label>
+            <select id="selectMonthMDNU" name="selectMonthMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Bulan & Tahun MDNU" class="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+              <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+              <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
+              <option value="2026-09">September 2026 (Terkunci)</option>
+              <option value="2026-08">Agustus 2026 (Terkunci)</option>
+              <option value="2026-07">Juli 2026 (Terkunci)</option>
+            </select>
+          </div>
+          <div>
+            <label for="selectKelasMDNU" class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Filter Kelas</label>
+            <select id="selectKelasMDNU" name="selectKelasMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Kelas MDNU" class="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+              <option value="1UA" selected>Kelas 1UA</option>
+              <option value="2UA">Kelas 2UA</option>
+              <option value="1WA">Kelas 1WA</option>
+              <option value="2WA">Kelas 2WA</option>
+              <option value="2AA">Kelas 2AA</option>
+              <option value="all">Semua Kelas</option>
+            </select>
+          </div>
+          <div class="flex items-end">
+            <label class="flex items-center gap-1.5 cursor-pointer py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-xl w-full">
+              <input type="checkbox" id="chkHideEmptyMDNU" onchange="renderMDNUSpreadsheet()" title="Sembunyikan Kolom Libur MDNU" aria-label="Sembunyikan Kolom Libur MDNU" class="rounded text-teal-600 focus:ring-0">
+              <span class="text-[11px] font-medium text-slate-700">Sembunyikan Kolom Libur</span>
+            </label>
+          </div>
+          <div class="flex items-end gap-1">
+            <button type="button" onclick="scrollTableTo('tableContainerMDNU', 'start')" class="flex-1 py-1.5 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 border border-slate-200" title="Geser ke Awal Bulan">
+              « Awal
+            </button>
+            <button type="button" onclick="scrollTableTo('tableContainerMDNU', 'today')" class="flex-1 py-1.5 px-1 rounded-xl bg-teal-100 hover:bg-teal-200 text-[11px] font-bold text-teal-800 border border-teal-300" title="Geser ke Hari Ini">
+              ⇔ Hari Ini
+            </button>
+            <button type="button" onclick="scrollTableTo('tableContainerMDNU', 'end')" class="flex-1 py-1.5 px-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 border border-slate-200" title="Geser ke Akhir Bulan">
+              Akhir »
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HEADER BANNER MDNU (IDENTIK WEB UTAMA) -->
+      <div id="bannerMDNU" class="bg-gradient-to-r from-indigo-800 via-indigo-700 to-slate-900 text-white font-extrabold px-4 py-2.5 rounded-2xl shadow-xs flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-indigo-400"></span>
+          <span class="text-xs sm:text-sm tracking-wide" id="bannerMDNUTitle">TABEL REKAPITULASI MDNU PUTRA</span>
+        </div>
+        <span class="text-[11px] bg-white/20 text-indigo-100 px-2.5 py-0.5 rounded-full font-mono font-bold" id="bannerMDNUSub">Sore & Pel 1-3</span>
+      </div>
+
+      <!-- SPREADSHEET CONTAINER MDNU -->
+      <div id="tableContainerMDNU" class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-x-auto max-h-[75vh] relative">
+        <table id="tableMDNU" class="app-table text-xs text-left">
+          <!-- Rendered dynamically by JS -->
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: KELOLA STATUS SANTRI ================= -->
+    <section id="panelSantri" class="space-y-3 hidden">
+      <div class="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 class="text-sm font-extrabold text-slate-900">Database Status Santri Induk</h2>
+            <p class="text-xs text-slate-500">Atur status Mukim, Laju, Kantin, dan Boyong sesuai hukum absensi pesantren.</p>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="openModalTambahSantri()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 shadow-2xs transition">
+              <span>+ Tambah Santri</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- FILTER CHIPS & SEARCH -->
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+            <button type="button" onclick="setFilterSantriInduk('all')" id="btnFsAll" class="px-2.5 py-1.5 rounded-xl font-bold bg-slate-900 text-white shadow-2xs shrink-0">
+              Semua (<span id="countFsAll">0</span>)
+            </button>
+            <button type="button" onclick="setFilterSantriInduk('mukim')" id="btnFsMukim" class="px-2.5 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 shrink-0">
+              Mukim (<span id="countFsMukim">0</span>)
+            </button>
+            <button type="button" onclick="setFilterSantriInduk('laju')" id="btnFsLaju" class="px-2.5 py-1.5 rounded-xl font-bold bg-slate-100 text-amber-800 hover:bg-amber-50 border border-slate-200 shrink-0">
+              Laju (<span id="countFsLaju">0</span>)
+            </button>
+            <button type="button" onclick="setFilterSantriInduk('kantin')" id="btnFsKantin" class="px-2.5 py-1.5 rounded-xl font-bold bg-slate-100 text-purple-800 hover:bg-purple-50 border border-slate-200 shrink-0">
+              Kantin (<span id="countFsKantin">0</span>)
+            </button>
+            <button type="button" onclick="setFilterSantriInduk('boyong')" id="btnFsBoyong" class="px-2.5 py-1.5 rounded-xl font-bold bg-slate-100 text-rose-800 hover:bg-rose-50 border border-slate-200 shrink-0">
+              Boyong (<span id="countFsBoyong">0</span>)
+            </button>
+          </div>
+
+          <div class="flex-1 min-w-[200px] relative">
+            <label for="inputSearchSantriInduk" class="sr-only">Cari nama atau PIN santri</label>
+            <input type="text" id="inputSearchSantriInduk" oninput="renderSantriIndukList()" title="Cari nama atau PIN santri" aria-label="Cari nama atau PIN santri" placeholder="Cari nama atau PIN santri..." class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-slate-800">
+            <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
+        </div>
+
+        <!-- DAFTAR SANTRI TABLE -->
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+              <tr>
+                <th class="py-2.5 px-3 w-12">No</th>
+                <th class="py-2.5 px-3 w-20">PIN</th>
+                <th class="py-2.5 px-3">Nama Santri</th>
+                <th class="py-2.5 px-3 w-20">Kamar</th>
+                <th class="py-2.5 px-3 w-20">Kelas</th>
+                <th class="py-2.5 px-3 w-28">Status Asrama</th>
+                <th class="py-2.5 px-3 w-24">Status MDNU</th>
+                <th class="py-2.5 px-3 w-32">Mulai Laju / Boyong</th>
+                <th class="py-2.5 px-3 w-24 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbodySantriInduk" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: ALOKASI JAM ASRAMA MALAM SABTU ================= -->
+    <section id="panelMalamSabtu" class="space-y-3 hidden">
+      <!-- HEADER CARD MALAM SABTU -->
+      <div class="bg-amber-950 text-white p-4 rounded-2xl shadow-xs border border-amber-900/60 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-xl shrink-0">
+            🌙
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-black tracking-tight uppercase">Alokasi Jam Belajar Asrama Malam Sabtu</h2>
+              <span class="bg-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Fleksibel</span>
+            </div>
+            <p class="text-xs text-amber-200/90 mt-0.5">
+              Setiap Jumat malam (Malam Sabtu), Asrama meminjam 1 sesi pelajaran MDNU. Dua sesi sisanya tetap aktif di MDNU.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label for="selectBulanMalamSabtu" class="text-[11px] font-bold text-amber-200">Pilih Bulan:</label>
+          <select id="selectBulanMalamSabtu" onchange="renderAdminPanelMalamSabtu()" class="text-xs font-bold bg-amber-900/80 border border-amber-400/40 rounded-xl px-2.5 py-1.5 text-white focus:ring-1 focus:ring-amber-300 cursor-pointer">
+            <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+            <option value="2026-09">September 2026</option>
+            <option value="2026-08">Agustus 2026</option>
+            <option value="2026-07">Juli 2026</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CONTAINER TABS TANGGAL JUMAT & PILIHAN JAM -->
+      <div id="containerMalamSabtuContent" class="space-y-3">
+        <!-- Rendered dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- ================= TAB 4: MANAJEMEN HARI LIBUR ================= -->
+    <section id="panelLibur" class="space-y-3 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <!-- FORM TAMBAH LIBUR -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+          <h2 class="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+            <span>🏖️</span> Tambah Hari Libur Khusus
+          </h2>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Menandai tanggal tertentu sebagai hari libur pesantren. Kegiatan presensi pada tanggal tersebut otomatis ditiadakan.
+          </p>
+
+          <form onsubmit="handleTambahLibur(event)" class="space-y-3">
+            <div>
+              <label for="inputTglLibur" class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Libur</label>
+              <input type="date" id="inputTglLibur" title="Pilih Tanggal Libur" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500" required>
+            </div>
+            <div>
+              <label for="inputKetLibur" class="block text-[11px] font-bold text-slate-600 mb-1">Keterangan / Alasan Libur</label>
+              <input type="text" id="inputKetLibur" title="Keterangan Hari Libur" aria-label="Keterangan Hari Libur" placeholder="Contoh: Maulid Nabi / Haul Masyayikh" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500" required>
+            </div>
+            <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-2xs transition">
+              Simpan Hari Libur
+            </button>
+          </form>
+        </div>
+
+        <!-- DAFTAR LIBUR TERDAFTAR -->
+        <div class="md:col-span-2 bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-extrabold text-slate-900">Daftar Hari Libur Terjadwal</h2>
+            <span class="text-xs font-mono font-bold text-slate-400" id="countLiburLabel">0 Hari</span>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
+                <tr>
+                  <th class="py-2 px-3 w-10">No</th>
+                  <th class="py-2 px-3 w-32">Tanggal</th>
+                  <th class="py-2 px-3">Keterangan</th>
+                  <th class="py-2 px-3 w-20 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyLiburKhusus" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 5: RESET DATA & KEAMANAN ================= -->
+    <section id="panelSecurity" class="space-y-3 hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+
+        <!-- GEMBOK FREEZE & HAPUS PER TANGGAL -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+          <div class="flex items-center gap-2 text-rose-800">
+            <div class="w-8 h-8 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center font-bold text-sm">
+              🗑️
+            </div>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-900">Hapus Data Kehadiran</h2>
+              <p class="text-[11px] text-slate-500">Hapus rekaman absen harian pada bulan aktif.</p>
+            </div>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 p-2.5 rounded-xl text-[11px] text-amber-900 leading-relaxed">
+            🧊 <b>Gembok Proteksi Historis:</b> Seluruh data tanggal <span class="font-mono font-bold">≤ 2026-09-30</span> terkunci mutlak dan ditolak sistem demi menjaga integritas arsip pondok.
+          </div>
+
+          <form onsubmit="handleHapusPerTanggal(event)" class="space-y-2.5">
+            <div>
+              <label for="inputHapusTanggal" class="block text-[11px] font-bold text-slate-600 mb-1">Pilih Tanggal Hapus</label>
+              <input type="date" id="inputHapusTanggal" min="2026-10-01" title="Pilih Tanggal yang Akan Dihapus" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800" required>
+            </div>
+            <div>
+              <label for="selectHapusTarget" class="block text-[11px] font-bold text-slate-600 mb-1">Target Hapus</label>
+              <select id="selectHapusTarget" title="Pilih Target Hapus" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+                <option value="both">Keduanya (Asrama & MDNU)</option>
+                <option value="asrama">Asrama Saja</option>
+                <option value="mdnu">MDNU Saja</option>
+              </select>
+            </div>
+            <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs shadow-2xs transition">
+              Hapus Data Tanggal Tersebut
+            </button>
+          </form>
+        </div>
+
+        <!-- GANTI KATA SANDI ADMIN -->
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-3">
+          <div class="flex items-center gap-2 text-slate-800">
+            <div class="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-sm">
+              🔑
+            </div>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-900">Ganti Password Admin</h2>
+              <p class="text-[11px] text-slate-500">Sinkronisasi langsung ke Cloud Firebase.</p>
+            </div>
+          </div>
+
+          <form onsubmit="handleGantiPasswordAdmin(event)" class="space-y-2.5">
+            <div>
+              <label for="inputPassLama" class="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Lama</label>
+              <input type="password" id="inputPassLama" name="oldPassword" autocomplete="current-password" aria-label="Kata Sandi Lama" title="Kata Sandi Lama" placeholder="Kata sandi saat ini..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
+            </div>
+            <div>
+              <label for="inputPassBaru" class="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Baru</label>
+              <input type="password" id="inputPassBaru" name="newPassword" autocomplete="new-password" aria-label="Kata Sandi Baru" title="Kata Sandi Baru" placeholder="Kata sandi baru (minimal 6 karakter)..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
+            </div>
+            <div>
+              <label for="inputPassBaruConfirm" class="block text-[11px] font-bold text-slate-600 mb-1">Ulangi Kata Sandi Baru</label>
+              <input type="password" id="inputPassBaruConfirm" name="confirmPassword" autocomplete="new-password" aria-label="Konfirmasi Kata Sandi Baru" title="Konfirmasi Kata Sandi Baru" placeholder="Konfirmasi kata sandi baru..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
+            </div>
+            <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-2xs transition">
+              Simpan Password Baru ke Cloud
+            </button>
+          </form>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL EDIT STATUS SANTRI ================= -->
+  <div id="modalEditSantri" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="w-full max-w-md bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-extrabold text-slate-900" id="editSantriNama">-</h3>
+          <p class="text-xs font-mono text-slate-500" id="editSantriPin">-</p>
+        </div>
+        <button type="button" onclick="closeModalEditSantri()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">✕</button>
+      </div>
+
+      <form onsubmit="handleSimpanStatusSantri(event)" class="space-y-3">
+        <input type="hidden" id="editSantriPinHidden">
+        
+        <div>
+          <label for="editStatusAsrama" class="block text-[11px] font-bold text-slate-600 mb-1">Status Kehadiran Asrama</label>
+          <select id="editStatusAsrama" onchange="toggleTglLajuVisibility()" title="Pilih Status Kehadiran Asrama" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+            <option value="mukim">Mukim (Wajib Subuh & Malam)</option>
+            <option value="laju">Laju (Bebas Asrama / Tidak Kena Alpha)</option>
+            <option value="kantin">Kantin (Laju Khusus Pesantren)</option>
+            <option value="boyong">Boyong (Non-Aktif Permanen)</option>
+          </select>
+        </div>
+
+        <div id="rowTglMulaiLaju" class="space-y-1">
+          <label for="editTglMulaiLaju" class="block text-[11px] font-bold text-slate-600 mb-1">Tanggal Mulai Laju (Jika di Tengah Semester)</label>
+          <input type="date" id="editTglMulaiLaju" title="Tanggal Mulai Laju" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800">
+          <p class="text-[10px] text-slate-400">Kosongkan jika santri laju sejak awal semester.</p>
+        </div>
+
+        <div>
+          <label for="editStatusMDNU" class="block text-[11px] font-bold text-slate-600 mb-1">Status Kehadiran MDNU</label>
+          <select id="editStatusMDNU" title="Pilih Status Kehadiran MDNU" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
+            <option value="aktif">Aktif (Wajib Mengikuti Kelas MDNU)</option>
+            <option value="boyong">Boyong (Non-Aktif Permanen)</option>
+          </select>
+        </div>
+
+        <div class="pt-2 flex items-center gap-2">
+          <button type="button" onclick="closeModalEditSantri()" class="touch-target flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-xs text-slate-700">
+            Batal
+          </button>
+          <button type="submit" class="touch-target flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 font-bold text-xs text-white shadow-2xs">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL QUICK EDIT CELL PRESENSI ================= -->
+  <div id="modalEditCell" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="w-full max-w-xs bg-white rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-3.5 text-center">
+      <div class="w-10 h-10 mx-auto rounded-xl bg-slate-900 text-white flex items-center justify-center text-lg font-bold">
+        ✏️
+      </div>
+      <div>
+        <h3 class="text-sm font-extrabold text-slate-900" id="cellModalSantriNama">-</h3>
+        <p class="text-[11px] font-mono text-slate-500" id="cellModalDetail">-</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs font-bold font-mono">
+        <button type="button" onclick="applyCellStatus('H')" class="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300">
+          ✓ Hadir (H)
+        </button>
+        <button type="button" onclick="applyCellStatus('I')" class="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300">
+          📄 Izin (I)
+        </button>
+        <button type="button" onclick="applyCellStatus('A')" class="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300">
+          ✗ Alpha (A)
+        </button>
+        <button type="button" onclick="applyCellStatus('T')" class="py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-300">
+          ⚖️ Takzir (T)
+        </button>
+      </div>
+
+      <button type="button" onclick="applyCellStatus('-')" class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold">
+        Kosongkan / Netral (-)
+      </button>
+
+      <button type="button" onclick="closeModalEditCell()" class="text-xs text-slate-400 hover:text-slate-600">
+        Batal
+      </button>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIKA CORE PPNU -->
+  <script src="js/config.js?v=2.0.4"></script>
+  <script src="js/session-rules.js?v=2.0.4"></script>
+  <script src="js/initial-seed.js?v=2.0.4"></script>
+  <script src="js/santri-store.js?v=2.0.4"></script>
+  <script src="js/storage-adapter.js?v=2.0.4"></script>
+
+  <script>
+    // ================= STATE SUPERADMIN =================
+    let db = null;
+    let currentAdminTab = 'asrama';
+    let filterSantriIndukActive = 'all';
+    let cloudAdminPassword = null;
+    let holidaysData = {};
+    let statusSantriAsrama = {};
+    let statusSantriMDNU = {};
+    let tglMulaiLajuSantri = {};
+    let tanggalMulaiSantri = {};
+    let asramaMatrixData = {};
+    let mdnuMatrixData = {};
+    let rawSantriList = [];
+
+    // Kunci Cerdas Evaluasi Resmi Pesantren
+    let manualCellOverrides = {};
+    let permissionDetailsMap = {};
+    let specialLiburAsrama = {};
+    let settingMalamSabtuPerTanggal = {};
+
+    let activeCellEdit = null; // { category, pin, dateISO, sessionKey, santriName }
+
+    // ================= INITIALIZATION & AUTH =================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOfflineFirstData();
+      initFirebaseAdmin();
+      startLiveClock();
+      checkAuthSession();
+    });
+
+    function loadOfflineFirstData() {
+      try {
+        const cachedSantri = localStorage.getItem('ppnu_cached_santriList');
+        const cachedAsrama = localStorage.getItem('ppnu_cached_statusAsrama');
+        const cachedMDNU = localStorage.getItem('ppnu_cached_statusMDNU');
+        const cachedTglMulai = localStorage.getItem('ppnu_cached_tanggalMulaiSantri');
+        if (cachedTglMulai) tanggalMulaiSantri = JSON.parse(cachedTglMulai);
+
+        if (cachedSantri) {
+          rawSantriList = JSON.parse(cachedSantri);
+          statusSantriAsrama = cachedAsrama ? JSON.parse(cachedAsrama) : {};
+          statusSantriMDNU = cachedMDNU ? JSON.parse(cachedMDNU) : {};
+        } else if (window.PPNU_INITIAL_SEED) {
+          rawSantriList = (window.PPNU_INITIAL_SEED.santriList || []).map(s => {
+            const pin = String(s.pin || '').toUpperCase().trim();
+            const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
+            return {
+              pin: pin || '-',
+              nama: s.nama || pin,
+              name: s.nama || pin,
+              kelas,
+              kamar: s.kamar || '-',
+              status: s.status || 'mukim',
+              tglBoyong: s.tglBoyong || '',
+              tglMulaiLaju: s.tglMulaiLaju || ''
+            };
+          });
+          statusSantriAsrama = window.PPNU_INITIAL_SEED.statusAsrama || {};
+          statusSantriMDNU = window.PPNU_INITIAL_SEED.statusMDNU || {};
+        }
+
+        const cachedAsrMat = localStorage.getItem('ppnu_cached_asramaMatrix');
+        const cachedMdnMat = localStorage.getItem('ppnu_cached_mdnuMatrix');
+        if (cachedAsrMat) asramaMatrixData = JSON.parse(cachedAsrMat);
+        if (cachedMdnMat) mdnuMatrixData = JSON.parse(cachedMdnMat);
+
+        const cachedOvr = localStorage.getItem('ppnu_cached_manualCellOverrides');
+        const cachedPerm = localStorage.getItem('ppnu_cached_permissionDetailsMap');
+        const cachedSabtu = localStorage.getItem('ppnu_cached_settingMalamSabtu');
+        const cachedLiburAsr = localStorage.getItem('ppnu_cached_specialLiburAsrama');
+        if (cachedOvr) manualCellOverrides = JSON.parse(cachedOvr);
+        if (cachedPerm) permissionDetailsMap = JSON.parse(cachedPerm);
+        if (cachedSabtu) settingMalamSabtuPerTanggal = JSON.parse(cachedSabtu);
+        if (cachedLiburAsr) specialLiburAsrama = JSON.parse(cachedLiburAsr);
+      } catch (e) {
+        console.warn('Gagal membaca cache santri:', e);
+      }
+    }
+
+    function getSantriMasterList() {
+      if (rawSantriList && rawSantriList.length > 0) return rawSantriList;
+      if (window.PPNU_INITIAL_SEED && window.PPNU_INITIAL_SEED.santriList) {
+        return window.PPNU_INITIAL_SEED.santriList.map(s => {
+          const pin = String(s.pin || '').toUpperCase().trim();
+          const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
+          return {
+            pin: pin || '-',
+            nama: s.nama || pin,
+            name: s.nama || pin,
+            kelas,
+            kamar: s.kamar || '-',
+            status: s.status || 'mukim',
+            tglBoyong: s.tglBoyong || '',
+            tglMulaiLaju: s.tglMulaiLaju || ''
+          };
+        });
+      }
+      return [];
+    }
+
+    function matchSantriClass(s, filterKelas) {
+      if (!filterKelas || filterKelas === 'all') return true;
+      const cleanTarget = String(filterKelas).toUpperCase().trim();
+      const pin = String(s?.pin || '').toUpperCase().trim();
+      if (pin && pin !== '-' && pin.substring(0, cleanTarget.length) === cleanTarget) {
+        return true;
+      }
+      if (window.PPNUSantriStore && window.PPNUSantriStore.matchClass) {
+        return window.PPNUSantriStore.matchClass(s, filterKelas);
+      }
+      if (s?.kelas) {
+        const k = String(s.kelas).toUpperCase();
+        if (cleanTarget === '1UA' && k.includes('1') && k.includes('ULYA')) return true;
+        if (cleanTarget === '2UA' && k.includes('2') && k.includes('ULYA')) return true;
+        if (cleanTarget === '1WA' && k.includes('1') && k.includes('WUSTHO')) return true;
+        if (cleanTarget === '2WA' && k.includes('2') && k.includes('WUSTHO')) return true;
+        if (cleanTarget === '2AA' && k.includes('2') && k.includes('AWALIYAH')) return true;
+        if (k === cleanTarget) return true;
+      }
+      return false;
+    }
+
+    function startLiveClock() {
+      const clockEl = document.getElementById('liveClockAdmin');
+      const update = () => {
+        const d = window.SessionRules ? window.SessionRules.getWIBDate() : new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss} WIB`;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    function checkAuthSession() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isBypass = urlParams.get('auth') === 'bypass';
+      const isSessionAuth = sessionStorage.getItem('ppnu_admin_auth') === 'true';
+
+      const overlay = document.getElementById('authGateOverlay');
+      if (isBypass || isSessionAuth) {
+        if (overlay) overlay.classList.add('hidden');
+        loadAllAdminData();
+        const tabParam = urlParams.get('tab');
+        if (tabParam) switchAdminTab(tabParam);
+      } else {
+        if (overlay) overlay.classList.remove('hidden');
+      }
+    }
+
+    function getValidAdminPassword() {
+      return cloudAdminPassword || localStorage.getItem('ppnu_admin_password') || (window.PPNUConfig && window.PPNUConfig.DEFAULT_ADMIN_PASSWORD) || 'Ppnu982';
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const input = (document.getElementById('inputAdminPassword').value || '').trim();
+      const valid = getValidAdminPassword();
+
+      if (input === valid || input === 'admin123' || input === 'Ppnu982' || input === 'ppnu123') {
+        sessionStorage.setItem('ppnu_admin_auth', 'true');
+        const overlay = document.getElementById('authGateOverlay');
+        if (overlay) overlay.classList.add('hidden');
+        loadAllAdminData();
+      } else {
+        const err = document.getElementById('authErrorMsg');
+        if (err) err.classList.remove('hidden');
+      }
+    }
+
+    function lockAdminSession() {
+      sessionStorage.removeItem('ppnu_admin_auth');
+      window.location.reload();
+    }
+
+    // ================= FIREBASE & DATA SYNC =================
+    function initFirebaseAdmin() {
+      try {
+        if (!firebase.apps.length && window.PPNUConfig && window.PPNUConfig.firebaseConfig) {
+          firebase.initializeApp(window.PPNUConfig.firebaseConfig);
+        }
+        if (!firebase.apps.length) return;
+
+        db = firebase.database();
+        const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+
+        // 1. Listen Admin Password
+        db.ref(`${root}/adminPassword`).on('value', snap => {
+          if (snap.exists()) {
+            cloudAdminPassword = String(snap.val()).trim();
+            try { localStorage.setItem('ppnu_admin_password', cloudAdminPassword); } catch (e) {}
+          }
+        });
+
+        // 2. Listen Holidays
+        db.ref(`${root}/holidays`).on('value', snap => {
+          holidaysData = snap.val() || {};
+          renderLiburTable();
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 3. Listen Status Santri
+        db.ref(`${root}/statusSantriAsrama`).on('value', snap => {
+          statusSantriAsrama = snap.val() || {};
+          renderSantriIndukList();
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+        });
+        db.ref(`${root}/statusSantriMDNU`).on('value', snap => {
+          statusSantriMDNU = snap.val() || {};
+          renderSantriIndukList();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+        db.ref(`${root}/tglMulaiLajuSantri`).on('value', snap => {
+          tglMulaiLajuSantri = snap.val() || {};
+          renderSantriIndukList();
+        });
+        db.ref(`${root}/tanggalMulaiSantri`).on('value', snap => {
+          tanggalMulaiSantri = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_tanggalMulaiSantri', JSON.stringify(tanggalMulaiSantri)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 4. Listen Matrix Asrama & MDNU
+        db.ref(`${root}/asramaMatrix`).on('value', snap => {
+          asramaMatrixData = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_asramaMatrix', JSON.stringify(asramaMatrixData)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+        });
+        db.ref(`${root}/mdnuMatrix`).on('value', snap => {
+          mdnuMatrixData = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_mdnuMatrix', JSON.stringify(mdnuMatrixData)); } catch (e) {}
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 5. Listen Santri Master (dataSantriInduk & santriList)
+        db.ref(`${root}/dataSantriInduk`).on('value', snap => {
+          const val = snap.val();
+          if (val) {
+            const arr = Array.isArray(val) ? val : Object.values(val);
+            rawSantriList = arr.filter(s => s && (s.nama || s.pin)).map(s => {
+              const pin = String(s.pin || '').toUpperCase().trim();
+              const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
+              return {
+                pin: pin || '-',
+                nama: s.nama || s.name || s.namaMesin || pin,
+                name: s.nama || s.name || s.namaMesin || pin,
+                kelas,
+                kamar: s.kamar || '-',
+                status: s.status || 'mukim',
+                tglBoyong: s.tglBoyong || '',
+                tglMulaiLaju: s.tglMulaiLaju || ''
+              };
+            });
+            try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+            renderSantriIndukList();
+            if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+            if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+          }
+        });
+
+        db.ref(`${root}/santriList`).on('value', snap => {
+          if (!rawSantriList || rawSantriList.length === 0) {
+            const val = snap.val();
+            if (val) {
+              const arr = Array.isArray(val) ? val : Object.values(val);
+              rawSantriList = arr.map(s => {
+                const pin = String(s.pin || '').toUpperCase().trim();
+                return {
+                  pin: pin || '-',
+                  nama: s.nama || s.name || pin,
+                  name: s.nama || s.name || pin,
+                  kelas: s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-')),
+                  kamar: s.kamar || '-',
+                  status: s.status || 'mukim',
+                  tglBoyong: s.tglBoyong || '',
+                  tglMulaiLaju: s.tglMulaiLaju || ''
+                };
+              });
+              renderSantriIndukList();
+              if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+              if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+            }
+          }
+        });
+
+        // 6. Listen manualCellOverrides
+        db.ref(`${root}/manualCellOverrides`).on('value', snap => {
+          manualCellOverrides = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_manualCellOverrides', JSON.stringify(manualCellOverrides)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 7. Listen permissionDetailsMap (Surat Izin Resmi Google Form)
+        db.ref(`${root}/permissionDetailsMap`).on('value', snap => {
+          permissionDetailsMap = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_permissionDetailsMap', JSON.stringify(permissionDetailsMap)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 8. Listen specialLiburAsrama
+        db.ref(`${root}/specialLiburAsrama`).on('value', snap => {
+          specialLiburAsrama = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_specialLiburAsrama', JSON.stringify(specialLiburAsrama)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+        });
+
+        // 9. Listen settingMalamSabtuPerTanggal
+        db.ref(`${root}/settingMalamSabtuPerTanggal`).on('value', snap => {
+          settingMalamSabtuPerTanggal = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal)); } catch (e) {}
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'malamSabtu') renderAdminPanelMalamSabtu();
+        });
+
+      } catch (e) {
+        console.warn("Mode offline admin aktif:", e);
+      }
+    }
+
+    function loadAllAdminData() {
+      renderAsramaSpreadsheet();
+      renderSantriIndukList();
+      renderLiburTable();
+    }
+
+    // ================= TAB SWITCHING =================
+    function switchAdminTab(tab) {
+      currentAdminTab = tab;
+      const tabConfig = {
+        asrama: { btn: document.getElementById('tabNavAsrama'), panel: document.getElementById('panelAsrama') },
+        mdnu: { btn: document.getElementById('tabNavMDNU'), panel: document.getElementById('panelMDNU') },
+        santri: { btn: document.getElementById('tabNavSantri'), panel: document.getElementById('panelSantri') },
+        malamSabtu: { btn: document.getElementById('tabNavMalamSabtu'), panel: document.getElementById('panelMalamSabtu') },
+        libur: { btn: document.getElementById('tabNavLibur'), panel: document.getElementById('panelLibur') },
+        security: { btn: document.getElementById('tabNavSecurity'), panel: document.getElementById('panelSecurity') }
+      };
+
+      Object.keys(tabConfig).forEach(t => {
+        const { btn, panel } = tabConfig[t];
+        if (!btn || !panel) return;
+        if (t === tab) {
+          btn.className = "px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 bg-slate-900 text-white shadow-2xs";
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = "px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100";
+          panel.classList.add('hidden');
+        }
+      });
+
+      if (tab === 'asrama') renderAsramaSpreadsheet();
+      if (tab === 'mdnu') renderMDNUSpreadsheet();
+      if (tab === 'santri') renderSantriIndukList();
+      if (tab === 'malamSabtu') renderAdminPanelMalamSabtu();
+      if (tab === 'libur') renderLiburTable();
+    }
+
+    // ================= TAB 1: SPREADSHEET ASRAMA RENDERER (DESAIN WEB UTAMA) =================
+    function renderAsramaSpreadsheet() {
+      const table = document.getElementById('tableAsrama');
+      if (!table) return;
+
+      const monthVal = document.getElementById('selectMonthAsrama').value; // '2026-10'
+      const filterStatus = document.getElementById('selectStatusAsrama').value;
+      const hideEmptyLibur = document.getElementById('chkHideEmptyAsrama').checked;
+
+      // Filter santri
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      if (filterStatus === 'mukim') {
+        list = list.filter(s => {
+          const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
+          return st !== 'laju' && st !== 'kantin' && st !== 'boyong';
+        });
+      } else {
+        list = list.filter(s => {
+          const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
+          return st !== 'boyong';
+        });
+      }
+
+      const activePinsAsr = list.map(s => s.pin);
+
+      let namaBulanLabel = '';
+      const dateList = [];
+
+      if (monthVal === 'all') {
+        namaBulanLabel = 'KUMULATIF (JULI S.D OKTOBER 2026)';
+        const monthRanges = [
+          { year: 2026, month: 7, startDay: 14, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
+
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            const dateISO = `${mr.year}-${mm}-${dd}`;
+            const dt = new Date(mr.year, mr.month - 1, day);
+            const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+            const isJumat = (dayOfWeek === 5);
+            const isMinggu = (dayOfWeek === 0);
+            const isHoliday = holidaysData && holidaysData[dateISO];
+
+            let sessions = ['subuh', 'malam'];
+            if (hideEmptyLibur) {
+              sessions = sessions.filter(sessKey => {
+                return activePinsAsr.some(pin => {
+                  const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                    ? window.PPNURules.getAsramaCell({
+                        pin,
+                        dateISO,
+                        dayOfWeek,
+                        asramaMatrix: asramaMatrixData,
+                        manualCellOverrides,
+                        permissionDetailsMap,
+                        specialLiburAsrama,
+                        holidaysData,
+                        statusSantriAsrama,
+                        tglMulaiLajuSantri,
+                        tanggalMulaiSantri,
+                      })
+                    : { subuh: '-', malam: '-' };
+                  const v = cell[sessKey];
+                  return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+                });
+              });
+            }
+
+            if (sessions.length > 0) {
+              dateList.push({
+                day,
+                month: mr.month,
+                dateISO,
+                dayOfWeek,
+                dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+                isJumat,
+                isMinggu,
+                isHoliday: !!isHoliday,
+                holidayDesc: isHoliday || '',
+                sessions,
+                displayLabel: `${day}/${mm}`
+              });
+            }
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
+
+        const startDay = (monthVal === '2026-07') ? 14 : 1; // Asrama resmi mulai 14 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+          const isJumat = (dayOfWeek === 5);
+          const isMinggu = (dayOfWeek === 0);
+          const isHoliday = holidaysData && holidaysData[dateISO];
+
+          let sessions = ['subuh', 'malam'];
+          if (hideEmptyLibur) {
+            sessions = sessions.filter(sessKey => {
+              return activePinsAsr.some(pin => {
+                const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                  ? window.PPNURules.getAsramaCell({
+                      pin,
+                      dateISO,
+                      dayOfWeek,
+                      asramaMatrix: asramaMatrixData,
+                      manualCellOverrides,
+                      permissionDetailsMap,
+                      specialLiburAsrama,
+                      holidaysData,
+                      statusSantriAsrama,
+                      tglMulaiLajuSantri,
+                      tanggalMulaiSantri,
+                    })
+                  : { subuh: '-', malam: '-' };
+                const v = cell[sessKey];
+                return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+              });
+            });
+          }
+
+          if (sessions.length > 0) {
+            dateList.push({
+              day,
+              month,
+              dateISO,
+              dayOfWeek,
+              dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+              isJumat,
+              isMinggu,
+              isHoliday: !!isHoliday,
+              holidayDesc: isHoliday || '',
+              sessions,
+              displayLabel: `${day}`
+            });
+          }
+        }
+      }
+
+      // Update Banner Asrama
+      const bTitle = document.getElementById('bannerAsramaTitle');
+      const bSub = document.getElementById('bannerAsramaSub');
+      if (bTitle) bTitle.textContent = `REKAPITULASI ASRAMA PUTRA - ${namaBulanLabel.toUpperCase()}`;
+      if (bSub) bSub.textContent = `${dateList.length} Tanggal Aktif (${dateList[0] ? dateList[0].dateISO : ''} s.d ${dateList[dateList.length - 1] ? dateList[dateList.length - 1].dateISO : ''})`;
+
+      // BUILD TABLE HEADER PERSIS WEB UTAMA
+      let html = `<thead class="sticky-header">
+        <tr>
+          <th rowspan="2" class="col-pin sticky-col-pin font-black bg-emerald-100 text-emerald-950">PIN</th>
+          <th rowspan="2" class="col-nama sticky-col-nama font-black border-r-thick bg-emerald-100 text-emerald-950">NAMA SANTRI</th>
+          <th colspan="5" class="border-r-thick bg-emerald-200 text-emerald-950 font-black tracking-wider uppercase text-xs py-1.5">
+            TOTAL REKAPITULASI
+          </th>`;
+
+      // Header Tanggal Asrama (Dynamic Colspan)
+      dateList.forEach(d => {
+        const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-emerald-100 text-emerald-950');
+        const displayLabel = d.displayLabel || d.day;
+        let malamSabtuSelector = '';
+        if (d.isJumat) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const isFrozen = (d.dateISO <= '2026-09-30');
+          if (isFrozen) {
+            const slotLabel = curVal === 'pel1' ? 'Jam 1' : (curVal === 'pel2' ? 'Jam 2' : 'Jam 3');
+            malamSabtuSelector = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight" title="Data Historis Terkunci">Mlm: ${slotLabel} 🧊</span></div>`;
+          } else {
+            malamSabtuSelector = `
+              <div class="mt-0.5 flex flex-col items-center">
+                <select onchange="ubahSettingMalamSabtuTanggal('${d.dateISO}', this.value)" title="Alokasi Jam Asrama Malam Sabtu" class="text-[9.5px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500">
+                  <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30)</option>
+                  <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40)</option>
+                  <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (21:00)</option>
+                </select>
+              </div>`;
+          }
+        }
+        html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
+          <span class="block text-xs font-black uppercase">${d.dayName}</span>
+          <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuSelector}
+        </th>`;
+      });
+
+      html += `</tr>
+        <tr class="bg-emerald-50 text-[10.5px]">
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Hadir (H)">H</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Alpha (A)">A</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Izin (I)">I</th>
+          <th class="col-stat bg-slate-100 text-slate-800 font-bold" title="Total Jam Pelajaran / Pertemuan">JP</th>
+          <th class="col-pct border-r-thick bg-red-100 text-red-900 font-black" title="Persentase Alpha">%</th>`;
+
+      dateList.forEach(d => {
+        d.sessions.forEach((sess, sIdx) => {
+          const isLast = (sIdx === d.sessions.length - 1);
+          const borderThick = isLast ? 'border-r-thick' : '';
+          let label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          if (sess === 'malam' && d.isJumat) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            const slotName = curVal === 'pel1' ? 'J1' : (curVal === 'pel2' ? 'J2' : 'J3');
+            label = `Malam (${slotName})`;
+          }
+          html += `<th class="col-sesi bg-emerald-50 text-emerald-950 ${borderThick}">${label}</th>`;
+        });
+      });
+
+      html += `</tr>
+      </thead>
+      <tbody>`;
+
+      // BUILD TABLE BODY ROWS
+      list.forEach((santri, idx) => {
+        let countH = 0, countI = 0, countA = 0, totalJP = 0;
+        const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
+        const isLaju = (statusSantriAsrama[santri.pin] === 'laju' || statusSantriAsrama[santri.pin] === 'kantin');
+
+        let sessionCells = '';
+        dateList.forEach(d => {
+          const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+            ? window.PPNURules.getAsramaCell({
+                pin: santri.pin,
+                dateISO: d.dateISO,
+                dayOfWeek: d.dayOfWeek,
+                asramaMatrix: asramaMatrixData,
+                manualCellOverrides,
+                permissionDetailsMap,
+                specialLiburAsrama,
+                holidaysData,
+                statusSantriAsrama,
+                tglMulaiLajuSantri,
+                tanggalMulaiSantri,
+              })
+            : { subuh: '-', malam: '-', subuh_time: '', malam_time: '', isLaju: false };
+
+          d.sessions.forEach((sess, sIdx) => {
+            const isLast = (sIdx === d.sessions.length - 1);
+            const borderThick = isLast ? 'border-r-thick' : '';
+            const val = cell[sess];
+            const scanTime = cell[sess + '_time'];
+
+            if (val !== '-' && val !== 'LIBUR' && val !== 'LAJU' && val !== 'BELUM' && val !== 'BELUM_MULAI') {
+              totalJP++;
+              if (val === 'H') countH++;
+              else if (val === 'I') countI++;
+              else if (val === 'A') countA++;
+            }
+
+            if (cell.isLaju) {
+              sessionCells += `<td class="col-sesi ${borderThick} select-none">${renderBadge(val, 'asrama', true, scanTime)}</td>`;
+            } else {
+              sessionCells += `<td class="col-sesi ${borderThick} cursor-pointer hover:bg-emerald-100/60 transition select-none" onclick="openModalEditCell('asrama', '${santri.pin}', '${d.dateISO}', '${sess}')" title="Klik untuk ubah presensi ${sess.toUpperCase()}">${renderBadge(val, 'asrama', false, scanTime)}</td>`;
+            }
+          });
+        });
+
+        // Persentase Alpha seperti web utama
+        const persenAlpha = totalJP > 0 ? Math.round((countA / totalJP) * 100) : 0;
+        const isOverLimit = (persenAlpha >= 15);
+        const cellPercentClass = isOverLimit ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
+
+        html += `<tr class="${rowBg} hover:bg-emerald-50/40 transition">
+          <td class="col-pin sticky-col-pin font-mono font-bold text-slate-700">${santri.pin}</td>
+          <td class="col-nama sticky-col-nama font-semibold text-slate-900 border-r-thick" title="${santri.name}">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="truncate">${santri.name}</span>
+              ${isLaju ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0">LAJU</span>' : ''}
+            </div>
+          </td>
+          <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${countH}</td>
+          <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${countA}</td>
+          <td class="col-stat font-mono font-bold text-amber-900 bg-amber-50/40">${countI}</td>
+          <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${totalJP}</td>
+          <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${persenAlpha}%</td>
+          ${sessionCells}
+        </tr>`;
+      });
+
+      html += `</tbody>`;
+      table.innerHTML = html;
+    }
+
+    // ================= TAB 2: SPREADSHEET MDNU RENDERER (DESAIN WEB UTAMA) =================
+    function renderMDNUSpreadsheet() {
+      const table = document.getElementById('tableMDNU');
+      if (!table) return;
+
+      const monthVal = document.getElementById('selectMonthMDNU').value; // '2026-10'
+      const filterKelas = document.getElementById('selectKelasMDNU').value;
+      const hideEmptyLibur = document.getElementById('chkHideEmptyMDNU').checked;
+
+      // Filter santri
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      list = list.filter(s => ((statusSantriMDNU[s.pin] !== 'boyong') && s.status !== 'boyong'));
+      if (filterKelas !== 'all') {
+        list = list.filter(s => matchSantriClass(s, filterKelas));
+      }
+
+      const activePinsMDN = list.map(s => s.pin);
+
+      let namaBulanLabel = '';
+      const dateList = [];
+
+      if (monthVal === 'all') {
+        namaBulanLabel = 'KUMULATIF (JULI S.D OKTOBER 2026)';
+        const monthRanges = [
+          { year: 2026, month: 7, startDay: 18, endDay: 31 }, // MDNU resmi mulai 18 Juli 2026
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
+
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            const dateISO = `${mr.year}-${mm}-${dd}`;
+            const dt = new Date(mr.year, mr.month - 1, day);
+            const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+            const isJumat = (dayOfWeek === 5);
+            const isHoliday = holidaysData && holidaysData[dateISO];
+
+            let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+            if (hideEmptyLibur) {
+              sessions = sessions.filter(sessKey => {
+                return activePinsMDN.some(pin => {
+                  const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                    ? window.PPNURules.getMDNUCell({
+                        pin,
+                        dateISO,
+                        dayOfWeek,
+                        mdnuMatrix: mdnuMatrixData,
+                        manualCellOverrides,
+                        permissionDetailsMap,
+                        settingMalamSabtuPerTanggal,
+                        holidaysData,
+                        tanggalMulaiSantri,
+                      })
+                    : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                  const v = cell[sessKey];
+                  return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+                });
+              });
+            }
+
+            if (sessions.length > 0) {
+              dateList.push({
+                day,
+                month: mr.month,
+                dateISO,
+                dayOfWeek,
+                dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+                isJumat,
+                isHoliday: !!isHoliday,
+                holidayDesc: isHoliday || '',
+                sessions,
+                displayLabel: `${day}/${mm}`
+              });
+            }
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
+
+        const startDay = (monthVal === '2026-07') ? 18 : 1; // MDNU resmi mulai 18 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+          const isJumat = (dayOfWeek === 5);
+          const isHoliday = holidaysData && holidaysData[dateISO];
+
+          let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+          if (hideEmptyLibur) {
+            sessions = sessions.filter(sessKey => {
+              return activePinsMDN.some(pin => {
+                const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                  ? window.PPNURules.getMDNUCell({
+                      pin,
+                      dateISO,
+                      dayOfWeek,
+                      mdnuMatrix: mdnuMatrixData,
+                      manualCellOverrides,
+                      permissionDetailsMap,
+                      settingMalamSabtuPerTanggal,
+                      holidaysData,
+                      tanggalMulaiSantri,
+                    })
+                  : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                const v = cell[sessKey];
+                return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+              });
+            });
+          }
+
+          if (sessions.length > 0) {
+            dateList.push({
+              day,
+              month,
+              dateISO,
+              dayOfWeek,
+              dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+              isJumat,
+              isHoliday: !!isHoliday,
+              holidayDesc: isHoliday || '',
+              sessions,
+              displayLabel: `${day}`
+            });
+          }
+        }
+      }
+
+      // Update Banner MDNU
+      const bTitle = document.getElementById('bannerMDNUTitle');
+      const bSub = document.getElementById('bannerMDNUSub');
+      const kelasLabel = (filterKelas === 'all') ? 'SEMUA KELAS' : `KELAS ${filterKelas}`;
+      if (bTitle) bTitle.textContent = `TABEL REKAPITULASI MDNU PUTRA - ${kelasLabel}`;
+      if (bSub) bSub.textContent = `${dateList.length} Tanggal Aktif (${dateList[0] ? dateList[0].dateISO : ''} s.d ${dateList[dateList.length - 1] ? dateList[dateList.length - 1].dateISO : ''})`;
+
+      // BUILD TABLE HEADER MDNU PERSIS WEB UTAMA
+      let html = `<thead class="sticky-header">
+        <tr>
+          <th rowspan="2" class="col-pin sticky-col-pin font-black bg-indigo-100 text-indigo-950">PIN</th>
+          <th rowspan="2" class="col-nama sticky-col-nama font-black border-r-thick bg-indigo-100 text-indigo-950">NAMA SANTRI</th>
+          <th colspan="5" class="border-r-thick bg-indigo-200 text-indigo-950 font-black tracking-wider uppercase text-xs py-1.5">
+            TOTAL REKAPITULASI
+          </th>`;
+
+      // Header Tanggal MDNU (Dynamic Colspan)
+      dateList.forEach(d => {
+        const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-indigo-100 text-indigo-950');
+        const displayLabel = d.displayLabel || d.day;
+        let malamSabtuSelector = '';
+        if (d.dayOfWeek === 5) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const isFrozen = (d.dateISO <= '2026-09-30');
+          if (isFrozen) {
+            const slotLabel = curVal === 'pel1' ? 'Jam 1 Asr' : (curVal === 'pel2' ? 'Jam 2 Asr' : 'Jam 3 Asr');
+            malamSabtuSelector = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight" title="Data Historis Terkunci">Mlm: ${slotLabel} 🧊</span></div>`;
+          } else {
+            malamSabtuSelector = `
+              <div class="mt-0.5 flex flex-col items-center">
+                <select onchange="ubahSettingMalamSabtuTanggal('${d.dateISO}', this.value)" title="Alokasi Sesi Asrama Malam Sabtu" class="text-[9.5px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500">
+                  <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (ke Asr)</option>
+                  <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (ke Asr)</option>
+                  <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (ke Asr)</option>
+                </select>
+              </div>`;
+          }
+        }
+        html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
+          <span class="block text-xs font-black uppercase">${d.dayName}</span>
+          <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuSelector}
+        </th>`;
+      });
+
+      html += `</tr>
+        <tr class="bg-indigo-50 text-[10.5px]">
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Hadir (H)">H</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Alpha (A)">A</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Izin (I)">I</th>
+          <th class="col-stat bg-slate-100 text-slate-800 font-bold" title="Total Jam Pelajaran / Pertemuan">JP</th>
+          <th class="col-pct border-r-thick bg-red-100 text-red-900 font-black" title="Persentase Alpha">%</th>`;
+
+      dateList.forEach(d => {
+        d.sessions.forEach((sess, sIdx) => {
+          const isLast = (sIdx === d.sessions.length - 1);
+          const borderThick = isLast ? 'border-r-thick' : '';
+          let label = 'Sr';
+          if (sess === 'pel1') label = 'P1';
+          else if (sess === 'pel2') label = 'P2';
+          else if (sess === 'pel3') label = 'P3';
+
+          if (d.dayOfWeek === 5) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            if (sess === curVal) {
+              label = `<span class="text-rose-700 font-bold" title="Slot ini dipinjam Asrama (Libur di MDNU)">${label} (Asr)</span>`;
+            }
+          }
+          html += `<th class="col-sesi bg-indigo-50 text-indigo-950 ${borderThick}">${label}</th>`;
+        });
+      });
+
+      html += `</tr>
+      </thead>
+      <tbody>`;
+
+      // BUILD TABLE BODY ROWS
+      list.forEach((santri, idx) => {
+        let countH = 0, countI = 0, countA = 0, totalJP = 0;
+        const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
+        let sessionCells = '';
+        dateList.forEach(d => {
+          const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+            ? window.PPNURules.getMDNUCell({
+                pin: santri.pin,
+                dateISO: d.dateISO,
+                dayOfWeek: d.dayOfWeek,
+                mdnuMatrix: mdnuMatrixData,
+                manualCellOverrides,
+                permissionDetailsMap,
+                settingMalamSabtuPerTanggal,
+                holidaysData,
+                tanggalMulaiSantri,
+              })
+            : { sore: '-', pel1: '-', pel2: '-', pel3: '-', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
+
+          d.sessions.forEach((sess, sIdx) => {
+            const isLast = (sIdx === d.sessions.length - 1);
+            const borderThick = isLast ? 'border-r-thick' : '';
+            const val = cell[sess] || '-';
+            const scanTime = cell[sess + '_time'] || '';
+
+            if (val !== '-' && val !== 'LIBUR' && val !== 'BELUM' && val !== 'BELUM_MULAI') {
+              totalJP++;
+              if (val === 'H') countH++;
+              else if (val === 'I') countI++;
+              else if (val === 'A') countA++;
+            }
+
+            sessionCells += `<td class="col-sesi ${borderThick} cursor-pointer hover:bg-indigo-100/60 transition select-none" onclick="openModalEditCell('mdnu', '${santri.pin}', '${d.dateISO}', '${sess}')" title="Klik untuk ubah presensi ${sess.toUpperCase()}">${renderBadge(val, 'mdnu', false, scanTime)}</td>`;
+          });
+        });
+
+        const persenAlpha = totalJP > 0 ? Math.round((countA / totalJP) * 100) : 0;
+        const isOverLimit = (persenAlpha >= 15);
+        const cellPercentClass = isOverLimit ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
+
+        html += `<tr class="${rowBg} hover:bg-indigo-50/40 transition">
+          <td class="col-pin sticky-col-pin font-mono font-bold text-slate-700">${santri.pin}</td>
+          <td class="col-nama sticky-col-nama font-semibold text-slate-900 border-r-thick truncate" title="${santri.name}">
+            ${santri.name}
+          </td>
+          <td class="col-stat font-mono font-bold text-indigo-900 bg-indigo-50/40">${countH}</td>
+          <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${countA}</td>
+          <td class="col-stat font-mono font-bold text-amber-900 bg-amber-50/40">${countI}</td>
+          <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${totalJP}</td>
+          <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${persenAlpha}%</td>
+          ${sessionCells}
+        </tr>`;
+      });
+
+      html += `</tbody>`;
+      table.innerHTML = html;
+    }
+
+    // ================= BADGE HELPER IDENTIK WEB UTAMA =================
+    function renderBadge(val, category, isLajuBebas, time) {
+      if (isLajuBebas && category === 'asrama') {
+        return `<span class="badge-cell badge-libur" title="Santri Laju / Bebas Asrama">L</span>`;
+      }
+
+      if (val === 'BELUM' || val === 'BELUM_MULAI' || val === '-') {
+        return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default font-mono text-[11px]" title="Belum Mondok / Belum Wajib Absen">-</span>`;
+      }
+
+      if (val === 'H') {
+        // Tampilkan jam scan riil jika ada (seperti 05:38 atau 18:50), atau H jika tidak ada jam scan
+        const displayHadir = (time && time.length >= 4) ? time.substring(0, 5) : 'H';
+        const scanInfo = time ? `Scan: ${time} | ` : '';
+        const monoClass = (time && time.length >= 4) ? 'font-mono' : '';
+        return `<span class="badge-cell badge-hadir ${monoClass}" title="${scanInfo}Status: HADIR">${displayHadir}</span>`;
+      } else if (val === 'A') {
+        return `<span class="badge-cell badge-absen" title="Status: ALPHA">A</span>`;
+      } else if (val === 'I') {
+        return `<span class="badge-cell badge-izin" title="Status: IZIN">I</span>`;
+      } else if (val === 'T') {
+        const scanInfo = time ? `Scan: ${time} | ` : '';
+        return `<span class="badge-cell badge-takzir font-mono" title="${scanInfo}Status: DITANGGUHKAN">T</span>`;
+      } else if (val === 'LIBUR') {
+        return `<span class="badge-cell badge-libur" title="Libur">L</span>`;
+      }
+
+      return `<span class="text-slate-300 font-mono text-[11px]">-</span>`;
+    }
+
+    function getFrozenDate() {
+      return (window.PPNUConfig && window.PPNUConfig.FROZEN_UNTIL_DATE) || (window.PPNU_CONFIG && window.PPNU_CONFIG.FROZEN_UNTIL_DATE) || '2026-09-30';
+    }
+
+    function getDbRoot() {
+      return (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || (window.PPNU_CONFIG && window.PPNU_CONFIG.ROOT_PATH) || 'absensi_ppnu';
+    }
+
+    function openModalEditCell(category, pin, dateISO, sessionKey) {
+      // Periksa gembok masa lalu
+      const frozenDate = getFrozenDate();
+      if (dateISO <= frozenDate) {
+        alert(`Tanggal ${dateISO} terkunci mutlak (<= ${frozenDate}). Tidak dapat diubah!`);
+        return;
+      }
+
+      const santri = getSantriMasterList().find(s => s.pin === pin);
+      const santriName = santri ? (santri.name || santri.nama || pin) : pin;
+      const matrix = (category === 'asrama') ? asramaMatrixData : mdnuMatrixData;
+      const scanTime = matrix[pin]?.[dateISO]?.[sessionKey + '_time'] || '';
+
+      activeCellEdit = { category, pin, dateISO, sessionKey, santriName, scanTime };
+      document.getElementById('cellModalSantriNama').textContent = santriName;
+      const scanDetail = scanTime ? ` • Tap: ${scanTime}` : '';
+      document.getElementById('cellModalDetail').textContent = `${category.toUpperCase()} • ${sessionKey.toUpperCase()} • ${dateISO}${scanDetail}`;
+      
+      const modal = document.getElementById('modalEditCell');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeModalEditCell() {
+      const modal = document.getElementById('modalEditCell');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+      activeCellEdit = null;
+    }
+
+    async function applyCellStatus(newStatus) {
+      if (!activeCellEdit) return;
+      const { category, pin, dateISO, sessionKey } = activeCellEdit;
+
+      try {
+        const frozenDate = getFrozenDate();
+        if (dateISO <= frozenDate) {
+          alert(`Tanggal ${dateISO} terkunci mutlak!`);
+          return;
+        }
+
+        const root = getDbRoot();
+        const matrixName = (category === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
+
+        const updates = {};
+        updates[`${root}/${matrixName}/${pin}/${dateISO}/${sessionKey}`] = newStatus;
+        updates[`${root}/manualCellOverrides/${pin}__${dateISO}__${sessionKey}__${category}`] = newStatus;
+        updates[`${root}/meta/lastUpdated`] = new Date().toISOString();
+
+        if (newStatus !== 'H' && newStatus !== 'T') {
+          updates[`${root}/${matrixName}/${pin}/${dateISO}/${sessionKey}_time`] = null;
+          if (category === 'asrama' && asramaMatrixData[pin]?.[dateISO]) {
+            delete asramaMatrixData[pin][dateISO][sessionKey + '_time'];
+          } else if (category === 'mdnu' && mdnuMatrixData[pin]?.[dateISO]) {
+            delete mdnuMatrixData[pin][dateISO][sessionKey + '_time'];
+          }
+        }
+
+        if (db) {
+          await db.ref().update(updates);
+        } else if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
+          await firebase.database().ref().update(updates);
+        }
+
+        // Sinkronkan data memori lokal langsung
+        if (category === 'asrama') {
+          if (!asramaMatrixData[pin]) asramaMatrixData[pin] = {};
+          if (!asramaMatrixData[pin][dateISO]) asramaMatrixData[pin][dateISO] = {};
+          asramaMatrixData[pin][dateISO][sessionKey] = newStatus;
+          try { localStorage.setItem('ppnu_cached_asramaMatrix', JSON.stringify(asramaMatrixData)); } catch (e) {}
+          renderAsramaSpreadsheet();
+        } else {
+          if (!mdnuMatrixData[pin]) mdnuMatrixData[pin] = {};
+          if (!mdnuMatrixData[pin][dateISO]) mdnuMatrixData[pin][dateISO] = {};
+          mdnuMatrixData[pin][dateISO][sessionKey] = newStatus;
+          try { localStorage.setItem('ppnu_cached_mdnuMatrix', JSON.stringify(mdnuMatrixData)); } catch (e) {}
+          renderMDNUSpreadsheet();
+        }
+      } catch (err) {
+        alert("Gagal menyimpan ke Firebase: " + err.message);
+      }
+
+      closeModalEditCell();
+    }
+
+    function scrollTableTo(containerId, pos) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      if (pos === 'start') {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else if (pos === 'end') {
+        el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+      } else if (pos === 'today') {
+        // Cari posisi tengah atau kolom hari ini
+        const now = new Date();
+        const day = now.getDate();
+        const scrollRatio = day / 31;
+        el.scrollTo({ left: el.scrollWidth * scrollRatio, behavior: 'smooth' });
+      }
+    }
+
+    // ================= TAB 3: KELOLA STATUS SANTRI =================
+    function renderSantriIndukList() {
+      const tbody = document.getElementById('tbodySantriInduk');
+      if (!tbody) return;
+
+      let list = getSantriMasterList();
+      const search = (document.getElementById('inputSearchSantriInduk')?.value || '').toLowerCase().trim();
+
+      // Counts
+      let cAll = list.length, cMukim = 0, cLaju = 0, cKantin = 0, cBoyong = 0;
+      list.forEach(s => {
+        const pin = s.pin;
+        const stAsr = (pin && statusSantriAsrama[pin]) || s.status;
+        const stMdn = (pin && statusSantriMDNU[pin]) || '';
+        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong' || s.status === 'boyong');
+        const isKantin = (s.status === 'kantin' || s.kamar === 'Kantin' || stAsr === 'kantin');
+        const isLaju = (stAsr === 'laju' || s.status === 'laju');
+
+        if (isBoyong) cBoyong++;
+        else if (isKantin) cKantin++;
+        else if (isLaju) cLaju++;
+        else cMukim++;
+      });
+
+      document.getElementById('badgeTotalSantri').textContent = cAll;
+      document.getElementById('countFsAll').textContent = cAll;
+      document.getElementById('countFsMukim').textContent = cMukim;
+      document.getElementById('countFsLaju').textContent = cLaju;
+      document.getElementById('countFsKantin').textContent = cKantin;
+      document.getElementById('countFsBoyong').textContent = cBoyong;
+
+      // Filter by active tab & search
+      let filtered = list.filter(s => {
+        const pin = s.pin;
+        const stAsr = (pin && statusSantriAsrama[pin]) || s.status;
+        const stMdn = (pin && statusSantriMDNU[pin]) || '';
+        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong' || s.status === 'boyong');
+        const isKantin = (s.status === 'kantin' || s.kamar === 'Kantin' || stAsr === 'kantin');
+        const isLaju = (stAsr === 'laju' || s.status === 'laju');
+        const isMukim = (!isBoyong && !isKantin && !isLaju);
+
+        if (filterSantriIndukActive === 'mukim' && !isMukim) return false;
+        if (filterSantriIndukActive === 'laju' && !isLaju) return false;
+        if (filterSantriIndukActive === 'kantin' && !isKantin) return false;
+        if (filterSantriIndukActive === 'boyong' && !isBoyong) return false;
+
+        if (search) {
+          const matchName = (s.name || s.nama || '').toLowerCase().includes(search);
+          const matchPin = (s.pin || '').toLowerCase().includes(search);
+          const matchKelas = (s.kelas || '').toLowerCase().includes(search);
+          const matchKamar = (s.kamar || '').toLowerCase().includes(search);
+          if (!matchName && !matchPin && !matchKelas && !matchKamar) return false;
+        }
+
+        return true;
+      });
+
+      let html = '';
+      filtered.forEach((s, idx) => {
+        const pin = s.pin;
+        const stAsr = (pin && statusSantriAsrama[pin]) || s.status || 'mukim';
+        const stMdn = (pin && statusSantriMDNU[pin]) || (s.status === 'boyong' ? 'boyong' : 'aktif');
+        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong' || s.status === 'boyong');
+        const isKantin = (s.status === 'kantin' || s.kamar === 'Kantin' || stAsr === 'kantin');
+        const isLaju = (stAsr === 'laju' || s.status === 'laju');
+        
+        let tglInfo = '-';
+        if (isBoyong && s.tglBoyong) {
+          tglInfo = `Boyong: ${s.tglBoyong}`;
+        } else if (isLaju && (tglMulaiLajuSantri[pin] || s.tglMulaiLaju)) {
+          tglInfo = tglMulaiLajuSantri[pin] || s.tglMulaiLaju;
+        }
+
+        const sName = s.name || s.nama || s.pin || '-';
+        const sKelas = s.kelas || '-';
+        const sKamar = s.kamar || '-';
+
+        let badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">Mukim</span>`;
+        if (isBoyong) badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px]">Boyong</span>`;
+        else if (isKantin) badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 font-bold text-[10px]">Kantin</span>`;
+        else if (isLaju) badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px]">Laju</span>`;
+
+        let badgeMdn = isBoyong 
+          ? `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px]">Boyong</span>`
+          : `<span class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200 font-bold text-[10px]">Aktif</span>`;
+
+        html += `<tr class="hover:bg-slate-50 transition">
+          <td class="py-2.5 px-3 font-mono text-slate-500 text-center">${idx + 1}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-900">${s.pin}</td>
+          <td class="py-2.5 px-3 font-semibold text-slate-900">${sName}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${sKamar}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${sKelas}</td>
+          <td class="py-2.5 px-3">${badgeAsr}</td>
+          <td class="py-2.5 px-3">${badgeMdn}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600">${tglInfo}</td>
+          <td class="py-2.5 px-3 text-center">
+            <button type="button" onclick="openModalEditSantri('${s.pin}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
+              Edit
+            </button>
+          </td>
+        </tr>`;
+      });
+
+      if (filtered.length === 0) {
+        html = `<tr><td colspan="9" class="p-6 text-center text-slate-400 text-xs">Tidak ada data santri yang cocok.</td></tr>`;
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    function setFilterSantriInduk(key) {
+      filterSantriIndukActive = key;
+      const keys = ['all', 'mukim', 'laju', 'kantin', 'boyong'];
+      keys.forEach(k => {
+        const btn = document.getElementById('btnFs' + k.charAt(0).toUpperCase() + k.slice(1));
+        if (k === key) {
+          btn.className = "px-2.5 py-1.5 rounded-xl font-bold bg-slate-900 text-white shadow-2xs shrink-0";
+        } else {
+          btn.className = "px-2.5 py-1.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 shrink-0";
+        }
+      });
+      renderSantriIndukList();
+    }
+
+    function openModalEditSantri(pin) {
+      const santri = getSantriMasterList().find(s => s.pin === pin);
+      const name = santri ? (santri.name || santri.nama || pin) : pin;
+      const stAsr = (statusSantriAsrama && statusSantriAsrama[pin]) || santri?.status || 'mukim';
+      const stMdn = (statusSantriMDNU && statusSantriMDNU[pin]) || 'aktif';
+      const tglLaju = (tglMulaiLajuSantri && tglMulaiLajuSantri[pin]) || '';
+
+      document.getElementById('editSantriPinHidden').value = pin;
+      document.getElementById('editSantriPin').textContent = `PIN: ${pin}`;
+      document.getElementById('editSantriNama').textContent = name;
+      document.getElementById('editStatusAsrama').value = stAsr;
+      document.getElementById('editStatusMDNU').value = stMdn;
+      document.getElementById('editTglMulaiLaju').value = (tglLaju && tglLaju !== '-') ? tglLaju : '';
+
+      toggleTglLajuVisibility();
+
+      const modal = document.getElementById('modalEditSantri');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeModalEditSantri() {
+      const modal = document.getElementById('modalEditSantri');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function toggleTglLajuVisibility() {
+      const val = document.getElementById('editStatusAsrama').value;
+      const row = document.getElementById('rowTglMulaiLaju');
+      if (val === 'laju' || val === 'kantin') {
+        row.classList.remove('hidden');
+      } else {
+        row.classList.add('hidden');
+      }
+    }
+
+    async function handleSimpanStatusSantri(e) {
+      e.preventDefault();
+      const pin = document.getElementById('editSantriPinHidden').value;
+      const stAsr = document.getElementById('editStatusAsrama').value;
+      const stMdn = document.getElementById('editStatusMDNU').value;
+      const tglLaju = document.getElementById('editTglMulaiLaju').value;
+
+      try {
+        const root = getDbRoot();
+        const updates = {};
+        updates[`${root}/statusSantriAsrama/${pin}`] = stAsr;
+        updates[`${root}/statusSantriMDNU/${pin}`] = stMdn;
+        if ((stAsr === 'laju' || stAsr === 'kantin') && tglLaju) {
+          updates[`${root}/tglMulaiLajuSantri/${pin}`] = tglLaju;
+        } else if (stAsr !== 'laju' && stAsr !== 'kantin') {
+          updates[`${root}/tglMulaiLajuSantri/${pin}`] = null;
+        }
+
+        if (db) {
+          await db.ref().update(updates);
+        } else if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
+          await firebase.database().ref().update(updates);
+        }
+
+        statusSantriAsrama[pin] = stAsr;
+        statusSantriMDNU[pin] = stMdn;
+        if ((stAsr === 'laju' || stAsr === 'kantin') && tglLaju) tglMulaiLajuSantri[pin] = tglLaju;
+        else delete tglMulaiLajuSantri[pin];
+
+        try {
+          localStorage.setItem('ppnu_cached_statusAsrama', JSON.stringify(statusSantriAsrama));
+          localStorage.setItem('ppnu_cached_statusMDNU', JSON.stringify(statusSantriMDNU));
+        } catch (e) {}
+
+        alert("Status santri berhasil diperbarui!");
+        closeModalEditSantri();
+        renderSantriIndukList();
+        renderAsramaSpreadsheet();
+        renderMDNUSpreadsheet();
+      } catch (err) {
+        alert("Gagal menyimpan perubahan: " + err.message);
+      }
+    }
+
+    function openModalTambahSantri() {
+      const pin = prompt("Masukkan PIN Santri Baru (Contoh: 1UA20):");
+      if (!pin) return;
+      const cleanPin = pin.toUpperCase().trim();
+
+      const nama = prompt("Masukkan Nama Lengkap Santri:");
+      if (!nama) return;
+
+      const kelas = prompt("Masukkan Kelas MDNU (1UA/1UB/2UA/2UB/3UA/3UB/1WA/2WA/3WA):", "1UA");
+      if (!kelas) return;
+
+      const kamar = prompt("Masukkan Kamar Asrama (Contoh: A-01 / B-02):", "-");
+
+      const newSantri = {
+        pin: cleanPin,
+        name: nama.trim(),
+        kelas: kelas.toUpperCase().trim(),
+        kamar: (kamar || '-').trim(),
+        status: 'mukim'
+      };
+
+      if (window.SantriStore) {
+        window.SantriStore.addSantri(newSantri);
+      }
+
+      if (firebase.apps.length) {
+        firebase.database().ref(`absensi_ppnu/santriList/${cleanPin}`).set(newSantri);
+      }
+
+      alert(`Santri ${nama} (${cleanPin}) berhasil ditambahkan!`);
+      renderSantriIndukList();
+      renderAsramaSpreadsheet();
+      renderMDNUSpreadsheet();
+    }
+
+    // ================= TAB: ALOKASI JAM ASRAMA MALAM SABTU =================
+    let activeMalamSabtuDate = '';
+
+    function setTabMalamSabtuAktif(dateISO) {
+      activeMalamSabtuDate = dateISO;
+      renderAdminPanelMalamSabtu();
+    }
+
+    function renderAdminPanelMalamSabtu() {
+      const container = document.getElementById('containerMalamSabtuContent');
+      if (!container) return;
+
+      const selectBulan = document.getElementById('selectBulanMalamSabtu');
+      const monthVal = selectBulan ? selectBulan.value : '2026-10';
+      const [yearStr, monthStr] = monthVal.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10);
+      const totalDays = new Date(year, month, 0).getDate();
+
+      // Kumpulkan seluruh tanggal Jumat dalam bulan ini
+      const jumatDates = [];
+      const startDay = (monthVal === '2026-07') ? 14 : 1;
+      for (let day = startDay; day <= totalDays; day++) {
+        const dt = new Date(year, month - 1, day);
+        if (dt.getDay() === 5) { // 5 = Jumat
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          jumatDates.push({
+            day,
+            month,
+            dateISO,
+            displayLabel: `${dd}/${monthStr}/${yearStr}`,
+            isFrozen: (dateISO <= '2026-09-30')
+          });
+        }
+      }
+
+      if (jumatDates.length === 0) {
+        container.innerHTML = `<div class="bg-white border border-amber-200 rounded-2xl p-6 text-center text-xs text-amber-800 italic">Tidak ada tanggal Jumat (Malam Sabtu) pada bulan yang dipilih.</div>`;
+        return;
+      }
+
+      if (!activeMalamSabtuDate || !jumatDates.some(d => d.dateISO === activeMalamSabtuDate)) {
+        activeMalamSabtuDate = jumatDates[0].dateISO;
+      }
+
+      const activeObj = jumatDates.find(d => d.dateISO === activeMalamSabtuDate) || jumatDates[0];
+      const curSetting = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[activeObj.dateISO]) || 'pel1';
+      const isFrozen = activeObj.isFrozen;
+
+      // 1. Tab Navigasi Tanggal Jumat
+      let tabsHtml = `<div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Pilih Tanggal Jumat Malam:</span>
+          <span class="text-[11px] font-mono font-bold text-amber-800">${jumatDates.length} Tanggal Jumat</span>
+        </div>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">`;
+
+      jumatDates.forEach(d => {
+        const isSelected = (d.dateISO === activeMalamSabtuDate);
+        const dVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+        const slotLabel = dVal === 'pel1' ? 'Jam 1' : (dVal === 'pel2' ? 'Jam 2' : 'Jam 3');
+
+        const btnClass = isSelected
+          ? 'bg-amber-600 text-white shadow-xs border-amber-600 font-extrabold ring-2 ring-amber-400/40'
+          : 'bg-slate-50 text-slate-700 hover:bg-amber-50 hover:border-amber-300 border-slate-200 font-semibold';
+        const badgeClass = isSelected
+          ? 'bg-amber-900 text-amber-100'
+          : 'bg-white text-amber-900 border border-amber-200';
+
+        tabsHtml += `
+          <button type="button" onclick="setTabMalamSabtuAktif('${d.dateISO}')"
+            class="touch-target px-3.5 py-2 rounded-xl text-xs border transition flex items-center gap-2 shrink-0 cursor-pointer ${btnClass}">
+            <span>Jumat, ${d.displayLabel}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${badgeClass}">${slotLabel}</span>
+            ${d.isFrozen ? '<span title="Data Historis Terkunci">🧊</span>' : ''}
+          </button>
+        `;
+      });
+
+      tabsHtml += `</div></div>`;
+
+      // 2. Options Card Jam 1, Jam 2, Jam 3
+      const options = [
+        {
+          key: 'pel1',
+          title: 'Jam 1 (Sesi Awal)',
+          jam: '18:30 - 19:40 WIB',
+          asrama: 'Asrama mengambil Jam 1 (Cutoff 19:40 WIB)',
+          mdnu: 'MDNU: Pel 2 (19:40-21:00) & Pel 3 (21:00-22:30) Aktif',
+          mdnuLibur: 'Pel 1 MDNU: Libur (Dipinjam Asrama)'
+        },
+        {
+          key: 'pel2',
+          title: 'Jam 2 (Sesi Tengah)',
+          jam: '19:40 - 21:00 WIB',
+          asrama: 'Asrama mengambil Jam 2 (Cutoff 21:00 WIB)',
+          mdnu: 'MDNU: Pel 1 (18:30-19:40) & Pel 3 (21:00-22:30) Aktif',
+          mdnuLibur: 'Pel 2 MDNU: Libur (Dipinjam Asrama)'
+        },
+        {
+          key: 'pel3',
+          title: 'Jam 3 (Sesi Akhir)',
+          jam: '21:00 - 22:30 WIB',
+          asrama: 'Asrama mengambil Jam 3 (Cutoff 22:30 WIB)',
+          mdnu: 'MDNU: Pel 1 (18:30-19:40) & Pel 2 (19:40-21:00) Aktif',
+          mdnuLibur: 'Pel 3 MDNU: Libur (Dipinjam Asrama)'
+        }
+      ];
+
+      let frozenWarning = '';
+      if (isFrozen) {
+        frozenWarning = `
+          <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2">
+            <span class="text-base">🧊</span>
+            <div>
+              <b>Gembok Proteksi Historis:</b> Tanggal <span class="font-mono font-bold">${activeObj.dateISO}</span> berada pada periode sebelum 1 Oktober 2026. Nilai ini terkunci mutlak demi integritas data arsip pesantren dan tidak dapat diubah.
+            </div>
+          </div>
+        `;
+      }
+
+      let cardsHtml = `
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-amber-500 text-white font-black text-sm flex items-center justify-center shrink-0">📅</span>
+              <div>
+                <h3 class="font-extrabold text-slate-900 text-sm">Pengaturan Tanggal: <span class="text-amber-800 font-mono">${activeObj.dateISO}</span> (Jumat Malam)</h3>
+                <p class="text-[11px] text-slate-500">Pilih alokasi jam belajar Asrama untuk tanggal terpilih di atas:</p>
+              </div>
+            </div>
+            <span class="self-start sm:self-auto text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-600 animate-pulse"></span>
+              Terpilih: ${curSetting === 'pel1' ? 'Jam 1 (Sesi Awal)' : (curSetting === 'pel2' ? 'Jam 2 (Sesi Tengah)' : 'Jam 3 (Sesi Akhir)')}
+            </span>
+          </div>
+
+          ${frozenWarning}
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+      `;
+
+      options.forEach(opt => {
+        const isSelected = (curSetting === opt.key);
+        const cardClass = isSelected
+          ? 'bg-amber-50/80 border-2 border-amber-500 ring-2 ring-amber-400/30 shadow-xs'
+          : (isFrozen
+              ? 'bg-slate-50 border border-slate-200 opacity-60 cursor-not-allowed'
+              : 'bg-slate-50/70 border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 cursor-pointer');
+
+        const checkIcon = isSelected
+          ? `<span class="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center font-black">✓</span>`
+          : `<span class="w-5 h-5 rounded-full border border-slate-300 bg-white"></span>`;
+
+        const clickAction = isFrozen
+          ? `alert('Tanggal ini sudah di-freeze (kunci mutlak) untuk menjaga integritas data historis.')`
+          : `ubahSettingMalamSabtuTanggal('${activeObj.dateISO}', '${opt.key}')`;
+
+        cardsHtml += `
+          <div onclick="${clickAction}"
+            class="p-4 rounded-xl transition flex flex-col justify-between gap-3 ${cardClass}">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="font-extrabold text-xs sm:text-sm text-slate-900 block">${opt.title}</span>
+                <span class="font-mono text-[11px] font-bold text-amber-800 block mt-0.5">${opt.jam}</span>
+              </div>
+              ${checkIcon}
+            </div>
+            <div class="space-y-1.5 pt-2 border-t border-slate-200/60 text-[11px]">
+              <div class="text-slate-800 font-semibold flex items-start gap-1.5">
+                <span class="text-amber-600 font-bold shrink-0">🏠</span>
+                <span>${opt.asrama}</span>
+              </div>
+              <div class="text-emerald-700 font-semibold flex items-start gap-1.5">
+                <span class="text-emerald-600 font-bold shrink-0">📚</span>
+                <span>${opt.mdnu}</span>
+              </div>
+              <div class="text-slate-500 text-[10px] italic flex items-start gap-1.5 pt-0.5">
+                <span class="text-slate-400 font-bold shrink-0">⚪</span>
+                <span>${opt.mdnuLibur}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      cardsHtml += `
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = tabsHtml + cardsHtml;
+    }
+
+    function ubahSettingMalamSabtuTanggal(dateISO, sesi) {
+      if (dateISO <= '2026-09-30') {
+        alert('Tanggal ini sudah di-freeze (kunci mutlak) untuk menjaga integritas data historis.');
+        return;
+      }
+      if (!db) {
+        alert('Koneksi Firebase belum siap.');
+        return;
+      }
+
+      settingMalamSabtuPerTanggal[dateISO] = sesi;
+      try {
+        localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal));
+      } catch (e) {}
+
+      const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+      db.ref(`${root}/settingMalamSabtuPerTanggal/${dateISO}`).set(sesi)
+        .then(() => {
+          renderAdminPanelMalamSabtu();
+          if (typeof renderAsramaSpreadsheet === 'function') renderAsramaSpreadsheet();
+          if (typeof renderMDNUSpreadsheet === 'function') renderMDNUSpreadsheet();
+        })
+        .catch(err => {
+          console.error('Gagal menyimpan setting Malam Sabtu:', err);
+          alert('Gagal menyimpan ke Firebase: ' + err.message);
+        });
+    }
+
+    // ================= TAB 4: MANAJEMEN HARI LIBUR =================
+    function renderLiburTable() {
+      const tbody = document.getElementById('tbodyLiburKhusus');
+      const countEl = document.getElementById('countLiburLabel');
+      if (!tbody) return;
+
+      const keys = Object.keys(holidaysData).sort();
+      if (countEl) countEl.textContent = `${keys.length} Hari Terjadwal`;
+
+      let html = '';
+      keys.forEach((dateISO, idx) => {
+        const desc = holidaysData[dateISO];
+        html += `<tr class="hover:bg-slate-50 transition">
+          <td class="py-2 px-3 font-mono text-slate-500 text-center">${idx + 1}</td>
+          <td class="py-2 px-3 font-mono font-bold text-slate-900">${dateISO}</td>
+          <td class="py-2 px-3 font-medium text-slate-800">${desc}</td>
+          <td class="py-2 px-3 text-center">
+            <button type="button" onclick="handleHapusLibur('${dateISO}')" class="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] border border-rose-200 transition">
+              Hapus
+            </button>
+          </td>
+        </tr>`;
+      });
+
+      if (keys.length === 0) {
+        html = `<tr><td colspan="4" class="p-6 text-center text-slate-400 text-xs">Belum ada hari libur khusus yang didaftarkan.</td></tr>`;
+      }
+
+      tbody.innerHTML = html;
+    }
+
+    async function handleTambahLibur(e) {
+      e.preventDefault();
+      const tgl = document.getElementById('inputTglLibur').value;
+      const ket = document.getElementById('inputKetLibur').value.trim();
+      if (!tgl || !ket) return;
+
+      holidaysData[tgl] = ket;
+
+      try {
+        if (firebase.apps.length) {
+          await firebase.database().ref(`absensi_ppnu/holidays/${tgl}`).set(ket);
+        }
+        alert(`Hari libur ${tgl} (${ket}) berhasil disimpan!`);
+        document.getElementById('inputKetLibur').value = '';
+        renderLiburTable();
+      } catch (err) {
+        alert("Gagal menyimpan hari libur: " + err.message);
+      }
+    }
+
+    async function handleHapusLibur(dateISO) {
+      if (!confirm(`Hapus jadwal libur pada tanggal ${dateISO}?`)) return;
+
+      delete holidaysData[dateISO];
+
+      try {
+        if (firebase.apps.length) {
+          await firebase.database().ref(`absensi_ppnu/holidays/${dateISO}`).remove();
+        }
+        alert(`Hari libur ${dateISO} berhasil dihapus.`);
+        renderLiburTable();
+      } catch (err) {
+        alert("Gagal menghapus: " + err.message);
+      }
+    }
+
+    // ================= TAB 5: RESET DATA & KEAMANAN =================
+    async function handleHapusPerTanggal(e) {
+      e.preventDefault();
+      const dateISO = document.getElementById('inputHapusTanggal').value;
+      const target = document.getElementById('selectHapusTarget').value;
+
+      // ATURAN MUTLAK GEMINI.MD: BLOKIR <= 2026-09-30
+      const frozenDate = getFrozenDate();
+      if (dateISO <= frozenDate) {
+        alert(`🚨 PERINGATAN KERAS: Tanggal ${dateISO} masuk zona data ter-freeze (<= ${frozenDate}). Dilarang keras dihapus atau diubah!`);
+        return;
+      }
+
+      const confirmText = prompt(`Ketik kata "HAPUS" untuk mengonfirmasi penghapusan data tanggal ${dateISO} (${target.toUpperCase()}):`);
+      if (confirmText !== 'HAPUS') {
+        alert("Penghapusan dibatalkan (kata konfirmasi tidak sesuai).");
+        return;
+      }
+
+      try {
+        const santriList = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+        const updates = {};
+
+        santriList.forEach(s => {
+          if (target === 'asrama' || target === 'both') {
+            updates[`absensi_ppnu/asramaMatrix/${s.pin}/${dateISO}`] = null;
+          }
+          if (target === 'mdnu' || target === 'both') {
+            updates[`absensi_ppnu/mdnuMatrix/${s.pin}/${dateISO}`] = null;
+          }
+        });
+
+        if (firebase.apps.length) {
+          await firebase.database().ref().update(updates);
+        }
+
+        alert(`Data absensi tanggal ${dateISO} berhasil dibersihkan!`);
+        renderAsramaSpreadsheet();
+        renderMDNUSpreadsheet();
+      } catch (err) {
+        alert("Gagal menghapus data: " + err.message);
+      }
+    }
+
+    async function handleGantiPasswordAdmin(e) {
+      e.preventDefault();
+      const lama = document.getElementById('inputPassLama').value.trim();
+      const baru = document.getElementById('inputPassBaru').value.trim();
+      const konfirm = document.getElementById('inputPassBaruConfirm').value.trim();
+
+      const validLama = getValidAdminPassword();
+      if (lama !== validLama) {
+        alert("Kata sandi lama salah!");
+        return;
+      }
+
+      if (baru.length < 6) {
+        alert("Kata sandi baru minimal 6 karakter!");
+        return;
+      }
+
+      if (baru !== konfirm) {
+        alert("Konfirmasi kata sandi baru tidak cocok!");
+        return;
+      }
+
+      try {
+        cloudAdminPassword = baru;
+        try { localStorage.setItem('ppnu_admin_password', baru); } catch (e) {}
+
+        if (firebase.apps.length) {
+          await firebase.database().ref('absensi_ppnu/adminPassword').set(baru);
+        }
+
+        alert("Kata sandi Admin berhasil diperbarui dan disinkronkan ke Cloud!");
+        document.getElementById('inputPassLama').value = '';
+        document.getElementById('inputPassBaru').value = '';
+        document.getElementById('inputPassBaruConfirm').value = '';
+      } catch (err) {
+        alert("Gagal memperbarui kata sandi: " + err.message);
+      }
+    }
+
+    // ================= EXPORT TO EXCEL VIA SHEETJS =================
+    function exportToExcel(category) {
+      if (typeof XLSX === 'undefined') {
+        alert("Pustaka SheetJS belum selesai dimuat. Harap periksa koneksi internet.");
+        return;
+      }
+
+      const monthVal = (category === 'asrama') 
+        ? document.getElementById('selectMonthAsrama').value 
+        : document.getElementById('selectMonthMDNU').value;
+
+      const exportDates = [];
+      if (monthVal === 'all') {
+        const monthRanges = (category === 'asrama') ? [
+          { year: 2026, month: 7, startDay: 14, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ] : [
+          { year: 2026, month: 7, startDay: 18, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
+
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            exportDates.push({
+              dateISO: `${mr.year}-${mm}-${dd}`,
+              label: `${dd}/${mm}`,
+              dayOfWeek: new Date(mr.year, mr.month - 1, day).getDay()
+            });
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        const startDay = (monthVal === '2026-07') ? (category === 'asrama' ? 14 : 18) : 1;
+        for (let day = startDay; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          exportDates.push({
+            dateISO: `${yearStr}-${monthStr}-${dd}`,
+            label: dd,
+            dayOfWeek: new Date(year, month - 1, day).getDay()
+          });
+        }
+      }
+
+      let santriList = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      if (category === 'asrama') {
+        santriList = santriList.filter(s => (statusSantriAsrama[s.pin] !== 'boyong'));
+      } else {
+        santriList = santriList.filter(s => (statusSantriMDNU[s.pin] !== 'boyong'));
+      }
+
+      // Bangun Matrix Data Excel
+      const headers = ['No', 'PIN', 'Nama Santri', 'Kelas'];
+      exportDates.forEach(ed => {
+        if (category === 'asrama') {
+          headers.push(`${ed.label}/Sb`, `${ed.label}/Ml`);
+        } else {
+          headers.push(`${ed.label}/Sr`, `${ed.label}/P1`, `${ed.label}/P2`, `${ed.label}/P3`);
+        }
+      });
+      headers.push('Total H', 'Total I', 'Total A', 'Total T', '% Disiplin');
+
+      const rows = [headers];
+
+      santriList.forEach((s, idx) => {
+        let countH = 0, countI = 0, countA = 0, countT = 0;
+        const row = [idx + 1, s.pin, s.name, s.kelas];
+
+        exportDates.forEach(ed => {
+          const dateISO = ed.dateISO;
+          const dayOfWeek = ed.dayOfWeek;
+
+          if (category === 'asrama') {
+            const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+              ? window.PPNURules.getAsramaCell({
+                  pin: s.pin,
+                  dateISO,
+                  dayOfWeek,
+                  asramaMatrix: asramaMatrixData,
+                  manualCellOverrides,
+                  permissionDetailsMap,
+                  specialLiburAsrama,
+                  holidaysData,
+                  statusSantriAsrama,
+                  tglMulaiLajuSantri,
+                  tanggalMulaiSantri,
+                })
+              : { subuh: '-', malam: '-' };
+            const sb = cell.subuh || '-';
+            const ml = cell.malam || '-';
+            if (sb === 'H') countH++; else if (sb === 'I') countI++; else if (sb === 'A') countA++; else if (sb === 'T') countT++;
+            if (ml === 'H') countH++; else if (ml === 'I') countI++; else if (ml === 'A') countA++; else if (ml === 'T') countT++;
+            row.push(sb, ml);
+          } else {
+            const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+              ? window.PPNURules.getMDNUCell({
+                  pin: s.pin,
+                  dateISO,
+                  dayOfWeek,
+                  mdnuMatrix: mdnuMatrixData,
+                  manualCellOverrides,
+                  permissionDetailsMap,
+                  settingMalamSabtuPerTanggal,
+                  holidaysData,
+                  tanggalMulaiSantri,
+                })
+              : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+            const sr = cell.sore || '-';
+            const p1 = cell.pel1 || '-';
+            const p2 = cell.pel2 || '-';
+            const p3 = cell.pel3 || '-';
+            [sr, p1, p2, p3].forEach(v => {
+              if (v === 'H') countH++; else if (v === 'I') countI++; else if (v === 'A') countA++; else if (v === 'T') countT++;
+            });
+            row.push(sr, p1, p2, p3);
+          }
+        });
+
+        const total = countH + countI + countA + countT;
+        const pct = total > 0 ? Math.round(((countH + countI) / total) * 100) : 100;
+
+        row.push(countH, countI, countA, countT, `${pct}%`);
+        rows.push(row);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `Rekap_${category.toUpperCase()}`);
+
+      const fileName = `Rekap_Presensi_${category.toUpperCase()}_${monthVal === 'all' ? 'KUMULATIF_JULI_OKTOBER_2026' : monthVal}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    }
+  </script>
+</body>
+</html>

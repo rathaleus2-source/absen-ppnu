@@ -258,7 +258,7 @@
   <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-md border-b border-slate-800">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3">
       <div class="flex items-center gap-2.5 min-w-0">
-        <a href="index.html" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-300 transition shrink-0" title="Kembali ke Gerbang Utama">
+        <a href="portal.html" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-300 transition shrink-0" title="Buka Gerbang Portal Lengkap">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
         </a>
         <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs">
@@ -273,11 +273,50 @@
         </div>
       </div>
 
-      <!-- Jam WIB & Mode Santri -->
-      <div class="flex items-center gap-3 shrink-0">
-        <div class="text-right">
+      <!-- Jam WIB & Pintu Masuk Peran Lain -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div class="text-right hidden sm:block">
           <div id="liveClockSantri" class="text-xs font-mono font-bold text-emerald-400 leading-tight">--:--:-- WIB</div>
-          <div class="text-[10px] text-slate-400">Portal Santri (Read-Only)</div>
+          <div class="text-[10px] text-slate-400">Portal Santri (Live)</div>
+        </div>
+
+        <!-- DROPDOWN PINTU PERAN -->
+        <div class="relative">
+          <button id="btnRoleMenu" type="button" onclick="toggleRoleMenu(event)" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 flex items-center gap-1.5 transition touch-target" title="Pintu Masuk Asatidz & Pengurus">
+            <span class="hidden xs:inline text-[11px]">Pintu Masuk</span>
+            <span>⚡</span>
+          </button>
+          <div id="roleMenuDropdown" class="hidden absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-50 text-xs text-slate-200">
+            <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">Gerbang Sistem</div>
+            <a href="ustadz.html" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition">
+              <span class="text-base">👨‍🏫</span>
+              <div>
+                <div class="font-bold text-xs">Presensi Asatidz</div>
+                <div class="text-[10px] text-slate-400">Verifikasi Kelas Tatap Muka</div>
+              </div>
+            </a>
+            <a href="pengurus.html" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition">
+              <span class="text-base">🛡️</span>
+              <div>
+                <div class="font-bold text-xs">Pos Keamanan & Takzir</div>
+                <div class="text-[10px] text-slate-400">Sidang Finger & Izin Resmi</div>
+              </div>
+            </a>
+            <a href="admin.html" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition">
+              <span class="text-base">⚙️</span>
+              <div>
+                <div class="font-bold text-xs">Pusat Kendali Admin</div>
+                <div class="text-[10px] text-slate-400">Pengaturan & Mesin ADMS</div>
+              </div>
+            </a>
+            <div class="border-t border-slate-800 my-1"></div>
+            <a href="portal.html" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-emerald-400 hover:bg-slate-800 transition text-[11px]">
+              <span>🏛️</span> <span>Halaman Utama Portal</span>
+            </a>
+            <a href="legacy/index.html" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-slate-400 hover:bg-slate-800 transition text-[11px]">
+              <span>📦</span> <span>Arsip Web Versi 1.0</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -1315,6 +1354,20 @@
         el.scrollTo({ left: el.scrollWidth * scrollRatio, behavior: 'smooth' });
       }
     }
+
+    function toggleRoleMenu(e) {
+      if (e) e.stopPropagation();
+      const m = document.getElementById('roleMenuDropdown');
+      if (m) m.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const m = document.getElementById('roleMenuDropdown');
+      const b = document.getElementById('btnRoleMenu');
+      if (m && !m.classList.contains('hidden') && b && !b.contains(e.target) && !m.contains(e.target)) {
+        m.classList.add('hidden');
+      }
+    });
   </script>
 </body>
 </html>

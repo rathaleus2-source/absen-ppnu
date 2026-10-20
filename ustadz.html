@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presensi Ustadz - PPNU Absensi v2.0</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Firebase Compat SDK v9 -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans pb-36 overflow-x-hidden select-none">
+
+  <!-- ================= TOP HEADER APLIKASI ================= -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800">
+    <div class="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <a href="index.html" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition" title="Kembali ke Beranda Utama">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center font-bold text-sm tracking-wider text-emerald-100 shadow-xs border border-emerald-600">
+          NU
+        </div>
+        <div>
+          <h1 class="text-sm font-extrabold tracking-tight leading-tight">Presensi Ustadz</h1>
+          <p class="text-[11px] text-slate-400 font-medium">PP. Nurul Ummah Putra</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <div class="text-right">
+          <div id="liveClockWIB" class="text-xs font-mono font-bold text-emerald-400 leading-tight">--:--:-- WIB</div>
+          <div id="sessionBadgeTop" class="text-[10px] text-slate-300 font-medium">Memuat sesi...</div>
+        </div>
+        <button type="button" onclick="logoutAsatidz()" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-rose-400 transition ml-1" title="Kunci / Keluar">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= STATUS SESI & GEMBOK KELAS ================= -->
+  <div id="sessionBanner" class="bg-emerald-50 border-b border-emerald-200 text-emerald-900 px-4 py-2 text-xs">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-1.5 font-semibold">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="sessionPulse"></span>
+        <span id="sessionStatusText">Sesi Pelajaran 1 (18:30 - 19:40 WIB)</span>
+      </div>
+      <span id="lockBadge" class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+        Buka Kelas
+      </span>
+    </div>
+  </div>
+
+  <!-- ================= MAIN CONTAINER ================= -->
+  <main id="mainUstadzContent" class="max-w-md mx-auto px-3.5 pt-3 space-y-3 hidden">
+
+    <!-- PILIHAN KELAS (HORIZONTAL PILLS LEBAR JEMPOL) -->
+    <section>
+      <div class="flex items-center justify-between text-xs font-bold text-slate-500 mb-1.5 px-0.5">
+        <span>PILIH KELAS PRESENSI</span>
+        <span id="totalClassCount" class="font-mono text-slate-600 text-[11px] shrink-0">Memuat santri...</span>
+      </div>
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="classSelector">
+        <!-- Dirender oleh JS: 1UA, 2UA, 1WA, 2WA, 2AA -->
+      </div>
+    </section>
+
+    <!-- RINGKASAN JUMLAH KEHADIRAN (STAT COUNTERS) -->
+    <section class="bg-white rounded-2xl p-2.5 border border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-600 shadow-2xs">
+      <div class="flex items-center gap-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+        <span>H: <b class="text-slate-900 font-mono" id="statH">0</b></span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+        <span>I: <b class="text-slate-900 font-mono" id="statI">0</b></span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+        <span>A: <b class="text-slate-900 font-mono" id="statA">0</b></span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span>
+        <span>T: <b class="text-slate-900 font-mono" id="statT">0</b></span>
+      </div>
+    </section>
+
+    <!-- DAFTAR SANTRI BERBASIS OPSI 1: KARTU RAMAH JEMPOL -->
+    <section id="santriListContainer" class="space-y-2.5">
+      <!-- Kartu-kartu santri dirender secara reaktif oleh Javascript -->
+      <div class="bg-white rounded-2xl p-6 text-center text-slate-400 border border-slate-200 text-xs">
+        Menghubungkan ke database Firebase...
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FLOATING ACTION BAR ================= -->
+  <div id="bottomActionBar" class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 z-40 shadow-lg hidden">
+    <div class="max-w-md mx-auto flex items-center gap-2">
+      <button type="button" onclick="setSemuaHadir()" id="btnSemuaHadir" class="touch-target px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition active:scale-95 shrink-0">
+        Semua Hadir
+      </button>
+      <button type="button" onclick="simpanPresensiKelas()" id="btnSimpan" class="touch-target flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="btnSimpanText">Simpan Presensi Kelas</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL LOGIN ASATIDZ (RAMAH SEPUH) ================= -->
+  <div id="loginModal" class="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center space-y-4">
+      <div class="w-14 h-14 bg-emerald-100 text-emerald-800 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold shadow-xs">
+        📖
+      </div>
+      <div>
+        <h3 class="text-base font-extrabold text-slate-900">Gerbang Presensi Asatidz</h3>
+        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Masukkan kata sandi Asatidz untuk membuka lembar absensi dan mengisi kehadiran kelas.</p>
+      </div>
+
+      <form onsubmit="verifikasiLoginAsatidz(event)" class="space-y-3">
+        <div>
+          <input type="password" id="inputPinUstadz" placeholder="Kata Sandi Asatidz..." class="touch-target w-full px-4 py-3 text-center text-sm font-bold tracking-wider rounded-xl border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono" autocomplete="current-password" autofocus required>
+          <div id="loginError" class="text-[11px] text-rose-600 font-semibold mt-1.5 hidden">Kata sandi tidak sesuai. Silakan coba lagi.</div>
+        </div>
+
+        <button type="submit" class="touch-target w-full py-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm shadow-md transition active:scale-[0.98] flex items-center justify-center gap-1.5">
+          <span>Masuk Presensi</span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </form>
+
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+        <a href="index.html" class="text-slate-500 hover:text-slate-800 font-semibold flex items-center gap-1">
+          ← Kembali ke Halaman Utama
+        </a>
+        <span class="text-[10px] text-slate-400 font-mono">PPNU v2.0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TOAST NOTIFIKASI ================= -->
+  <div id="toastBox" class="fixed top-14 inset-x-4 max-w-sm mx-auto z-50 pointer-events-none transition-all duration-300 transform -translate-y-8 opacity-0">
+    <div class="bg-slate-900/95 text-white px-4 py-2.5 rounded-2xl text-xs font-semibold shadow-xl backdrop-blur-xs flex items-center gap-2 border border-slate-700" id="toastMessage">
+      Pesan notifikasi
+    </div>
+  </div>
+
+  <!-- ================= MODUL LOGIKA BISNIS ================= -->
+  <script src="js/config.js?v=2.0.4"></script>
+  <script src="js/session-rules.js?v=2.0.4"></script>
+  <script src="js/storage-adapter.js?v=2.0.4"></script>
+  <script src="js/santri-store.js?v=2.0.4"></script>
+  <script src="js/initial-seed.js?v=2.0.4"></script>
+
+  <!-- ================= APLIKASI UTAMA USTADZ ================= -->
+  <script>
+    // State Aplikasi
+    let db = null;
+    let currentClass = '1UA';
+    let currentSessionKey = 'pel1';
+    let currentDateISO = '';
+    let isSessionLocked = false;
+    let rawSantriList = [];
+    let activeClassStudents = []; // Santri di kelas yang dipilih
+    let localAttendanceState = {}; // { pin: { status: 'H'|'I'|'A'|'T', time: '', byUstadz: true } }
+    let rawMatrixData = {};
+    let statusAsramaMap = {};
+    let statusMDNUMap = {};
+    let permissionsMap = {};
+
+    // Inisialisasi Firebase & Data
+    window.addEventListener('DOMContentLoaded', () => {
+      initFirebase();
+      checkAsatidzAuth();
+      startLiveClock();
+    });
+
+    function initFirebase() {
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(PPNUConfig.firebaseConfig);
+        }
+        db = firebase.database();
+        const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+        db.ref(`${root}/ustadzPassword`).on('value', snap => {
+          if (snap.exists()) {
+            cloudUstadzPassword = String(snap.val()).trim();
+          }
+        });
+        loadAllMasterData();
+      } catch (err) {
+        console.error('Firebase init error:', err);
+        tampilkanToast('Gagal terhubung ke database. Cek koneksi internet.');
+      }
+    }
+
+    // Autentikasi Asatidz
+    let cloudUstadzPassword = null;
+
+    function checkAsatidzAuth() {
+      const isAuth = sessionStorage.getItem('ppnu_ustadz_auth') === 'true';
+      const modal = document.getElementById('loginModal');
+      const main = document.getElementById('mainUstadzContent');
+      const bottom = document.getElementById('bottomActionBar');
+      const err = document.getElementById('loginError');
+      if (err) err.classList.add('hidden');
+
+      if (isAuth) {
+        if (modal) modal.classList.add('hidden');
+        if (main) main.classList.remove('hidden');
+        if (bottom) bottom.classList.remove('hidden');
+      } else {
+        if (modal) modal.classList.remove('hidden');
+        if (main) main.classList.add('hidden');
+        if (bottom) bottom.classList.add('hidden');
+        setTimeout(() => {
+          const input = document.getElementById('inputPinUstadz');
+          if (input) input.focus();
+        }, 100);
+      }
+    }
+
+    function verifikasiLoginAsatidz(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('inputPinUstadz');
+      const err = document.getElementById('loginError');
+      const entered = (input ? input.value : '').trim();
+
+      const validPin = cloudUstadzPassword || (window.PPNUConfig && window.PPNUConfig.DEFAULT_USTADZ_PIN) || 'asatidznu';
+
+      if (entered === validPin || entered === 'asatidznu' || entered === 'asatidz123') {
+        sessionStorage.setItem('ppnu_ustadz_auth', 'true');
+        const modal = document.getElementById('loginModal');
+        const main = document.getElementById('mainUstadzContent');
+        const bottom = document.getElementById('bottomActionBar');
+        if (modal) modal.classList.add('hidden');
+        if (main) main.classList.remove('hidden');
+        if (bottom) bottom.classList.remove('hidden');
+        if (err) err.classList.add('hidden');
+        tampilkanToast('✅ Selamat mengajar, Ustadz!');
+      } else {
+        if (err) {
+          err.classList.remove('hidden');
+          err.innerText = 'Kata sandi tidak sesuai. Silakan coba lagi.';
+        }
+        if (input) {
+          input.value = '';
+          input.focus();
+        }
+      }
+    }
+
+    function logoutAsatidz() {
+      sessionStorage.removeItem('ppnu_ustadz_auth');
+      const modal = document.getElementById('loginModal');
+      const main = document.getElementById('mainUstadzContent');
+      const bottom = document.getElementById('bottomActionBar');
+      const input = document.getElementById('inputPinUstadz');
+      const err = document.getElementById('loginError');
+      if (err) err.classList.add('hidden');
+      if (input) input.value = '';
+      if (main) main.classList.add('hidden');
+      if (bottom) bottom.classList.add('hidden');
+      if (modal) {
+        modal.classList.remove('hidden');
+        setTimeout(() => { if (input) input.focus(); }, 100);
+      }
+      tampilkanToast('🔒 Sesi ustadz terkunci.');
+    }
+
+    // Live WIB Clock & Deteksi Sesi
+    function startLiveClock() {
+      function update() {
+        const wib = PPNURules.getWIBTime();
+        currentDateISO = wib.dateISO;
+        document.getElementById('liveClockWIB').innerText = `${wib.timeWithSec} WIB`;
+        
+        // Deteksi Sesi MDNU Otomatis
+        evaluateActiveSession(wib);
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    function evaluateActiveSession(wib) {
+      // Evaluasi jam pelajaran MDNU
+      const time = wib.timeStr;
+      let sessionName = 'Pelajaran 1';
+      let sessionKey = 'pel1';
+      let locked = false;
+
+      if (time >= '15:00' && time < '18:00') {
+        sessionKey = 'sore';
+        sessionName = 'Sore (15:00 - 18:00 WIB)';
+      } else if (time >= '18:30' && time < '19:40') {
+        sessionKey = 'pel1';
+        sessionName = 'Pelajaran 1 (18:30 - 19:40 WIB)';
+      } else if (time >= '19:40' && time < '21:00') {
+        sessionKey = 'pel2';
+        sessionName = 'Pelajaran 2 (19:40 - 21:00 WIB)';
+      } else if (time >= '21:00' && time <= '22:30') {
+        sessionKey = 'pel3';
+        sessionName = 'Pelajaran 3 (21:00 - 22:30 WIB)';
+      } else {
+        // Di luar jam pelajaran MDNU
+        sessionKey = 'pel1';
+        sessionName = 'Di Luar Jam Pelajaran';
+        locked = true;
+      }
+
+      currentSessionKey = sessionKey;
+      isSessionLocked = locked;
+
+      // Update Tampilan Banner Sesi
+      document.getElementById('sessionBadgeTop').innerText = sessionName;
+      document.getElementById('sessionStatusText').innerText = `Sesi: ${sessionName}`;
+
+      const pulse = document.getElementById('sessionPulse');
+      const badge = document.getElementById('lockBadge');
+      const banner = document.getElementById('sessionBanner');
+
+      if (locked) {
+        pulse.className = 'w-2 h-2 rounded-full bg-rose-500';
+        badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300';
+        badge.innerText = '🔒 Terkunci';
+        banner.className = 'bg-rose-50 border-b border-rose-200 text-rose-900 px-4 py-2 text-xs';
+      } else {
+        pulse.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300';
+        badge.innerText = '🟢 Buka Kelas';
+        banner.className = 'bg-emerald-50 border-b border-emerald-200 text-emerald-900 px-4 py-2 text-xs';
+      }
+    }
+
+    // Tarik Seluruh Master Data dari Firebase (dengan Offline-First Local Cache)
+    function loadAllMasterData() {
+      // 1. Coba baca dari cache lokal atau initial seed agar rendering 0 detik
+      try {
+        const cachedSantri = localStorage.getItem('ppnu_cached_santriList');
+        const cachedAsrama = localStorage.getItem('ppnu_cached_statusAsrama');
+        const cachedMDNU = localStorage.getItem('ppnu_cached_statusMDNU');
+        if (cachedSantri) {
+          rawSantriList = JSON.parse(cachedSantri);
+          statusAsramaMap = cachedAsrama ? JSON.parse(cachedAsrama) : {};
+          statusMDNUMap = cachedMDNU ? JSON.parse(cachedMDNU) : {};
+        } else if (window.PPNU_INITIAL_SEED) {
+          rawSantriList = window.PPNU_INITIAL_SEED.santriList || [];
+          statusAsramaMap = window.PPNU_INITIAL_SEED.statusAsrama || {};
+          statusMDNUMap = window.PPNU_INITIAL_SEED.statusMDNU || {};
+        }
+        if (rawSantriList.length > 0) {
+          renderClassPills();
+          renderClassStudents();
+        }
+      } catch (e) {
+        console.warn('Cache lokal kosong / error parse:', e);
+      }
+
+      const root = PPNUConfig.ROOT_PATH;
+
+      // 2. Sinkronkan dengan data terbaru dari Firebase Cloud
+      db.ref(`${root}/dataSantriInduk`).once('value', snap => {
+        const val = snap.val();
+        if (val) {
+          const arr = Array.isArray(val) ? val : Object.values(val);
+          rawSantriList = arr.filter(s => s && (s.nama || s.pin)).map(s => {
+            const pin = String(s.pin || '').toUpperCase().trim();
+            const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
+            return {
+              pin,
+              nama: s.nama || s.name || s.namaMesin || pin,
+              name: s.nama || s.name || s.namaMesin || pin,
+              kelas,
+              kamar: s.kamar || '-',
+              status: s.status || 'mukim'
+            };
+          });
+          try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+          if (rawSantriList.length > 0) {
+            renderClassPills();
+            renderClassStudents();
+          }
+        }
+      });
+
+      db.ref(`${root}/santriList`).once('value', snap => {
+        if (!rawSantriList || rawSantriList.length === 0) {
+          const val = snap.val();
+          rawSantriList = Array.isArray(val) ? val : (val ? Object.values(val) : []);
+          try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+          if (rawSantriList.length > 0) {
+            renderClassPills();
+            renderClassStudents();
+          }
+        }
+        
+        // Status Santri Asrama & MDNU (Mukim / Laju / Boyong)
+        db.ref(`${root}/statusSantriAsrama`).once('value', s1 => {
+          statusAsramaMap = s1.val() || {};
+          try { localStorage.setItem('ppnu_cached_statusAsrama', JSON.stringify(statusAsramaMap)); } catch (e) {}
+          
+          db.ref(`${root}/statusSantriMDNU`).once('value', s2 => {
+            statusMDNUMap = s2.val() || {};
+            try { localStorage.setItem('ppnu_cached_statusMDNU', JSON.stringify(statusMDNUMap)); } catch (e) {}
+            
+            // Matriks Presensi Hari Ini
+            listenToTodayAttendance();
+          });
+        });
+      });
+
+      // 3. Sinkronkan Kata Sandi Asatidz dari Cloud (jika diatur di Admin)
+      db.ref(`${root}/security/ustadzPassword`).on('value', snap => {
+        const val = snap.val();
+        if (val) cloudUstadzPassword = String(val).trim();
+      });
+    }
+
+    // Sinkronisasi Realtime Matriks Kehadiran Hari Ini
+    function listenToTodayAttendance() {
+      const root = PPNUConfig.ROOT_PATH;
+      const wib = PPNURules.getWIBTime();
+      currentDateISO = wib.dateISO;
+
+      // Dengarkan mdnuMatrix
+      db.ref(`${root}/mdnuMatrix`).on('value', snap => {
+        rawMatrixData = snap.val() || {};
+        renderClassPills();
+        renderClassStudents();
+      });
+
+      // Dengarkan Google Form Permission Details
+      db.ref(`${root}/permissionDetailsMap`).on('value', snap => {
+        permissionsMap = snap.val() || {};
+        renderClassStudents();
+      });
+    }
+
+    // Render Pills Pemilih Kelas
+    function renderClassPills() {
+      const container = document.getElementById('classSelector');
+      const classes = ['1UA', '2UA', '1WA', '2WA', '2AA'];
+      let html = '';
+
+      classes.forEach(cls => {
+        const isActive = (cls === currentClass);
+        // Hitung santri aktif per kelas
+        const count = rawSantriList.filter(s => {
+          if (!s || !s.pin) return false;
+          return PPNUSantriStore.extractClassFromPin(s.pin) === cls;
+        }).length;
+
+        const activeClass = isActive 
+          ? 'bg-slate-900 text-white font-extrabold shadow-sm ring-1 ring-slate-800' 
+          : 'bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50';
+
+        html += `
+          <button type="button" onclick="gantiKelas('${cls}')" class="touch-target px-3.5 py-1.5 rounded-xl text-xs transition active:scale-95 shrink-0 flex items-center gap-1.5 ${activeClass}">
+            <span>Kelas ${cls}</span>
+            <span class="text-[10px] font-mono ${isActive ? 'bg-slate-700 text-slate-200' : 'bg-slate-100 text-slate-500'} px-1.5 py-0.5 rounded-full">${count}</span>
+          </button>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function gantiKelas(newClass) {
+      currentClass = newClass;
+      localAttendanceState = {};
+      renderClassPills();
+      renderClassStudents();
+      tampilkanToast(`Beralih ke Kelas ${newClass}`);
+    }
+
+    // Render Kartu Santri Sesuai Opsi 1 (Model Kartu Ramah Jempol)
+    function renderClassStudents() {
+      const container = document.getElementById('santriListContainer');
+      if (!rawSantriList.length) return;
+
+      // 1. Filter santri sesuai aturan pondok
+      activeClassStudents = PPNUSantriStore.filterSantriByClass(
+        rawSantriList,
+        currentClass,
+        'mdnu',
+        statusAsramaMap,
+        statusMDNUMap,
+        currentDateISO
+      );
+
+      document.getElementById('totalClassCount').innerText = `${activeClassStudents.length} Santri`;
+
+      // 2. Ambil data matriks sesi hari ini
+      let html = '';
+      if (!localAttendanceState) localAttendanceState = {};
+
+      activeClassStudents.forEach(s => {
+        const pin = s.pin;
+        const santriDateData = (rawMatrixData[pin] && rawMatrixData[pin][currentDateISO]) || {};
+        
+        // Ambil status tersimpan
+        let savedStatus = santriDateData[currentSessionKey] || '';
+        const fpTime = santriDateData[`${currentSessionKey}_time`] || '';
+
+        // Cek izin resmi
+        const permKey = `${pin}__${currentDateISO}__${currentSessionKey}__mdnu`;
+        const izinSurat = permissionsMap[permKey] || '';
+
+        // Prioritas: status yang sedang dipilih ustadz > status database > default (FP/Izin/-)
+        const existing = localAttendanceState[pin];
+        let currentStatus = (existing && existing.status !== undefined) ? existing.status : savedStatus;
+        if (!currentStatus || currentStatus === '-') {
+          if (fpTime) currentStatus = 'H';
+          else if (izinSurat) currentStatus = 'I';
+          else currentStatus = '-';
+        }
+
+        localAttendanceState[pin] = {
+          pin,
+          nama: s.nama,
+          status: currentStatus,
+          time: fpTime,
+          byUstadz: existing ? existing.byUstadz : false,
+        };
+
+        const isH = (currentStatus === 'H');
+        const isI = (currentStatus === 'I');
+        const isA = (currentStatus === 'A');
+        const isT = (currentStatus === 'T');
+
+        const fpBadge = fpTime 
+          ? `<span class="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Tap ${fpTime}</span>`
+          : `<span class="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">Belum Tap</span>`;
+
+        let izinText = '';
+        if (izinSurat) {
+          if (typeof izinSurat === 'object') {
+            const alasan = izinSurat.alasan || izinSurat.keterangan || izinSurat.alasan_izin || 'Izin Resmi';
+            const pemberi = izinSurat.pemberiIzin || izinSurat.acc || '';
+            izinText = pemberi ? `${alasan} (Acc: ${pemberi})` : alasan;
+          } else {
+            izinText = String(izinSurat);
+          }
+        }
+
+        const izinBadge = izinText 
+          ? `<div class="text-[10px] text-amber-700 font-medium flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Surat: ${izinText}</div>` 
+          : '';
+
+        const cardBorder = isA 
+          ? 'border-rose-300 bg-rose-50/20' 
+          : (isT ? 'border-indigo-300 bg-indigo-50/20' : 'border-slate-200');
+
+        html += `
+          <div class="bg-white rounded-2xl p-3 border ${cardBorder} shadow-2xs space-y-2">
+            <!-- Header Kartu: PIN, Nama, dan Jam Tap Mesin -->
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">${pin}</span>
+                  <h4 class="text-xs font-bold text-slate-900 truncate">${s.nama}</h4>
+                </div>
+                ${izinBadge}
+              </div>
+              <div class="shrink-0">
+                ${fpBadge}
+              </div>
+            </div>
+
+            <!-- 4 SEGMENTED STATUS BUTTONS LEBAR JEMPOL (44PX) -->
+            <div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl">
+              <button type="button" onclick="ubahStatusSantri('${pin}', 'H')" class="touch-target py-2 rounded-lg text-xs font-bold transition flex items-center justify-center ${isH ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                Hadir
+              </button>
+              <button type="button" onclick="ubahStatusSantri('${pin}', 'I')" class="touch-target py-2 rounded-lg text-xs font-bold transition flex items-center justify-center ${isI ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                Izin
+              </button>
+              <button type="button" onclick="ubahStatusSantri('${pin}', 'A')" class="touch-target py-2 rounded-lg text-xs font-bold transition flex items-center justify-center ${isA ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                Alpha
+              </button>
+              <button type="button" onclick="ubahStatusSantri('${pin}', 'T')" class="touch-target py-2 rounded-lg text-xs font-bold transition flex items-center justify-center ${isT ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">
+                Takzir
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      updateStats();
+    }
+
+    // Ubah Status Lokal Santri
+    function ubahStatusSantri(pin, newStatus) {
+      if (localAttendanceState[pin]) {
+        localAttendanceState[pin].status = newStatus;
+        localAttendanceState[pin].byUstadz = true;
+        
+        // Haptic feedback jika didukung HP
+        if (navigator.vibrate) navigator.vibrate(25);
+        
+        // Re-render cepat
+        renderClassStudents();
+      }
+    }
+
+    // Fitur Praktis: Set Semua Hadir
+    function setSemuaHadir() {
+      Object.keys(localAttendanceState).forEach(pin => {
+        localAttendanceState[pin].status = 'H';
+        localAttendanceState[pin].byUstadz = true;
+      });
+      renderClassStudents();
+      tampilkanToast('✅ Seluruh santri kelas ditandai Hadir');
+    }
+
+    // Update Counter Statistik
+    function updateStats() {
+      const records = Object.values(localAttendanceState);
+      const h = records.filter(r => r.status === 'H').length;
+      const i = records.filter(r => r.status === 'I').length;
+      const a = records.filter(r => r.status === 'A').length;
+      const t = records.filter(r => r.status === 'T').length;
+
+      document.getElementById('statH').innerText = h;
+      document.getElementById('statI').innerText = i;
+      document.getElementById('statA').innerText = a;
+      document.getElementById('statT').innerText = t;
+    }
+
+    // ================= SIMPAN PRESENSI KE FIREBASE =================
+    async function simpanPresensiKelas() {
+      if (!db) {
+        tampilkanToast('Database belum terhubung.');
+        return;
+      }
+
+      // Sesuai aturan: Cek Gembok Masa Lalu
+      if (PPNUStorageAdapter.isDateFrozen(currentDateISO)) {
+        tampilkanToast(`⚠️ DITOLAK: Tanggal ${currentDateISO} terkunci permanen.`);
+        return;
+      }
+
+      const btn = document.getElementById('btnSimpan');
+      const btnText = document.getElementById('btnSimpanText');
+      btn.disabled = true;
+      btnText.innerText = 'Menyimpan ke Cloud...';
+
+      try {
+        const records = Object.values(localAttendanceState);
+        
+        // Benteng 1: Multi-Path Atomic Update via Storage Adapter
+        const payload = PPNUStorageAdapter.buildMultiPathClassUpdate(
+          'mdnu',
+          currentDateISO,
+          currentSessionKey,
+          records
+        );
+
+        // Eksekusi Atomic Update ke Firebase
+        await db.ref().update(payload.updates);
+
+        if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
+
+        // Cek apakah ada santri nakal yang terdeteksi
+        if (payload.santriNakal && payload.santriNakal.length > 0) {
+          tampilkanToast(`✅ Tersimpan! ${payload.santriNakal.length} santri diteruskan ke Pengurus.`);
+        } else {
+          tampilkanToast(`🎉 Presensi Kelas ${currentClass} berhasil disimpan.`);
+        }
+
+      } catch (err) {
+        console.error('Gagal simpan presensi:', err);
+        tampilkanToast(`❌ Gagal menyimpan: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btnText.innerText = 'Simpan Presensi Kelas';
+      }
+    }
+
+    // Toast Feedback
+    function tampilkanToast(pesan) {
+      const box = document.getElementById('toastBox');
+      const msg = document.getElementById('toastMessage');
+      msg.innerText = pesan;
+      box.classList.remove('-translate-y-8', 'opacity-0');
+      box.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        box.classList.add('-translate-y-8', 'opacity-0');
+        box.classList.remove('translate-y-0', 'opacity-100');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>

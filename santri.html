@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mading Kehadiran Santri - PPNU Absensi v2.0</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Firebase Compat SDK v9 -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <!-- Modul Internal v2.0 -->
+  <script src="js/config.js?v=2.0.4"></script>
+  <script src="js/initial-seed.js?v=2.0.4"></script>
+  <script src="js/santri-store.js?v=2.0.4"></script>
+  <script src="js/session-rules.js?v=2.0.4"></script>
+
+  <style>
+    :root {
+      --col-pin-w: 64px;
+      --col-nama-w: 130px;
+      --col-stat-w: 34px;
+      --col-pct-w: 42px;
+      --col-sesi-w: 42px;
+      --cell-h: 34px;
+      --cell-font: 10.5px;
+      --cell-badge-w: 24px;
+      --cell-badge-h: 20px;
+    }
+
+    @media (max-width: 640px) {
+      :root {
+        --col-pin-w: 58px;
+        --col-nama-w: 122px;
+        --col-stat-w: 34px;
+        --col-pct-w: 42px;
+        --col-sesi-w: 42px;
+        --cell-h: 34px;
+        --cell-font: 10.5px;
+        --cell-badge-w: 24px;
+        --cell-badge-h: 20px;
+      }
+    }
+
+    .touch-target {
+      min-height: 40px;
+      min-width: 40px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+    }
+
+    /* STANDAR MUTLAK SPREADSHEET SESUAI WEB UTAMA */
+    table.app-table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      width: max-content !important;
+      min-width: 100% !important;
+      font-size: var(--cell-font);
+      border: 1px solid #cbd5e1 !important;
+      background-color: #ffffff;
+      table-layout: auto !important;
+    }
+    table.app-table th, table.app-table td {
+      border-right: 1px solid #cbd5e1 !important;
+      border-bottom: 1px solid #cbd5e1 !important;
+      text-align: center;
+      vertical-align: middle;
+      white-space: nowrap;
+      box-sizing: border-box;
+    }
+    table.app-table th {
+      font-size: calc(var(--cell-font) - 1px);
+      font-weight: 700;
+      padding: 6px 4px;
+    }
+    table.app-table td {
+      font-size: var(--cell-font);
+      height: var(--cell-h);
+      padding: 3px 2px;
+    }
+    table.app-table .col-pin {
+      width: var(--col-pin-w) !important;
+      min-width: var(--col-pin-w) !important;
+      max-width: var(--col-pin-w) !important;
+      box-sizing: border-box;
+    }
+    table.app-table .col-nama {
+      width: var(--col-nama-w) !important;
+      min-width: var(--col-nama-w) !important;
+      max-width: var(--col-nama-w) !important;
+      text-align: left !important;
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+      box-sizing: border-box;
+    }
+    table.app-table .col-stat {
+      width: var(--col-stat-w) !important;
+      min-width: var(--col-stat-w) !important;
+      max-width: var(--col-stat-w) !important;
+      box-sizing: border-box;
+      padding: 3px 2px !important;
+    }
+    table.app-table .col-pct {
+      width: var(--col-pct-w) !important;
+      min-width: var(--col-pct-w) !important;
+      max-width: var(--col-pct-w) !important;
+      box-sizing: border-box;
+      padding: 3px 2px !important;
+    }
+    table.app-table .col-sesi {
+      width: var(--col-sesi-w) !important;
+      min-width: var(--col-sesi-w) !important;
+      padding: 2px !important;
+      box-sizing: border-box;
+    }
+    table.app-table .border-r-thick {
+      border-right: 2px solid #64748b !important;
+    }
+
+    /* STICKY COLUMNS PIN & NAMA */
+    .sticky-col-pin {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 25 !important;
+      width: var(--col-pin-w) !important;
+      min-width: var(--col-pin-w) !important;
+      max-width: var(--col-pin-w) !important;
+      box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.1);
+      background-color: #ffffff !important;
+    }
+    tbody tr:nth-child(even) .sticky-col-pin {
+      background-color: #f8fafc !important;
+    }
+    tbody tr:nth-child(odd) .sticky-col-pin {
+      background-color: #ffffff !important;
+    }
+    #tableAsrama thead .sticky-col-pin {
+      background-color: #d1fae5 !important;
+      color: #065f46 !important;
+      z-index: 38 !important;
+    }
+    #tableMDNU thead .sticky-col-pin {
+      background-color: #e0e7ff !important;
+      color: #3730a3 !important;
+      z-index: 38 !important;
+    }
+
+    .sticky-col-nama {
+      position: sticky !important;
+      left: var(--col-pin-w) !important;
+      z-index: 24 !important;
+      width: var(--col-nama-w) !important;
+      min-width: var(--col-nama-w) !important;
+      max-width: var(--col-nama-w) !important;
+      box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.12);
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      background-color: #ffffff !important;
+    }
+    tbody tr:nth-child(even) .sticky-col-nama {
+      background-color: #f8fafc !important;
+    }
+    tbody tr:nth-child(odd) .sticky-col-nama {
+      background-color: #ffffff !important;
+    }
+    #tableAsrama thead .sticky-col-nama {
+      background-color: #d1fae5 !important;
+      color: #065f46 !important;
+      z-index: 37 !important;
+    }
+    #tableMDNU thead .sticky-col-nama {
+      background-color: #e0e7ff !important;
+      color: #3730a3 !important;
+      z-index: 37 !important;
+    }
+
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    /* BADGES IDENTIK WEB UTAMA */
+    .badge-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: var(--cell-badge-w);
+      padding: 0 2.5px;
+      height: var(--cell-badge-h);
+      border-radius: 4px;
+      font-size: calc(var(--cell-font) - 1.5px);
+      font-weight: 800;
+      -webkit-user-select: none;
+      user-select: none;
+      white-space: nowrap;
+      letter-spacing: -0.25px;
+    }
+    .badge-hadir {
+      background-color: #ecfdf5;
+      color: #047857;
+      border: 1px solid #a7f3d0;
+    }
+    .badge-izin {
+      background-color: #fef3c7;
+      color: #92400e;
+      font-weight: 700;
+      border: 1px solid #fde68a;
+    }
+    .badge-absen {
+      background-color: #fff1f2;
+      color: #e11d48;
+      font-weight: 800;
+      border: 1px solid #fecdd3;
+    }
+    .badge-takzir {
+      background-color: #e0e7ff;
+      color: #3730a3;
+      font-weight: 800;
+      border: 1px solid #c7d2fe;
+    }
+    .badge-libur {
+      background-color: #f1f5f9;
+      color: #94a3b8;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans pb-16">
+
+  <!-- ================= TOP HEADER TRANSPARAN MADING ================= -->
+  <header class="sticky top-0 z-40 bg-slate-900 text-white shadow-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <a href="portal.html" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-300 transition shrink-0" title="Buka Gerbang Portal Lengkap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div class="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs">
+          NU
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-1.5">
+            <h1 class="text-xs sm:text-sm font-extrabold tracking-tight truncate">Mading Kehadiran Santri</h1>
+            <span class="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-mono font-bold border border-emerald-500/30">v2.0</span>
+          </div>
+          <p class="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">Pondok Pesantren Nurul Ummah Putra</p>
+        </div>
+      </div>
+
+      <!-- Jam WIB & Pintu Masuk Peran Lain -->
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div class="text-right hidden sm:block">
+          <div id="liveClockSantri" class="text-xs font-mono font-bold text-emerald-400 leading-tight">--:--:-- WIB</div>
+          <div class="text-[10px] text-slate-400">Portal Santri (Live)</div>
+        </div>
+
+        <!-- DROPDOWN PINTU PERAN -->
+        <div class="relative">
+          <button id="btnRoleMenu" type="button" onclick="toggleRoleMenu(event)" class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-emerald-400 flex items-center gap-1.5 transition touch-target" title="Pintu Masuk Asatidz & Pengurus">
+            <span class="hidden xs:inline text-[11px]">Pintu Masuk</span>
+            <span>⚡</span>
+          </button>
+          <div id="roleMenuDropdown" class="hidden absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-2 z-50 text-xs text-slate-200">
+            <div class="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">Gerbang Sistem</div>
+            <a href="ustadz.html" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition">
+              <span class="text-base">👨‍🏫</span>
+              <div>
+                <div class="font-bold text-xs">Presensi Asatidz</div>
+                <div class="text-[10px] text-slate-400">Verifikasi Kelas Tatap Muka</div>
+              </div>
+            </a>
+            <a href="pengurus.html" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition">
+              <span class="text-base">🛡️</span>
+              <div>
+                <div class="font-bold text-xs">Pos Keamanan & Takzir</div>
+                <div class="text-[10px] text-slate-400">Sidang Finger & Izin Resmi</div>
+              </div>
+            </a>
+            <a href="admin.html" class="flex items-center gap-2 px-2.5 py-2 rounded-xl text-slate-200 hover:bg-slate-800 hover:text-white transition">
+              <span class="text-base">⚙️</span>
+              <div>
+                <div class="font-bold text-xs">Pusat Kendali Admin</div>
+                <div class="text-[10px] text-slate-400">Pengaturan & Mesin ADMS</div>
+              </div>
+            </a>
+            <div class="border-t border-slate-800 my-1"></div>
+            <a href="portal.html" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-emerald-400 hover:bg-slate-800 transition text-[11px]">
+              <span>🏛️</span> <span>Halaman Utama Portal</span>
+            </a>
+            <a href="legacy/index.html" class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-slate-400 hover:bg-slate-800 transition text-[11px]">
+              <span>📦</span> <span>Arsip Web Versi 1.0</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= NAVIGASI 2 TAB (SESUAI REVISI SENIOR) ================= -->
+  <nav class="bg-white border-b border-slate-200/90 shadow-2xs sticky top-[49px] sm:top-[53px] z-30">
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-2 text-xs font-bold">
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- TAB 1: ASRAMA -->
+        <button type="button" onclick="switchSantriTab('asrama')" id="tabBtnAsrama" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 bg-slate-900 text-white shadow-2xs">
+          <span>🏠</span>
+          <span>Master Asrama</span>
+        </button>
+
+        <!-- TAB 2: MDNU -->
+        <button type="button" onclick="switchSantriTab('mdnu')" id="tabBtnMDNU" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+          <span>📖</span>
+          <span>Master MDNU</span>
+        </button>
+      </div>
+
+      <!-- SEARCH BAR SANTRI CEPAT -->
+      <div class="w-48 sm:w-64 relative shrink-0">
+        <input type="text" id="inputSearchSantri" oninput="handleSearchFilter()" placeholder="Cari nama atau PIN santri..." class="w-full pl-7 pr-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-slate-700">
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= KONTEN UTAMA SPREADSHEET ================= -->
+  <main class="max-w-7xl mx-auto px-2 sm:px-4 py-3 space-y-3">
+
+    <!-- ================= TAB 1: SPREADSHEET ASRAMA PUTRA ================= -->
+    <section id="panelAsrama" class="space-y-3">
+      <!-- CONTROL TOOLBAR ASRAMA (SESUAI ANOTASI: TANPA DOWNLOAD EXCEL & AUTO-HIDE LIBUR) -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <div>
+            <label for="selectMonthAsrama" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">BULAN & TAHUN</label>
+            <select id="selectMonthAsrama" name="selectMonthAsrama" onchange="renderAsramaSpreadsheet()" title="Pilih Bulan & Tahun Asrama" aria-label="Pilih Bulan & Tahun Asrama" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+              <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+              <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
+              <option value="2026-09">September 2026</option>
+              <option value="2026-08">Agustus 2026</option>
+              <option value="2026-07">Juli 2026</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="selectStatusAsrama" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER SANTRI</label>
+            <select id="selectStatusAsrama" name="selectStatusAsrama" onchange="renderAsramaSpreadsheet()" title="Filter Status Santri Asrama" aria-label="Filter Status Santri Asrama" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+              <option value="mukim" selected>Santri Mukim Saja</option>
+              <option value="all">Semua Santri</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- QUICK SCROLL NAVIGATION -->
+        <div class="flex items-center gap-1 text-[11px] font-bold">
+          <button type="button" onclick="scrollTableTo('containerTableAsrama', 'start')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Geser ke awal tanggal">&laquo; Awal</button>
+          <button type="button" onclick="scrollTableTo('containerTableAsrama', 'today')" class="px-2.5 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-900 transition flex items-center gap-1" title="Geser ke tanggal hari ini">
+            <span>&hArr; Hari Ini</span>
+          </button>
+          <button type="button" onclick="scrollTableTo('containerTableAsrama', 'end')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Geser ke akhir tanggal">Akhir &raquo;</button>
+        </div>
+      </div>
+
+      <!-- BANNER STATUS ASRAMA -->
+      <div class="rounded-xl bg-emerald-900 text-white px-3.5 py-2 flex flex-wrap items-center justify-between gap-1 shadow-2xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span class="text-xs font-extrabold tracking-tight uppercase" id="bannerAsramaTitle">REKAPITULASI ASRAMA PUTRA - OKTOBER 2026</span>
+        </div>
+        <div class="text-[11px] font-mono text-emerald-200" id="bannerAsramaSub">Memuat tanggal...</div>
+      </div>
+
+      <!-- SPREADSHEET TABLE ASRAMA CONTAINER -->
+      <div id="containerTableAsrama" class="overflow-x-auto bg-white border border-slate-300 rounded-2xl shadow-xs max-h-[75vh]">
+        <table id="tableAsrama" class="app-table">
+          <!-- Rendered dynamically by JS -->
+        </table>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: SPREADSHEET MDNU PUTRA ================= -->
+    <section id="panelMDNU" class="space-y-3 hidden">
+      <!-- CONTROL TOOLBAR MDNU (SESUAI ANOTASI: TANPA DOWNLOAD EXCEL & AUTO-HIDE LIBUR) -->
+      <div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
+        <div class="flex flex-wrap items-center gap-2">
+          <div>
+            <label for="selectMonthMDNU" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">BULAN & TAHUN</label>
+            <select id="selectMonthMDNU" name="selectMonthMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Bulan & Tahun MDNU" aria-label="Pilih Bulan & Tahun MDNU" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+              <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+              <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
+              <option value="2026-09">September 2026</option>
+              <option value="2026-08">Agustus 2026</option>
+              <option value="2026-07">Juli 2026</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="selectKelasMDNU" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER KELAS</label>
+            <select id="selectKelasMDNU" name="selectKelasMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Jenjang Kelas MDNU" aria-label="Pilih Jenjang Kelas MDNU" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+              <option value="1UA" selected>Kelas 1UA</option>
+              <option value="2UA">Kelas 2UA</option>
+              <option value="1WA">Kelas 1WA</option>
+              <option value="2WA">Kelas 2WA</option>
+              <option value="2AA">Kelas 2AA</option>
+              <option value="all">Semua Kelas</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- QUICK SCROLL NAVIGATION -->
+        <div class="flex items-center gap-1 text-[11px] font-bold">
+          <button type="button" onclick="scrollTableTo('containerTableMDNU', 'start')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Geser ke awal tanggal">&laquo; Awal</button>
+          <button type="button" onclick="scrollTableTo('containerTableMDNU', 'today')" class="px-2.5 py-1.5 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-900 transition flex items-center gap-1" title="Geser ke tanggal hari ini">
+            <span>&hArr; Hari Ini</span>
+          </button>
+          <button type="button" onclick="scrollTableTo('containerTableMDNU', 'end')" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Geser ke akhir tanggal">Akhir &raquo;</button>
+        </div>
+      </div>
+
+      <!-- BANNER STATUS MDNU -->
+      <div class="rounded-xl bg-indigo-950 text-white px-3.5 py-2 flex flex-wrap items-center justify-between gap-1 shadow-2xs">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+          <span class="text-xs font-extrabold tracking-tight uppercase" id="bannerMDNUTitle">TABEL REKAPITULASI MDNU PUTRA - KELAS 1UA</span>
+        </div>
+        <div class="text-[11px] font-mono text-indigo-200" id="bannerMDNUSub">Memuat tanggal...</div>
+      </div>
+
+      <!-- SPREADSHEET TABLE MDNU CONTAINER -->
+      <div id="containerTableMDNU" class="overflow-x-auto bg-white border border-slate-300 rounded-2xl shadow-xs max-h-[75vh]">
+        <table id="tableMDNU" class="app-table">
+          <!-- Rendered dynamically by JS -->
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= LOGIKA JAVASCRIPT & ENGINE REKAP ================= -->
+  <script>
+    // State Portal Santri
+    let db = null;
+    let currentSantriTab = 'asrama';
+    let holidaysData = {};
+    let statusSantriAsrama = {};
+    let statusSantriMDNU = {};
+    let tglMulaiLajuSantri = {};
+    let tanggalMulaiSantri = {};
+    let asramaMatrixData = {};
+    let mdnuMatrixData = {};
+    let rawSantriList = [];
+
+    // Kunci Cerdas Evaluasi Resmi Pesantren
+    let manualCellOverrides = {};
+    let permissionDetailsMap = {};
+    let specialLiburAsrama = {};
+    let settingMalamSabtuPerTanggal = {};
+
+    let searchQuery = '';
+
+    // ================= INITIALIZATION =================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOfflineFirstData();
+      initFirebaseSantri();
+      startLiveClock();
+
+      // Cek parameter tab di URL (?tab=mdnu atau ?tab=asrama)
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam === 'mdnu') {
+        switchSantriTab('mdnu');
+      } else {
+        renderAsramaSpreadsheet();
+      }
+    });
+
+    function loadOfflineFirstData() {
+      try {
+        const cachedSantri = localStorage.getItem('ppnu_cached_santriList');
+        const cachedAsrama = localStorage.getItem('ppnu_cached_statusAsrama');
+        const cachedMDNU = localStorage.getItem('ppnu_cached_statusMDNU');
+        const cachedTglMulai = localStorage.getItem('ppnu_cached_tanggalMulaiSantri');
+        if (cachedTglMulai) tanggalMulaiSantri = JSON.parse(cachedTglMulai);
+
+        if (cachedSantri) {
+          rawSantriList = JSON.parse(cachedSantri);
+          statusSantriAsrama = cachedAsrama ? JSON.parse(cachedAsrama) : {};
+          statusSantriMDNU = cachedMDNU ? JSON.parse(cachedMDNU) : {};
+        } else if (window.PPNU_INITIAL_SEED) {
+          rawSantriList = (window.PPNU_INITIAL_SEED.santriList || []).map(s => {
+            const pin = String(s.pin || '').toUpperCase().trim();
+            const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+            return {
+              pin,
+              nama: s.nama || pin,
+              name: s.nama || pin,
+              kelas,
+              status: 'mukim'
+            };
+          });
+          statusSantriAsrama = window.PPNU_INITIAL_SEED.statusAsrama || {};
+          statusSantriMDNU = window.PPNU_INITIAL_SEED.statusMDNU || {};
+        }
+
+        const cachedAsrMat = localStorage.getItem('ppnu_cached_asramaMatrix');
+        const cachedMdnMat = localStorage.getItem('ppnu_cached_mdnuMatrix');
+        if (cachedAsrMat) asramaMatrixData = JSON.parse(cachedAsrMat);
+        if (cachedMdnMat) mdnuMatrixData = JSON.parse(cachedMdnMat);
+
+        const cachedOvr = localStorage.getItem('ppnu_cached_manualCellOverrides');
+        const cachedPerm = localStorage.getItem('ppnu_cached_permissionDetailsMap');
+        const cachedSabtu = localStorage.getItem('ppnu_cached_settingMalamSabtu');
+        const cachedLiburAsr = localStorage.getItem('ppnu_cached_specialLiburAsrama');
+        if (cachedOvr) manualCellOverrides = JSON.parse(cachedOvr);
+        if (cachedPerm) permissionDetailsMap = JSON.parse(cachedPerm);
+        if (cachedSabtu) settingMalamSabtuPerTanggal = JSON.parse(cachedSabtu);
+        if (cachedLiburAsr) specialLiburAsrama = JSON.parse(cachedLiburAsr);
+      } catch (e) {
+        console.warn('Gagal membaca cache santri:', e);
+      }
+    }
+
+    function getSantriMasterList() {
+      if (rawSantriList && rawSantriList.length > 0) return rawSantriList;
+      if (window.PPNU_INITIAL_SEED && window.PPNU_INITIAL_SEED.santriList) {
+        return window.PPNU_INITIAL_SEED.santriList.map(s => {
+          const pin = String(s.pin || '').toUpperCase().trim();
+          const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+          return {
+            pin,
+            nama: s.nama || pin,
+            name: s.nama || pin,
+            kelas,
+            status: 'mukim'
+          };
+        });
+      }
+      return [];
+    }
+
+    function matchSantriClass(s, filterKelas) {
+      if (!filterKelas || filterKelas === 'all') return true;
+      const cleanTarget = String(filterKelas).toUpperCase().trim();
+      const pin = String(s?.pin || '').toUpperCase().trim();
+      if (pin && pin !== '-' && pin.substring(0, cleanTarget.length) === cleanTarget) {
+        return true;
+      }
+      if (window.PPNUSantriStore && window.PPNUSantriStore.matchClass) {
+        return window.PPNUSantriStore.matchClass(s, filterKelas);
+      }
+      if (s?.kelas) {
+        const k = String(s.kelas).toUpperCase();
+        if (cleanTarget === '1UA' && k.includes('1') && k.includes('ULYA')) return true;
+        if (cleanTarget === '2UA' && k.includes('2') && k.includes('ULYA')) return true;
+        if (cleanTarget === '1WA' && k.includes('1') && k.includes('WUSTHO')) return true;
+        if (cleanTarget === '2WA' && k.includes('2') && k.includes('WUSTHO')) return true;
+        if (cleanTarget === '2AA' && k.includes('2') && k.includes('AWALIYAH')) return true;
+        if (k === cleanTarget) return true;
+      }
+      return false;
+    }
+
+    function startLiveClock() {
+      const clockEl = document.getElementById('liveClockSantri');
+      const update = () => {
+        const d = (window.PPNURules && window.PPNURules.getWIBTime) ? new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Jakarta" })) : new Date();
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mm = String(d.getMinutes()).padStart(2, '0');
+        const ss = String(d.getSeconds()).padStart(2, '0');
+        if (clockEl) clockEl.textContent = `${hh}:${mm}:${ss} WIB`;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    // ================= FIREBASE REALTIME LISTENER (READ-ONLY) =================
+    function initFirebaseSantri() {
+      try {
+        if (!firebase.apps.length && window.PPNUConfig && window.PPNUConfig.firebaseConfig) {
+          firebase.initializeApp(window.PPNUConfig.firebaseConfig);
+        }
+        if (!firebase.apps.length) return;
+
+        db = firebase.database();
+        const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+
+        // Listen Holidays
+        db.ref(`${root}/holidays`).on('value', snap => {
+          holidaysData = snap.val() || {};
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // Listen Status Santri
+        db.ref(`${root}/statusSantriAsrama`).on('value', snap => {
+          statusSantriAsrama = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_statusAsrama', JSON.stringify(statusSantriAsrama)); } catch (e) {}
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+        });
+        db.ref(`${root}/statusSantriMDNU`).on('value', snap => {
+          statusSantriMDNU = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_statusMDNU', JSON.stringify(statusSantriMDNU)); } catch (e) {}
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+        db.ref(`${root}/tglMulaiLajuSantri`).on('value', snap => {
+          tglMulaiLajuSantri = snap.val() || {};
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+        });
+        db.ref(`${root}/tanggalMulaiSantri`).on('value', snap => {
+          tanggalMulaiSantri = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_tanggalMulaiSantri', JSON.stringify(tanggalMulaiSantri)); } catch (e) {}
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // Listen Matrix Asrama & MDNU
+        db.ref(`${root}/asramaMatrix`).on('value', snap => {
+          asramaMatrixData = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_asramaMatrix', JSON.stringify(asramaMatrixData)); } catch (e) {}
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+        });
+        db.ref(`${root}/mdnuMatrix`).on('value', snap => {
+          mdnuMatrixData = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_mdnuMatrix', JSON.stringify(mdnuMatrixData)); } catch (e) {}
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // Listen Overrides & Permissions
+        db.ref(`${root}/manualCellOverrides`).on('value', snap => {
+          manualCellOverrides = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_manualCellOverrides', JSON.stringify(manualCellOverrides)); } catch (e) {}
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+        db.ref(`${root}/permissionDetailsMap`).on('value', snap => {
+          permissionDetailsMap = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_permissionDetailsMap', JSON.stringify(permissionDetailsMap)); } catch (e) {}
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+        db.ref(`${root}/specialLiburAsrama`).on('value', snap => {
+          specialLiburAsrama = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_specialLiburAsrama', JSON.stringify(specialLiburAsrama)); } catch (e) {}
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+        });
+        db.ref(`${root}/settingMalamSabtuPerTanggal`).on('value', snap => {
+          settingMalamSabtuPerTanggal = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal)); } catch (e) {}
+          if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+        });
+
+        // Listen Master Santri (dataSantriInduk / santriList)
+        db.ref(`${root}/dataSantriInduk`).on('value', snap => {
+          const val = snap.val();
+          if (val) {
+            const arr = Array.isArray(val) ? val : Object.values(val);
+            rawSantriList = arr.filter(s => s.pin && s.pin !== '-').map(s => {
+              const pin = String(s.pin || '').toUpperCase().trim();
+              const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+              return {
+                pin,
+                nama: s.nama || s.name || s.namaMesin || pin,
+                name: s.nama || s.name || s.namaMesin || pin,
+                kelas,
+                kamar: s.kamar || '-',
+                status: s.status || 'mukim'
+              };
+            });
+            try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+            if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+            if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+          }
+        });
+
+        db.ref(`${root}/santriList`).on('value', snap => {
+          if (!rawSantriList || rawSantriList.length === 0) {
+            if (snap.exists() && Array.isArray(snap.val())) {
+              rawSantriList = snap.val().map(s => {
+                const pin = String(s.pin || '').toUpperCase().trim();
+                const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+                return {
+                  pin,
+                  nama: s.nama || pin,
+                  name: s.nama || pin,
+                  kelas,
+                  status: 'mukim'
+                };
+              });
+              try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+              if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+              if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('Firebase init santri:', err);
+      }
+    }
+
+    // ================= TAB SWITCHER =================
+    function switchSantriTab(tab) {
+      currentSantriTab = tab;
+      const btnAsr = document.getElementById('tabBtnAsrama');
+      const btnMdn = document.getElementById('tabBtnMDNU');
+      const panelAsr = document.getElementById('panelAsrama');
+      const panelMdn = document.getElementById('panelMDNU');
+
+      if (tab === 'asrama') {
+        btnAsr.className = "px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 bg-slate-900 text-white shadow-2xs";
+        btnMdn.className = "px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100";
+        panelAsr.classList.remove('hidden');
+        panelMdn.classList.add('hidden');
+        renderAsramaSpreadsheet();
+      } else {
+        btnMdn.className = "px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 bg-slate-900 text-white shadow-2xs";
+        btnAsr.className = "px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100";
+        panelMdn.classList.remove('hidden');
+        panelAsr.classList.add('hidden');
+        renderMDNUSpreadsheet();
+      }
+    }
+
+    function handleSearchFilter() {
+      searchQuery = (document.getElementById('inputSearchSantri')?.value || '').toLowerCase().trim();
+      if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+      if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+    }
+
+    // ================= TAB 1: SPREADSHEET ASRAMA RENDERER (AUTO-HIDE LIBUR) =================
+    function renderAsramaSpreadsheet() {
+      const table = document.getElementById('tableAsrama');
+      if (!table) return;
+
+      const monthVal = document.getElementById('selectMonthAsrama').value; // '2026-10'
+      const filterStatus = document.getElementById('selectStatusAsrama').value;
+      const hideEmptyLibur = true; // REVISI SENIOR: AUTO HIDE LIBUR SELALU TRUE
+      // Filter santri
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      if (filterStatus === 'mukim') {
+        list = list.filter(s => {
+          const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
+          return st !== 'laju' && st !== 'kantin' && st !== 'boyong';
+        });
+      } else {
+        list = list.filter(s => {
+          const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
+          return st !== 'boyong';
+        });
+      }
+
+      if (searchQuery) {
+        list = list.filter(s => {
+          const matchName = (s.name || s.nama || '').toLowerCase().includes(searchQuery);
+          const matchPin = (s.pin || '').toLowerCase().includes(searchQuery);
+          return matchName || matchPin;
+        });
+      }
+
+      const activePinsAsr = list.map(s => s.pin);
+
+      let namaBulanLabel = '';
+      const dateList = [];
+
+      if (monthVal === 'all') {
+        namaBulanLabel = 'KUMULATIF (JULI S.D OKTOBER 2026)';
+        const monthRanges = [
+          { year: 2026, month: 7, startDay: 14, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
+
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            const dateISO = `${mr.year}-${mm}-${dd}`;
+            const dt = new Date(mr.year, mr.month - 1, day);
+            const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+            const isJumat = (dayOfWeek === 5);
+            const isMinggu = (dayOfWeek === 0);
+            const isHoliday = holidaysData && holidaysData[dateISO];
+
+            let sessions = ['subuh', 'malam'];
+            if (hideEmptyLibur) {
+              sessions = sessions.filter(sessKey => {
+                return activePinsAsr.some(pin => {
+                  const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                    ? window.PPNURules.getAsramaCell({
+                        pin,
+                        dateISO,
+                        dayOfWeek,
+                        asramaMatrix: asramaMatrixData,
+                        manualCellOverrides,
+                        permissionDetailsMap,
+                        specialLiburAsrama,
+                        holidaysData,
+                        statusSantriAsrama,
+                        tglMulaiLajuSantri,
+                        tanggalMulaiSantri,
+                      })
+                    : { subuh: '-', malam: '-' };
+                  const v = cell[sessKey];
+                  return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+                });
+              });
+            }
+
+            if (sessions.length > 0) {
+              dateList.push({
+                day,
+                month: mr.month,
+                dateISO,
+                dayOfWeek,
+                dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+                isJumat,
+                isMinggu,
+                isHoliday: !!isHoliday,
+                holidayDesc: isHoliday || '',
+                sessions,
+                displayLabel: `${day}/${mm}`
+              });
+            }
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
+
+        const startDay = (monthVal === '2026-07') ? 14 : 1; // Asrama resmi mulai 14 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+          const isJumat = (dayOfWeek === 5);
+          const isMinggu = (dayOfWeek === 0);
+          const isHoliday = holidaysData && holidaysData[dateISO];
+
+          let sessions = ['subuh', 'malam'];
+          if (hideEmptyLibur) {
+            sessions = sessions.filter(sessKey => {
+              return activePinsAsr.some(pin => {
+                const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                  ? window.PPNURules.getAsramaCell({
+                      pin,
+                      dateISO,
+                      dayOfWeek,
+                      asramaMatrix: asramaMatrixData,
+                      manualCellOverrides,
+                      permissionDetailsMap,
+                      specialLiburAsrama,
+                      holidaysData,
+                      statusSantriAsrama,
+                      tglMulaiLajuSantri,
+                      tanggalMulaiSantri,
+                    })
+                  : { subuh: '-', malam: '-' };
+                const v = cell[sessKey];
+                return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+              });
+            });
+          }
+
+          if (sessions.length > 0) {
+            dateList.push({
+              day,
+              month,
+              dateISO,
+              dayOfWeek,
+              dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+              isJumat,
+              isMinggu,
+              isHoliday: !!isHoliday,
+              holidayDesc: isHoliday || '',
+              sessions,
+              displayLabel: `${day}`
+            });
+          }
+        }
+      }
+
+      // Update Banner Asrama
+      const bTitle = document.getElementById('bannerAsramaTitle');
+      const bSub = document.getElementById('bannerAsramaSub');
+      if (bTitle) bTitle.textContent = `REKAPITULASI ASRAMA PUTRA - ${namaBulanLabel.toUpperCase()}`;
+      if (bSub) bSub.textContent = `${dateList.length} Tanggal Aktif (${dateList[0] ? dateList[0].dateISO : ''} s.d ${dateList[dateList.length - 1] ? dateList[dateList.length - 1].dateISO : ''})`;
+
+      // BUILD TABLE HEADER
+      let html = `<thead class="sticky-header">
+        <tr>
+          <th rowspan="2" class="col-pin sticky-col-pin font-black bg-emerald-100 text-emerald-950">PIN</th>
+          <th rowspan="2" class="col-nama sticky-col-nama font-black border-r-thick bg-emerald-100 text-emerald-950">NAMA SANTRI</th>
+          <th colspan="5" class="border-r-thick bg-emerald-200 text-emerald-950 font-black tracking-wider uppercase text-xs py-1.5">
+            TOTAL REKAPITULASI
+          </th>`;
+
+      // Header Tanggal Asrama (Dynamic Colspan)
+      dateList.forEach(d => {
+        const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-emerald-100 text-emerald-950');
+        const displayLabel = d.displayLabel || d.day;
+        let malamSabtuBadge = '';
+        if (d.isJumat) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const slotName = curVal === 'pel1' ? 'Jam 1' : (curVal === 'pel2' ? 'Jam 2' : 'Jam 3');
+          malamSabtuBadge = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight">Mlm Sabtu: ${slotName}</span></div>`;
+        }
+        html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
+          <span class="block text-xs font-black uppercase">${d.dayName}</span>
+          <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuBadge}
+        </th>`;
+      });
+
+      html += `</tr>
+        <tr class="bg-emerald-50 text-[10.5px]">
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Hadir (H)">H</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Alpha (A)">A</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Izin (I)">I</th>
+          <th class="col-stat bg-slate-100 text-slate-800 font-bold" title="Total Jam Pelajaran / Pertemuan">JP</th>
+          <th class="col-pct border-r-thick bg-red-100 text-red-900 font-black" title="Persentase Alpha">%</th>`;
+
+      dateList.forEach(d => {
+        d.sessions.forEach((sess, sIdx) => {
+          const isLast = (sIdx === d.sessions.length - 1);
+          const borderThick = isLast ? 'border-r-thick' : '';
+          let label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          if (sess === 'malam' && d.isJumat) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            const slotName = curVal === 'pel1' ? 'J1' : (curVal === 'pel2' ? 'J2' : 'J3');
+            label = `Malam (${slotName})`;
+          }
+          html += `<th class="col-sesi bg-emerald-50 text-emerald-950 ${borderThick}">${label}</th>`;
+        });
+      });
+
+      html += `</tr>
+      </thead>
+      <tbody>`;
+
+      // BUILD TABLE BODY ROWS
+      list.forEach((santri, idx) => {
+        let countH = 0, countI = 0, countA = 0, totalJP = 0;
+        const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
+        const isLaju = (statusSantriAsrama[santri.pin] === 'laju' || statusSantriAsrama[santri.pin] === 'kantin');
+
+        let sessionCells = '';
+        dateList.forEach(d => {
+          const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+            ? window.PPNURules.getAsramaCell({
+                pin: santri.pin,
+                dateISO: d.dateISO,
+                dayOfWeek: d.dayOfWeek,
+                asramaMatrix: asramaMatrixData,
+                manualCellOverrides,
+                permissionDetailsMap,
+                specialLiburAsrama,
+                holidaysData,
+                statusSantriAsrama,
+                tglMulaiLajuSantri,
+                tanggalMulaiSantri,
+              })
+            : { subuh: '-', malam: '-', subuh_time: '', malam_time: '', isLaju: false };
+
+          d.sessions.forEach((sess, sIdx) => {
+            const isLast = (sIdx === d.sessions.length - 1);
+            const borderThick = isLast ? 'border-r-thick' : '';
+            const val = cell[sess];
+            const scanTime = cell[sess + '_time'];
+
+            if (val !== '-' && val !== 'LIBUR' && val !== 'LAJU' && val !== 'BELUM' && val !== 'BELUM_MULAI') {
+              totalJP++;
+              if (val === 'H') countH++;
+              else if (val === 'I') countI++;
+              else if (val === 'A') countA++;
+            }
+
+            // READ-ONLY: Santri tidak bisa mengedit sel (tidak ada onclick modal)
+            if (cell.isLaju) {
+              sessionCells += `<td class="col-sesi ${borderThick} select-none">${renderBadge(val, 'asrama', true, scanTime)}</td>`;
+            } else {
+              sessionCells += `<td class="col-sesi ${borderThick} select-none">${renderBadge(val, 'asrama', false, scanTime)}</td>`;
+            }
+          });
+        });
+
+        // Persentase Alpha seperti web utama
+        const persenAlpha = totalJP > 0 ? Math.round((countA / totalJP) * 100) : 0;
+        const isOverLimit = (persenAlpha >= 15);
+        const cellPercentClass = isOverLimit ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
+
+        html += `<tr class="${rowBg} hover:bg-emerald-50/40 transition">
+          <td class="col-pin sticky-col-pin font-mono font-bold text-slate-700">${santri.pin}</td>
+          <td class="col-nama sticky-col-nama font-semibold text-slate-900 border-r-thick" title="${santri.name}">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="truncate">${santri.name}</span>
+              ${isLaju ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-extrabold border border-amber-300 shrink-0">LAJU</span>' : ''}
+            </div>
+          </td>
+          <td class="col-stat font-mono font-bold text-emerald-900 bg-emerald-50/40">${countH}</td>
+          <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${countA}</td>
+          <td class="col-stat font-mono font-bold text-amber-900 bg-amber-50/40">${countI}</td>
+          <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${totalJP}</td>
+          <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${persenAlpha}%</td>
+          ${sessionCells}
+        </tr>`;
+      });
+
+      html += `</tbody>`;
+      table.innerHTML = html;
+    }
+
+    // ================= TAB 2: SPREADSHEET MDNU RENDERER (AUTO-HIDE LIBUR) =================
+    function renderMDNUSpreadsheet() {
+      const table = document.getElementById('tableMDNU');
+      if (!table) return;
+
+      const monthVal = document.getElementById('selectMonthMDNU').value; // '2026-10'
+      const filterKelas = document.getElementById('selectKelasMDNU').value;
+      const hideEmptyLibur = true; // REVISI SENIOR: AUTO HIDE LIBUR SELALU TRUE
+
+      // Filter santri
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      list = list.filter(s => (statusSantriMDNU[s.pin] !== 'boyong' && s.status !== 'boyong'));
+      if (filterKelas !== 'all') {
+        list = list.filter(s => matchSantriClass(s, filterKelas));
+      }
+
+      if (searchQuery) {
+        list = list.filter(s => {
+          const matchName = (s.name || s.nama || '').toLowerCase().includes(searchQuery);
+          const matchPin = (s.pin || '').toLowerCase().includes(searchQuery);
+          return matchName || matchPin;
+        });
+      }
+
+      const activePinsMDN = list.map(s => s.pin);
+
+      let namaBulanLabel = '';
+      const dateList = [];
+
+      if (monthVal === 'all') {
+        namaBulanLabel = 'KUMULATIF (JULI S.D OKTOBER 2026)';
+        const monthRanges = [
+          { year: 2026, month: 7, startDay: 18, endDay: 31 }, // MDNU resmi mulai 18 Juli 2026
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
+
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            const dateISO = `${mr.year}-${mm}-${dd}`;
+            const dt = new Date(mr.year, mr.month - 1, day);
+            const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+            const isJumat = (dayOfWeek === 5);
+            const isHoliday = holidaysData && holidaysData[dateISO];
+
+            let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+            if (hideEmptyLibur) {
+              sessions = sessions.filter(sessKey => {
+                return activePinsMDN.some(pin => {
+                  const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                    ? window.PPNURules.getMDNUCell({
+                        pin,
+                        dateISO,
+                        dayOfWeek,
+                        mdnuMatrix: mdnuMatrixData,
+                        manualCellOverrides,
+                        permissionDetailsMap,
+                        settingMalamSabtuPerTanggal,
+                        holidaysData,
+                        tanggalMulaiSantri,
+                      })
+                    : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                  const v = cell[sessKey];
+                  return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+                });
+              });
+            }
+
+            if (sessions.length > 0) {
+              dateList.push({
+                day,
+                month: mr.month,
+                dateISO,
+                dayOfWeek,
+                dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+                isJumat,
+                isHoliday: !!isHoliday,
+                holidayDesc: isHoliday || '',
+                sessions,
+                displayLabel: `${day}/${mm}`
+              });
+            }
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
+
+        const startDay = (monthVal === '2026-07') ? 18 : 1; // MDNU resmi mulai 18 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+          const isJumat = (dayOfWeek === 5);
+          const isHoliday = holidaysData && holidaysData[dateISO];
+
+          let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+          if (hideEmptyLibur) {
+            sessions = sessions.filter(sessKey => {
+              return activePinsMDN.some(pin => {
+                const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                  ? window.PPNURules.getMDNUCell({
+                      pin,
+                      dateISO,
+                      dayOfWeek,
+                      mdnuMatrix: mdnuMatrixData,
+                      manualCellOverrides,
+                      permissionDetailsMap,
+                      settingMalamSabtuPerTanggal,
+                      holidaysData,
+                      tanggalMulaiSantri,
+                    })
+                  : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                const v = cell[sessKey];
+                return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+              });
+            });
+          }
+
+          if (sessions.length > 0) {
+            dateList.push({
+              day,
+              month,
+              dateISO,
+              dayOfWeek,
+              dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+              isJumat,
+              isHoliday: !!isHoliday,
+              holidayDesc: isHoliday || '',
+              sessions,
+              displayLabel: `${day}`
+            });
+          }
+        }
+      }
+
+      // Update Banner MDNU
+      const bTitle = document.getElementById('bannerMDNUTitle');
+      const bSub = document.getElementById('bannerMDNUSub');
+      const kelasLabel = (filterKelas === 'all') ? 'SEMUA KELAS' : `KELAS ${filterKelas}`;
+      if (bTitle) bTitle.textContent = `TABEL REKAPITULASI MDNU PUTRA - ${kelasLabel}`;
+      if (bSub) bSub.textContent = `${dateList.length} Tanggal Aktif (${dateList[0] ? dateList[0].dateISO : ''} s.d ${dateList[dateList.length - 1] ? dateList[dateList.length - 1].dateISO : ''})`;
+
+      // BUILD TABLE HEADER MDNU PERSIS WEB UTAMA
+      let html = `<thead class="sticky-header">
+        <tr>
+          <th rowspan="2" class="col-pin sticky-col-pin font-black bg-indigo-100 text-indigo-950">PIN</th>
+          <th rowspan="2" class="col-nama sticky-col-nama font-black border-r-thick bg-indigo-100 text-indigo-950">NAMA SANTRI</th>
+          <th colspan="5" class="border-r-thick bg-indigo-200 text-indigo-950 font-black tracking-wider uppercase text-xs py-1.5">
+            TOTAL REKAPITULASI
+          </th>`;
+
+      // Header Tanggal MDNU (Dynamic Colspan)
+      dateList.forEach(d => {
+        const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-indigo-100 text-indigo-950');
+        const displayLabel = d.displayLabel || d.day;
+        let malamSabtuBadge = '';
+        if (d.isJumat) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const slotName = curVal === 'pel1' ? 'Jam 1 Asr' : (curVal === 'pel2' ? 'Jam 2 Asr' : 'Jam 3 Asr');
+          malamSabtuBadge = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight">Mlm Sabtu: ${slotName}</span></div>`;
+        }
+        html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
+          <span class="block text-xs font-black uppercase">${d.dayName}</span>
+          <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuBadge}
+        </th>`;
+      });
+
+      html += `</tr>
+        <tr class="bg-indigo-50 text-[10.5px]">
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Hadir (H)">H</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Alpha (A)">A</th>
+          <th class="col-stat bg-[#cfe2f3] text-slate-800 font-bold" title="Izin (I)">I</th>
+          <th class="col-stat bg-slate-100 text-slate-800 font-bold" title="Total Jam Pelajaran / Pertemuan">JP</th>
+          <th class="col-pct border-r-thick bg-red-100 text-red-900 font-black" title="Persentase Alpha">%</th>`;
+
+      dateList.forEach(d => {
+        d.sessions.forEach((sess, sIdx) => {
+          const isLast = (sIdx === d.sessions.length - 1);
+          const borderThick = isLast ? 'border-r-thick' : '';
+          let label = 'Sr';
+          if (sess === 'pel1') label = 'P1';
+          else if (sess === 'pel2') label = 'P2';
+          else if (sess === 'pel3') label = 'P3';
+
+          if (d.isJumat) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            if (sess === curVal) {
+              label = `<span class="text-rose-700 font-bold" title="Slot ini dipinjam Asrama (Libur di MDNU)">${label} (Asr)</span>`;
+            }
+          }
+          html += `<th class="col-sesi bg-indigo-50 text-indigo-950 ${borderThick}">${label}</th>`;
+        });
+      });
+
+      html += `</tr>
+      </thead>
+      <tbody>`;
+
+      // BUILD TABLE BODY ROWS
+      list.forEach((santri, idx) => {
+        let countH = 0, countI = 0, countA = 0, totalJP = 0;
+        const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+
+        let sessionCells = '';
+        dateList.forEach(d => {
+          const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+            ? window.PPNURules.getMDNUCell({
+                pin: santri.pin,
+                dateISO: d.dateISO,
+                dayOfWeek: d.dayOfWeek,
+                mdnuMatrix: mdnuMatrixData,
+                manualCellOverrides,
+                permissionDetailsMap,
+                settingMalamSabtuPerTanggal,
+                holidaysData,
+                tanggalMulaiSantri,
+              })
+            : { sore: '-', pel1: '-', pel2: '-', pel3: '-', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
+
+          d.sessions.forEach((sess, sIdx) => {
+            const isLast = (sIdx === d.sessions.length - 1);
+            const borderThick = isLast ? 'border-r-thick' : '';
+            const val = cell[sess] || '-';
+            const scanTime = cell[sess + '_time'] || '';
+
+            if (val !== '-' && val !== 'LIBUR' && val !== 'BELUM' && val !== 'BELUM_MULAI') {
+              totalJP++;
+              if (val === 'H') countH++;
+              else if (val === 'I') countI++;
+              else if (val === 'A') countA++;
+            }
+
+            // READ-ONLY: Santri tidak bisa mengedit sel (tidak ada onclick modal)
+            sessionCells += `<td class="col-sesi ${borderThick} select-none">${renderBadge(val, 'mdnu', false, scanTime)}</td>`;
+          });
+        });
+
+        const persenAlpha = totalJP > 0 ? Math.round((countA / totalJP) * 100) : 0;
+        const isOverLimit = (persenAlpha >= 15);
+        const cellPercentClass = isOverLimit ? 'bg-red-600 text-white font-black' : 'bg-white text-slate-800 font-semibold';
+
+        html += `<tr class="${rowBg} hover:bg-indigo-50/40 transition">
+          <td class="col-pin sticky-col-pin font-mono font-bold text-slate-700">${santri.pin}</td>
+          <td class="col-nama sticky-col-nama font-semibold text-slate-900 border-r-thick truncate" title="${santri.name}">
+            ${santri.name}
+          </td>
+          <td class="col-stat font-mono font-bold text-indigo-900 bg-indigo-50/40">${countH}</td>
+          <td class="col-stat font-mono font-bold text-rose-900 bg-rose-50/40">${countA}</td>
+          <td class="col-stat font-mono font-bold text-amber-900 bg-amber-50/40">${countI}</td>
+          <td class="col-stat font-mono font-bold text-slate-800 bg-slate-100">${totalJP}</td>
+          <td class="col-pct font-mono border-r-thick ${cellPercentClass}">${persenAlpha}%</td>
+          ${sessionCells}
+        </tr>`;
+      });
+
+      html += `</tbody>`;
+      table.innerHTML = html;
+    }
+
+    // ================= BADGE HELPER IDENTIK WEB UTAMA (READ-ONLY) =================
+    function renderBadge(val, category, isLajuBebas, time) {
+      if (isLajuBebas && category === 'asrama') {
+        return `<span class="badge-cell badge-libur" title="Santri Laju / Bebas Asrama">L</span>`;
+      }
+
+      if (val === 'BELUM' || val === 'BELUM_MULAI' || val === '-') {
+        return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default font-mono text-[11px]" title="Belum Mondok / Belum Wajib Absen">-</span>`;
+      }
+
+      if (val === 'H') {
+        const displayHadir = (time && time.length >= 4) ? time.substring(0, 5) : 'H';
+        const scanInfo = time ? `Scan: ${time} | ` : '';
+        const monoClass = (time && time.length >= 4) ? 'font-mono' : '';
+        return `<span class="badge-cell badge-hadir ${monoClass}" title="${scanInfo}Status: HADIR">${displayHadir}</span>`;
+      } else if (val === 'A') {
+        return `<span class="badge-cell badge-absen" title="Status: ALPHA">A</span>`;
+      } else if (val === 'I') {
+        return `<span class="badge-cell badge-izin" title="Status: IZIN">I</span>`;
+      } else if (val === 'T') {
+        const scanInfo = time ? `Scan: ${time} | ` : '';
+        return `<span class="badge-cell badge-takzir font-mono" title="${scanInfo}Status: DITANGGUHKAN">T</span>`;
+      } else if (val === 'LIBUR') {
+        return `<span class="badge-cell badge-libur" title="Libur">L</span>`;
+      }
+
+      return `<span class="text-slate-300 font-mono text-[11px]">-</span>`;
+    }
+
+    function scrollTableTo(containerId, pos) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      if (pos === 'start') {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else if (pos === 'end') {
+        el.scrollTo({ left: el.scrollWidth, behavior: 'smooth' });
+      } else if (pos === 'today') {
+        const now = new Date();
+        const day = now.getDate();
+        const scrollRatio = day / 31;
+        el.scrollTo({ left: el.scrollWidth * scrollRatio, behavior: 'smooth' });
+      }
+    }
+
+    function toggleRoleMenu(e) {
+      if (e) e.stopPropagation();
+      const m = document.getElementById('roleMenuDropdown');
+      if (m) m.classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const m = document.getElementById('roleMenuDropdown');
+      const b = document.getElementById('btnRoleMenu');
+      if (m && !m.classList.contains('hidden') && b && !b.contains(e.target) && !m.contains(e.target)) {
+        m.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
