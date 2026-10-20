@@ -353,6 +353,7 @@
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Bulan & Tahun</label>
             <select id="selectMonthAsrama" onchange="renderAsramaSpreadsheet()" title="Pilih Bulan & Tahun Asrama" class="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
               <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+              <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
               <option value="2026-09">September 2026 (Terkunci)</option>
               <option value="2026-08">Agustus 2026 (Terkunci)</option>
               <option value="2026-07">Juli 2026 (Terkunci)</option>
@@ -425,6 +426,7 @@
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Bulan & Tahun</label>
             <select id="selectMonthMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Bulan & Tahun MDNU" class="w-full px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800">
               <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+              <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
               <option value="2026-09">September 2026 (Terkunci)</option>
               <option value="2026-08">Agustus 2026 (Terkunci)</option>
               <option value="2026-07">Juli 2026 (Terkunci)</option>
@@ -1077,12 +1079,6 @@
       const filterStatus = document.getElementById('selectStatusAsrama').value;
       const hideEmptyLibur = document.getElementById('chkHideEmptyAsrama').checked;
 
-      const [yearStr, monthStr] = monthVal.split('-');
-      const year = parseInt(yearStr, 10);
-      const month = parseInt(monthStr, 10);
-      const totalDays = new Date(year, month, 0).getDate();
-      const namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
-
       // Filter santri
       let list = getSantriMasterList();
       if (filterStatus === 'mukim') {
@@ -1097,56 +1093,131 @@
         });
       }
 
-      // Generate date array dengan evaluasi per-sesi cerdas
       const activePinsAsr = list.map(s => s.pin);
+
+      let namaBulanLabel = '';
       const dateList = [];
-      for (let day = 1; day <= totalDays; day++) {
-        const dd = String(day).padStart(2, '0');
-        const dateISO = `${yearStr}-${monthStr}-${dd}`;
-        const dt = new Date(year, month - 1, day);
-        const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
 
-        const isJumat = (dayOfWeek === 5);
-        const isMinggu = (dayOfWeek === 0);
-        const isHoliday = holidaysData && holidaysData[dateISO];
+      if (monthVal === 'all') {
+        namaBulanLabel = 'KUMULATIF (JULI S.D OKTOBER 2026)';
+        const monthRanges = [
+          { year: 2026, month: 7, startDay: 14, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
 
-        let sessions = ['subuh', 'malam'];
-        if (hideEmptyLibur) {
-          sessions = sessions.filter(sessKey => {
-            return activePinsAsr.some(pin => {
-              const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
-                ? window.PPNURules.getAsramaCell({
-                    pin,
-                    dateISO,
-                    dayOfWeek,
-                    asramaMatrix: asramaMatrixData,
-                    manualCellOverrides,
-                    permissionDetailsMap,
-                    specialLiburAsrama,
-                    holidaysData,
-                    statusSantriAsrama,
-                    tglMulaiLajuSantri,
-                    tanggalMulaiSantri,
-                  })
-                : { subuh: '-', malam: '-' };
-              const v = cell[sessKey];
-              return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            const dateISO = `${mr.year}-${mm}-${dd}`;
+            const dt = new Date(mr.year, mr.month - 1, day);
+            const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+            const isJumat = (dayOfWeek === 5);
+            const isMinggu = (dayOfWeek === 0);
+            const isHoliday = holidaysData && holidaysData[dateISO];
+
+            let sessions = ['subuh', 'malam'];
+            if (hideEmptyLibur) {
+              sessions = sessions.filter(sessKey => {
+                return activePinsAsr.some(pin => {
+                  const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                    ? window.PPNURules.getAsramaCell({
+                        pin,
+                        dateISO,
+                        dayOfWeek,
+                        asramaMatrix: asramaMatrixData,
+                        manualCellOverrides,
+                        permissionDetailsMap,
+                        specialLiburAsrama,
+                        holidaysData,
+                        statusSantriAsrama,
+                        tglMulaiLajuSantri,
+                        tanggalMulaiSantri,
+                      })
+                    : { subuh: '-', malam: '-' };
+                  const v = cell[sessKey];
+                  return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+                });
+              });
+            }
+
+            if (sessions.length > 0) {
+              dateList.push({
+                day,
+                month: mr.month,
+                dateISO,
+                dayOfWeek,
+                dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+                isJumat,
+                isMinggu,
+                isHoliday: !!isHoliday,
+                holidayDesc: isHoliday || '',
+                sessions,
+                displayLabel: `${day}/${mm}`
+              });
+            }
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+          const isJumat = (dayOfWeek === 5);
+          const isMinggu = (dayOfWeek === 0);
+          const isHoliday = holidaysData && holidaysData[dateISO];
+
+          let sessions = ['subuh', 'malam'];
+          if (hideEmptyLibur) {
+            sessions = sessions.filter(sessKey => {
+              return activePinsAsr.some(pin => {
+                const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                  ? window.PPNURules.getAsramaCell({
+                      pin,
+                      dateISO,
+                      dayOfWeek,
+                      asramaMatrix: asramaMatrixData,
+                      manualCellOverrides,
+                      permissionDetailsMap,
+                      specialLiburAsrama,
+                      holidaysData,
+                      statusSantriAsrama,
+                      tglMulaiLajuSantri,
+                      tanggalMulaiSantri,
+                    })
+                  : { subuh: '-', malam: '-' };
+                const v = cell[sessKey];
+                return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+              });
             });
-          });
-        }
+          }
 
-        if (sessions.length > 0) {
-          dateList.push({
-            day,
-            dateISO,
-            dayOfWeek,
-            dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
-            isJumat,
-            isMinggu,
-            isHoliday: !!isHoliday,
-            holidayDesc: isHoliday || '',
-            sessions
-          });
+          if (sessions.length > 0) {
+            dateList.push({
+              day,
+              month,
+              dateISO,
+              dayOfWeek,
+              dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+              isJumat,
+              isMinggu,
+              isHoliday: !!isHoliday,
+              holidayDesc: isHoliday || '',
+              sessions,
+              displayLabel: `${day}`
+            });
+          }
         }
       }
 
@@ -1168,9 +1239,10 @@
       // Header Tanggal Asrama (Dynamic Colspan)
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-emerald-100 text-emerald-950');
+        const displayLabel = d.displayLabel || d.day;
         html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
-          <span class="block text-[10.5px] font-mono font-semibold">${d.day}</span>
+          <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
         </th>`;
       });
 
@@ -1276,11 +1348,6 @@
       const filterKelas = document.getElementById('selectKelasMDNU').value;
       const hideEmptyLibur = document.getElementById('chkHideEmptyMDNU').checked;
 
-      const [yearStr, monthStr] = monthVal.split('-');
-      const year = parseInt(yearStr, 10);
-      const month = parseInt(monthStr, 10);
-      const totalDays = new Date(year, month, 0).getDate();
-
       // Filter santri
       let list = getSantriMasterList();
       list = list.filter(s => (statusSantriMDNU[s.pin] !== 'boyong'));
@@ -1288,62 +1355,132 @@
         list = list.filter(s => s.kelas === filterKelas);
       }
 
-      // Generate date array dengan evaluasi per-sesi cerdas MDNU
       const activePinsMDN = list.map(s => s.pin);
+
+      let namaBulanLabel = '';
       const dateList = [];
-      for (let day = 1; day <= totalDays; day++) {
-        const dd = String(day).padStart(2, '0');
-        const dateISO = `${yearStr}-${monthStr}-${dd}`;
-        const dt = new Date(year, month - 1, day);
-        const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
 
-        const isJumat = (dayOfWeek === 5);
-        const isHoliday = holidaysData && holidaysData[dateISO];
+      if (monthVal === 'all') {
+        namaBulanLabel = 'KUMULATIF (JULI S.D OKTOBER 2026)';
+        const monthRanges = [
+          { year: 2026, month: 7, startDay: 18, endDay: 31 }, // MDNU resmi mulai 18 Juli 2026
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
 
-        let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
-        if (hideEmptyLibur) {
-          sessions = sessions.filter(sessKey => {
-            return activePinsMDN.some(pin => {
-              const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
-                ? window.PPNURules.getMDNUCell({
-                    pin,
-                    dateISO,
-                    dayOfWeek,
-                    mdnuMatrix: mdnuMatrixData,
-                    manualCellOverrides,
-                    permissionDetailsMap,
-                    settingMalamSabtuPerTanggal,
-                    holidaysData,
-                    tanggalMulaiSantri,
-                  })
-                : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
-              const v = cell[sessKey];
-              return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            const dateISO = `${mr.year}-${mm}-${dd}`;
+            const dt = new Date(mr.year, mr.month - 1, day);
+            const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+            const isJumat = (dayOfWeek === 5);
+            const isHoliday = holidaysData && holidaysData[dateISO];
+
+            let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+            if (hideEmptyLibur) {
+              sessions = sessions.filter(sessKey => {
+                return activePinsMDN.some(pin => {
+                  const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                    ? window.PPNURules.getMDNUCell({
+                        pin,
+                        dateISO,
+                        dayOfWeek,
+                        mdnuMatrix: mdnuMatrixData,
+                        manualCellOverrides,
+                        permissionDetailsMap,
+                        settingMalamSabtuPerTanggal,
+                        holidaysData,
+                        tanggalMulaiSantri,
+                      })
+                    : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                  const v = cell[sessKey];
+                  return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+                });
+              });
+            }
+
+            if (sessions.length > 0) {
+              dateList.push({
+                day,
+                month: mr.month,
+                dateISO,
+                dayOfWeek,
+                dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+                isJumat,
+                isHoliday: !!isHoliday,
+                holidayDesc: isHoliday || '',
+                sessions,
+                displayLabel: `${day}/${mm}`
+              });
+            }
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
+
+        for (let day = 1; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay(); // 0 = Minggu, 5 = Jumat
+
+          const isJumat = (dayOfWeek === 5);
+          const isHoliday = holidaysData && holidaysData[dateISO];
+
+          let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+          if (hideEmptyLibur) {
+            sessions = sessions.filter(sessKey => {
+              return activePinsMDN.some(pin => {
+                const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                  ? window.PPNURules.getMDNUCell({
+                      pin,
+                      dateISO,
+                      dayOfWeek,
+                      mdnuMatrix: mdnuMatrixData,
+                      manualCellOverrides,
+                      permissionDetailsMap,
+                      settingMalamSabtuPerTanggal,
+                      holidaysData,
+                      tanggalMulaiSantri,
+                    })
+                  : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+                const v = cell[sessKey];
+                return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
+              });
             });
-          });
-        }
+          }
 
-        if (sessions.length > 0) {
-          dateList.push({
-            day,
-            dateISO,
-            dayOfWeek,
-            dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
-            isJumat,
-            isHoliday: !!isHoliday,
-            holidayDesc: isHoliday || '',
-            sessions
-          });
+          if (sessions.length > 0) {
+            dateList.push({
+              day,
+              month,
+              dateISO,
+              dayOfWeek,
+              dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+              isJumat,
+              isHoliday: !!isHoliday,
+              holidayDesc: isHoliday || '',
+              sessions,
+              displayLabel: `${day}`
+            });
+          }
         }
       }
 
       // Update Banner MDNU
       const bTitle = document.getElementById('bannerMDNUTitle');
       const bSub = document.getElementById('bannerMDNUSub');
-      const namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
       const kelasLabel = (filterKelas === 'all') ? 'SEMUA KELAS' : `KELAS ${filterKelas}`;
       if (bTitle) bTitle.textContent = `TABEL REKAPITULASI MDNU PUTRA - ${kelasLabel}`;
-      if (bSub) bSub.textContent = `${dateList.length} Tanggal (${namaBulanLabel.toUpperCase()})`;
+      if (bSub) bSub.textContent = `${dateList.length} Tanggal Aktif (${dateList[0] ? dateList[0].dateISO : ''} s.d ${dateList[dateList.length - 1] ? dateList[dateList.length - 1].dateISO : ''})`;
 
       // BUILD TABLE HEADER MDNU PERSIS WEB UTAMA
       let html = `<thead class="sticky-header">
@@ -1357,9 +1494,10 @@
       // Header Tanggal MDNU (Dynamic Colspan)
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-indigo-100 text-indigo-950');
+        const displayLabel = d.displayLabel || d.day;
         html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
-          <span class="block text-[10.5px] font-mono font-semibold">${d.day}</span>
+          <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
         </th>`;
       });
 
@@ -1972,10 +2110,45 @@
         ? document.getElementById('selectMonthAsrama').value 
         : document.getElementById('selectMonthMDNU').value;
 
-      const [yearStr, monthStr] = monthVal.split('-');
-      const year = parseInt(yearStr, 10);
-      const month = parseInt(monthStr, 10);
-      const totalDays = new Date(year, month, 0).getDate();
+      const exportDates = [];
+      if (monthVal === 'all') {
+        const monthRanges = (category === 'asrama') ? [
+          { year: 2026, month: 7, startDay: 14, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ] : [
+          { year: 2026, month: 7, startDay: 18, endDay: 31 },
+          { year: 2026, month: 8, startDay: 1, endDay: 31 },
+          { year: 2026, month: 9, startDay: 1, endDay: 30 },
+          { year: 2026, month: 10, startDay: 1, endDay: 31 },
+        ];
+
+        monthRanges.forEach(mr => {
+          for (let day = mr.startDay; day <= mr.endDay; day++) {
+            const dd = String(day).padStart(2, '0');
+            const mm = String(mr.month).padStart(2, '0');
+            exportDates.push({
+              dateISO: `${mr.year}-${mm}-${dd}`,
+              label: `${dd}/${mm}`,
+              dayOfWeek: new Date(mr.year, mr.month - 1, day).getDay()
+            });
+          }
+        });
+      } else {
+        const [yearStr, monthStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const totalDays = new Date(year, month, 0).getDate();
+        for (let day = 1; day <= totalDays; day++) {
+          const dd = String(day).padStart(2, '0');
+          exportDates.push({
+            dateISO: `${yearStr}-${monthStr}-${dd}`,
+            label: dd,
+            dayOfWeek: new Date(year, month - 1, day).getDay()
+          });
+        }
+      }
 
       let santriList = getSantriMasterList();
       if (category === 'asrama') {
@@ -1986,14 +2159,13 @@
 
       // Bangun Matrix Data Excel
       const headers = ['No', 'PIN', 'Nama Santri', 'Kelas'];
-      for (let day = 1; day <= totalDays; day++) {
-        const dd = String(day).padStart(2, '0');
+      exportDates.forEach(ed => {
         if (category === 'asrama') {
-          headers.push(`${dd}/Sb`, `${dd}/Ml`);
+          headers.push(`${ed.label}/Sb`, `${ed.label}/Ml`);
         } else {
-          headers.push(`${dd}/Sr`, `${dd}/P1`, `${dd}/P2`, `${dd}/P3`);
+          headers.push(`${ed.label}/Sr`, `${ed.label}/P1`, `${ed.label}/P2`, `${ed.label}/P3`);
         }
-      }
+      });
       headers.push('Total H', 'Total I', 'Total A', 'Total T', '% Disiplin');
 
       const rows = [headers];
@@ -2002,12 +2174,9 @@
         let countH = 0, countI = 0, countA = 0, countT = 0;
         const row = [idx + 1, s.pin, s.name, s.kelas];
 
-        for (let day = 1; day <= totalDays; day++) {
-          const dd = String(day).padStart(2, '0');
-          const dateISO = `${yearStr}-${monthStr}-${dd}`;
-
-          const dt = new Date(year, month - 1, day);
-          const dayOfWeek = dt.getDay();
+        exportDates.forEach(ed => {
+          const dateISO = ed.dateISO;
+          const dayOfWeek = ed.dayOfWeek;
 
           if (category === 'asrama') {
             const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
@@ -2022,6 +2191,7 @@
                   holidaysData,
                   statusSantriAsrama,
                   tglMulaiLajuSantri,
+                  tanggalMulaiSantri,
                 })
               : { subuh: '-', malam: '-' };
             const sb = cell.subuh || '-';
@@ -2040,6 +2210,7 @@
                   permissionDetailsMap,
                   settingMalamSabtuPerTanggal,
                   holidaysData,
+                  tanggalMulaiSantri,
                 })
               : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
             const sr = cell.sore || '-';
@@ -2051,7 +2222,7 @@
             });
             row.push(sr, p1, p2, p3);
           }
-        }
+        });
 
         const total = countH + countI + countA + countT;
         const pct = total > 0 ? Math.round(((countH + countI) / total) * 100) : 100;
@@ -2064,7 +2235,7 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, `Rekap_${category.toUpperCase()}`);
 
-      const fileName = `Rekap_Presensi_${category.toUpperCase()}_${monthVal}.xlsx`;
+      const fileName = `Rekap_Presensi_${category.toUpperCase()}_${monthVal === 'all' ? 'KUMULATIF_JULI_OKTOBER_2026' : monthVal}.xlsx`;
       XLSX.writeFile(wb, fileName);
     }
   </script>
