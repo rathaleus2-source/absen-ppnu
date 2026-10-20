@@ -781,6 +781,12 @@
     let mdnuMatrixData = {};
     let rawSantriList = [];
 
+    // Kunci Cerdas Evaluasi Resmi Pesantren
+    let manualCellOverrides = {};
+    let permissionDetailsMap = {};
+    let specialLiburAsrama = {};
+    let settingMalamSabtuPerTanggal = {};
+
     let activeCellEdit = null; // { category, pin, dateISO, sessionKey, santriName }
 
     // ================= INITIALIZATION & AUTH =================
@@ -820,6 +826,15 @@
         const cachedMdnMat = localStorage.getItem('ppnu_cached_mdnuMatrix');
         if (cachedAsrMat) asramaMatrixData = JSON.parse(cachedAsrMat);
         if (cachedMdnMat) mdnuMatrixData = JSON.parse(cachedMdnMat);
+
+        const cachedOvr = localStorage.getItem('ppnu_cached_manualCellOverrides');
+        const cachedPerm = localStorage.getItem('ppnu_cached_permissionDetailsMap');
+        const cachedSabtu = localStorage.getItem('ppnu_cached_settingMalamSabtu');
+        const cachedLiburAsr = localStorage.getItem('ppnu_cached_specialLiburAsrama');
+        if (cachedOvr) manualCellOverrides = JSON.parse(cachedOvr);
+        if (cachedPerm) permissionDetailsMap = JSON.parse(cachedPerm);
+        if (cachedSabtu) settingMalamSabtuPerTanggal = JSON.parse(cachedSabtu);
+        if (cachedLiburAsr) specialLiburAsrama = JSON.parse(cachedLiburAsr);
       } catch (e) {
         console.warn('Gagal membaca cache santri:', e);
       }
@@ -973,6 +988,36 @@
           }
         });
 
+        // 6. Listen manualCellOverrides
+        db.ref(`${root}/manualCellOverrides`).on('value', snap => {
+          manualCellOverrides = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_manualCellOverrides', JSON.stringify(manualCellOverrides)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 7. Listen permissionDetailsMap (Surat Izin Resmi Google Form)
+        db.ref(`${root}/permissionDetailsMap`).on('value', snap => {
+          permissionDetailsMap = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_permissionDetailsMap', JSON.stringify(permissionDetailsMap)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
+        // 8. Listen specialLiburAsrama
+        db.ref(`${root}/specialLiburAsrama`).on('value', snap => {
+          specialLiburAsrama = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_specialLiburAsrama', JSON.stringify(specialLiburAsrama)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+        });
+
+        // 9. Listen settingMalamSabtuPerTanggal
+        db.ref(`${root}/settingMalamSabtuPerTanggal`).on('value', snap => {
+          settingMalamSabtuPerTanggal = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal)); } catch (e) {}
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+        });
+
       } catch (e) {
         console.warn("Mode offline admin aktif:", e);
       }
@@ -1122,15 +1167,25 @@
 
         let sessionCells = '';
         dateList.forEach(d => {
-          const isLajuOnDate = isLaju && (!tglLaju || d.dateISO >= tglLaju);
-
-          const matrixPin = asramaMatrixData[santri.pin] || {};
-          const dayData = matrixPin[d.dateISO] || {};
+          const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+            ? window.PPNURules.getAsramaCell({
+                pin: santri.pin,
+                dateISO: d.dateISO,
+                dayOfWeek: d.dayOfWeek,
+                asramaMatrix: asramaMatrixData,
+                manualCellOverrides,
+                permissionDetailsMap,
+                specialLiburAsrama,
+                holidaysData,
+                statusSantriAsrama,
+                tglMulaiLajuSantri,
+              })
+            : { subuh: '-', malam: '-', subuh_time: '', malam_time: '', isLaju: false };
 
           // Subuh
-          const valSubuh = dayData.subuh || '-';
-          const timeSubuh = dayData.subuh_time || '';
-          if (!isLajuOnDate && valSubuh !== '-' && valSubuh !== 'LIBUR') {
+          const valSubuh = cell.subuh;
+          const timeSubuh = cell.subuh_time;
+          if (valSubuh !== '-' && valSubuh !== 'LIBUR' && valSubuh !== 'LAJU') {
             totalJP++;
             if (valSubuh === 'H') countH++;
             else if (valSubuh === 'I') countI++;
@@ -1138,16 +1193,16 @@
           }
 
           // Malam
-          const valMalam = dayData.malam || '-';
-          const timeMalam = dayData.malam_time || '';
-          if (!isLajuOnDate && valMalam !== '-' && valMalam !== 'LIBUR') {
+          const valMalam = cell.malam;
+          const timeMalam = cell.malam_time;
+          if (valMalam !== '-' && valMalam !== 'LIBUR' && valMalam !== 'LAJU') {
             totalJP++;
             if (valMalam === 'H') countH++;
             else if (valMalam === 'I') countI++;
             else if (valMalam === 'A') countA++;
           }
 
-          if (isLajuOnDate) {
+          if (cell.isLaju) {
             sessionCells += `<td class="col-sesi select-none">${renderBadge(valSubuh, 'asrama', true, timeSubuh)}</td>`;
             sessionCells += `<td class="col-sesi border-r-thick select-none">${renderBadge(valMalam, 'asrama', true, timeMalam)}</td>`;
           } else {
@@ -1281,13 +1336,23 @@
 
         let sessionCells = '';
         dateList.forEach(d => {
-          const matrixPin = mdnuMatrixData[santri.pin] || {};
-          const dayData = matrixPin[d.dateISO] || {};
+          const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+            ? window.PPNURules.getMDNUCell({
+                pin: santri.pin,
+                dateISO: d.dateISO,
+                dayOfWeek: d.dayOfWeek,
+                mdnuMatrix: mdnuMatrixData,
+                manualCellOverrides,
+                permissionDetailsMap,
+                settingMalamSabtuPerTanggal,
+                holidaysData,
+              })
+            : { sore: '-', pel1: '-', pel2: '-', pel3: '-', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
 
           const sessions = ['sore', 'pel1', 'pel2', 'pel3'];
           sessions.forEach((sess, sIdx) => {
-            const val = dayData[sess] || '-';
-            const scanTime = dayData[sess + '_time'] || '';
+            const val = cell[sess] || '-';
+            const scanTime = cell[sess + '_time'] || '';
             if (val !== '-' && val !== 'LIBUR') {
               totalJP++;
               if (val === 'H') countH++;
@@ -1876,21 +1941,46 @@
           const dd = String(day).padStart(2, '0');
           const dateISO = `${yearStr}-${monthStr}-${dd}`;
 
+          const dt = new Date(year, month - 1, day);
+          const dayOfWeek = dt.getDay();
+
           if (category === 'asrama') {
-            const matrixPin = asramaMatrixData[s.pin] || {};
-            const dayData = matrixPin[dateISO] || {};
-            const sb = dayData.subuh || '-';
-            const ml = dayData.malam || '-';
+            const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+              ? window.PPNURules.getAsramaCell({
+                  pin: s.pin,
+                  dateISO,
+                  dayOfWeek,
+                  asramaMatrix: asramaMatrixData,
+                  manualCellOverrides,
+                  permissionDetailsMap,
+                  specialLiburAsrama,
+                  holidaysData,
+                  statusSantriAsrama,
+                  tglMulaiLajuSantri,
+                })
+              : { subuh: '-', malam: '-' };
+            const sb = cell.subuh || '-';
+            const ml = cell.malam || '-';
             if (sb === 'H') countH++; else if (sb === 'I') countI++; else if (sb === 'A') countA++; else if (sb === 'T') countT++;
             if (ml === 'H') countH++; else if (ml === 'I') countI++; else if (ml === 'A') countA++; else if (ml === 'T') countT++;
             row.push(sb, ml);
           } else {
-            const matrixPin = mdnuMatrixData[s.pin] || {};
-            const dayData = matrixPin[dateISO] || {};
-            const sr = dayData.sore || '-';
-            const p1 = dayData.pel1 || '-';
-            const p2 = dayData.pel2 || '-';
-            const p3 = dayData.pel3 || '-';
+            const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+              ? window.PPNURules.getMDNUCell({
+                  pin: s.pin,
+                  dateISO,
+                  dayOfWeek,
+                  mdnuMatrix: mdnuMatrixData,
+                  manualCellOverrides,
+                  permissionDetailsMap,
+                  settingMalamSabtuPerTanggal,
+                  holidaysData,
+                })
+              : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+            const sr = cell.sore || '-';
+            const p1 = cell.pel1 || '-';
+            const p2 = cell.pel2 || '-';
+            const p3 = cell.pel3 || '-';
             [sr, p1, p2, p3].forEach(v => {
               if (v === 'H') countH++; else if (v === 'I') countI++; else if (v === 'A') countA++; else if (v === 'T') countT++;
             });

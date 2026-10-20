@@ -410,6 +410,200 @@ const PPNURules = {
 
     return !hasActivePresence;
   },
+
+  /**
+   * Helper Cerdas: Deteksi apakah sesi jadwal belum melewati batas akhir jam absen (Cutoff)
+   * Sebelum jam cutoff berakhir: status santri yang belum finger tetap tanda strip (-) netral
+   * Setelah jam cutoff lewat: santri yang tidak finger dan tidak izin baru resmi menjadi Alpha (A)
+   * @param {string} dateISO - '2026-10-20'
+   * @param {string} sessionKey - 'subuh'|'malam'|'sore'|'pel1'|'pel2'|'pel3'
+   * @param {'asrama'|'mdnu'} category
+   * @returns {boolean} True jika sesi belum lewat cutoff (netral)
+   */
+  isSesiBelumLewatBatas(dateISO, sessionKey, category = 'asrama') {
+    const wib = this.getWIBTime();
+    const todayISO = wib.dateISO;
+
+    if (dateISO > todayISO) return true; // Tanggal masa depan pasti belum lewat
+    if (dateISO < todayISO) return false; // Tanggal masa lalu sudah lewat / selesai
+
+    // Tanggal HARI INI: cek jam sekarang terhadap BATAS AKHIR (CUTOFF) jam absen
+    const curMinutes = wib.totalMinutes;
+
+    if (category === 'asrama') {
+      if (sessionKey === 'subuh') return curMinutes <= (6 * 60 + 30); // 06:30 WIB
+      if (sessionKey === 'malam') return curMinutes <= (23 * 60);      // 23:00 WIB
+    }
+
+    if (category === 'mdnu') {
+      if (sessionKey === 'sore') return curMinutes <= (18 * 60);       // 18:00 WIB
+      if (sessionKey === 'pel1') return curMinutes <= (19 * 60 + 40);  // 19:40 WIB
+      if (sessionKey === 'pel2') return curMinutes <= (21 * 60);       // 21:00 WIB
+      if (sessionKey === 'pel3') return curMinutes <= (22 * 60 + 30);  // 22:30 WIB
+    }
+
+    return false;
+  },
+
+  /**
+   * Evaluasi cerdas status kehadiran santri pada Asrama (Subuh & Malam)
+   * Menggabungkan riwayat database, scan fisik, izin resmi, dispensasi laju, dan cutoff
+   */
+  getAsramaCell({
+    pin,
+    dateISO,
+    dayOfWeek,
+    asramaMatrix = {},
+    manualCellOverrides = {},
+    permissionDetailsMap = {},
+    specialLiburAsrama = {},
+    holidaysData = {},
+    statusSantriAsrama = {},
+    tglMulaiLajuSantri = {},
+  }) {
+    const cleanPin = String(pin || '').toUpperCase().trim();
+    const is1UA = cleanPin.startsWith('1UA');
+    const isLaju = (statusSantriAsrama[cleanPin] === 'laju' || statusSantriAsrama[cleanPin] === 'kantin');
+    const tglLaju = tglMulaiLajuSantri[cleanPin];
+    const isLajuOnDate = isLaju && (!tglLaju || dateISO >= tglLaju);
+
+    const raw = (asramaMatrix[cleanPin] && asramaMatrix[cleanPin][dateISO]) || {};
+    const ovrSubuh = manualCellOverrides[`${cleanPin}__${dateISO}__subuh__asrama`];
+    const ovrMalam = manualCellOverrides[`${cleanPin}__${dateISO}__malam__asrama`];
+    const hasIzinSubuh = permissionDetailsMap[`${cleanPin}__${dateISO}__subuh__asrama`];
+    const hasIzinMalam = permissionDetailsMap[`${cleanPin}__${dateISO}__malam__asrama`];
+    const isSpecialLibur = (specialLiburAsrama && specialLiburAsrama[dateISO]) || (holidaysData && holidaysData[dateISO]);
+
+    // 1. Evaluasi Subuh
+    let subuh = '-';
+    const subuhTime = raw.subuh_time || '';
+    if (isSpecialLibur) {
+      subuh = 'LIBUR';
+    } else if (isLajuOnDate) {
+      subuh = 'LAJU';
+    } else if (ovrSubuh !== undefined) {
+      subuh = ovrSubuh;
+    } else if (raw.subuh && raw.subuh !== '-' && raw.subuh !== '') {
+      subuh = raw.subuh;
+    } else if (raw.subuh_time) {
+      subuh = 'H';
+    } else if (hasIzinSubuh) {
+      subuh = 'I';
+    } else if (dayOfWeek === 0 || dayOfWeek === 5) {
+      subuh = 'LIBUR'; // Rutin libur Subuh Jumat (5) & Minggu (0)
+    } else if (this.isSesiBelumLewatBatas(dateISO, 'subuh', 'asrama')) {
+      subuh = '-';
+    } else {
+      subuh = 'A';
+    }
+
+    // 2. Evaluasi Malam
+    let malam = '-';
+    const malamTime = raw.malam_time || '';
+    const isJadwalMalam = (dayOfWeek === 4 || dayOfWeek === 5 || (dayOfWeek === 0 && is1UA));
+
+    if (isSpecialLibur) {
+      malam = 'LIBUR';
+    } else if (isLajuOnDate) {
+      malam = 'LAJU';
+    } else if (ovrMalam !== undefined) {
+      malam = ovrMalam;
+    } else if (raw.malam && raw.malam !== '-' && raw.malam !== '') {
+      malam = raw.malam;
+    } else if (raw.malam_time) {
+      malam = 'H';
+    } else if (hasIzinMalam) {
+      malam = 'I';
+    } else if (!isJadwalMalam) {
+      malam = 'LIBUR';
+    } else if (this.isSesiBelumLewatBatas(dateISO, 'malam', 'asrama')) {
+      malam = '-';
+    } else {
+      malam = 'A';
+    }
+
+    return {
+      subuh,
+      malam,
+      subuh_time: subuhTime,
+      malam_time: malamTime,
+      isLaju: isLajuOnDate
+    };
+  },
+
+  /**
+   * Evaluasi cerdas status kehadiran santri pada MDNU (Sore, Pel 1, Pel 2, Pel 3)
+   */
+  getMDNUCell({
+    pin,
+    dateISO,
+    dayOfWeek,
+    mdnuMatrix = {},
+    manualCellOverrides = {},
+    permissionDetailsMap = {},
+    settingMalamSabtuPerTanggal = {},
+    holidaysData = {},
+  }) {
+    const cleanPin = String(pin || '').toUpperCase().trim();
+    const is1UA = cleanPin.startsWith('1UA');
+    const is2WA = cleanPin.startsWith('2WA');
+    const raw = (mdnuMatrix[cleanPin] && mdnuMatrix[cleanPin][dateISO]) || {};
+
+    const isBeforeStart = (dateISO < '2026-07-18');
+    const isSpecialLibur = holidaysData && holidaysData[dateISO];
+    const settingMalamSabtu = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[dateISO]) || 'pel1';
+
+    const res = {
+      sore: '-',
+      pel1: '-',
+      pel2: '-',
+      pel3: '-',
+      sore_time: raw.sore_time || '',
+      pel1_time: raw.pel1_time || '',
+      pel2_time: raw.pel2_time || '',
+      pel3_time: raw.pel3_time || ''
+    };
+
+    ['sore', 'pel1', 'pel2', 'pel3'].forEach(sess => {
+      const ovr = manualCellOverrides[`${cleanPin}__${dateISO}__${sess}__mdnu`];
+      const hasIzin = permissionDetailsMap[`${cleanPin}__${dateISO}__${sess}__mdnu`];
+      const scanTime = raw[`${sess}_time`] || '';
+
+      let isScheduled = false;
+      if (sess === 'sore') {
+        if ((dayOfWeek === 6 || dayOfWeek === 0) && is1UA) isScheduled = true;
+        else if (dayOfWeek === 4 && is2WA) isScheduled = true;
+      } else {
+        if (dayOfWeek === 4) {
+          isScheduled = false; // Kamis malam libur total MDNU
+        } else if (dayOfWeek === 5) {
+          isScheduled = (sess !== settingMalamSabtu); // Sesi yang dipinjam Asrama adalah LIBUR
+        } else {
+          isScheduled = true;
+        }
+      }
+
+      if (isBeforeStart || isSpecialLibur) {
+        res[sess] = 'LIBUR';
+      } else if (ovr !== undefined) {
+        res[sess] = ovr;
+      } else if (raw[sess] && raw[sess] !== '-' && raw[sess] !== '') {
+        res[sess] = raw[sess];
+      } else if (scanTime) {
+        res[sess] = 'H';
+      } else if (hasIzin) {
+        res[sess] = 'I';
+      } else if (!isScheduled) {
+        res[sess] = 'LIBUR';
+      } else if (this.isSesiBelumLewatBatas(dateISO, sess, 'mdnu')) {
+        res[sess] = '-';
+      } else {
+        res[sess] = 'A';
+      }
+    });
+
+    return res;
+  },
 };
 
 // Dukung ekspor ES module maupun browser window global
