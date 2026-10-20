@@ -818,6 +818,11 @@
         db = firebase.database();
         const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
 
+        // Sinkronisasi Server Time Offset (Anti-Manipulasi Jam HP)
+        firebase.database().ref('.info/serverTimeOffset').on('value', snap => {
+          if (window.SessionRules) window.SessionRules.setServerOffsetMs(snap.val() || 0);
+        });
+
         // Listen Holidays
         db.ref(`${root}/holidays`).on('value', snap => {
           holidaysData = snap.val() || {};

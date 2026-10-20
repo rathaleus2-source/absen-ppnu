@@ -369,30 +369,6 @@
     }
 
     // ================= AUTH GATE =================
-    function checkAuthSession() {
-      const isLogged = sessionStorage.getItem('ppnu_pengurus_logged') === 'true';
-      if (isLogged) {
-        showWorkspace();
-      } else {
-        showAuthGate();
-      }
-    }
-
-    function showAuthGate() {
-      isPengurusLoggedIn = false;
-      document.getElementById('authGateSection').classList.remove('hidden');
-      document.getElementById('mainWorkspaceSection').classList.add('hidden');
-      document.getElementById('btnLogout').classList.add('hidden');
-    }
-
-    function showWorkspace() {
-      isPengurusLoggedIn = true;
-      document.getElementById('authGateSection').classList.add('hidden');
-      document.getElementById('mainWorkspaceSection').classList.remove('hidden');
-      document.getElementById('btnLogout').classList.remove('hidden');
-      renderCurrentTab();
-    }
-
     const PPNU_SALT = 'PPNU_SECURE_SALT_2026_';
 
     async function hashPassword(plainText) {
@@ -421,6 +397,44 @@
       return cloudPassword || localStorage.getItem('ppnu_admin_password') || '';
     }
 
+    async function getExpectedPengurusSessionToken(validHash) {
+      if (!validHash) return '';
+      const todayISO = new Date().toISOString().slice(0, 10);
+      return hashPassword(validHash + '::PPNU_PENGURUS_SESSION::' + todayISO);
+    }
+
+    async function checkAuthSession() {
+      const token = sessionStorage.getItem('ppnu_pengurus_session_token');
+      const valid = getValidPassword();
+      let isLogged = false;
+
+      if (token && valid) {
+        const expected = await getExpectedPengurusSessionToken(valid);
+        isLogged = (token === expected);
+      }
+
+      if (isLogged) {
+        showWorkspace();
+      } else {
+        showAuthGate();
+      }
+    }
+
+    function showAuthGate() {
+      isPengurusLoggedIn = false;
+      document.getElementById('authGateSection').classList.remove('hidden');
+      document.getElementById('mainWorkspaceSection').classList.add('hidden');
+      document.getElementById('btnLogout').classList.add('hidden');
+    }
+
+    function showWorkspace() {
+      isPengurusLoggedIn = true;
+      document.getElementById('authGateSection').classList.add('hidden');
+      document.getElementById('mainWorkspaceSection').classList.remove('hidden');
+      document.getElementById('btnLogout').classList.remove('hidden');
+      renderCurrentTab();
+    }
+
     async function handleLoginSubmit(e) {
       e.preventDefault();
       const input = document.getElementById('inputPasswordPengurus');
@@ -442,7 +456,8 @@
 
       const isMatch = await verifyPassword(val, valid);
       if (isMatch) {
-        sessionStorage.setItem('ppnu_pengurus_logged', 'true');
+        const sessionToken = await getExpectedPengurusSessionToken(valid);
+        sessionStorage.setItem('ppnu_pengurus_session_token', sessionToken);
         err.classList.add('hidden');
         input.value = '';
         showWorkspace();
@@ -461,6 +476,7 @@
 
     function logoutPengurus() {
       if (confirm('Kunci pos jaga dan keluar dari mode pengurus?')) {
+        sessionStorage.removeItem('ppnu_pengurus_session_token');
         sessionStorage.removeItem('ppnu_pengurus_logged');
         showAuthGate();
         showToast('🔒 Pos Keamanan dikunci.', '🛡️');
@@ -495,6 +511,11 @@
         }
         db = firebase.database();
         const root = PPNUConfig.ROOT_PATH;
+
+        // Sinkronisasi Server Time Offset (Anti-Manipulasi Jam HP)
+        firebase.database().ref('.info/serverTimeOffset').on('value', snap => {
+          if (window.SessionRules) window.SessionRules.setServerOffsetMs(snap.val() || 0);
+        });
 
         // Sandi Pengurus / Admin
         db.ref(`${root}/adminPassword`).on('value', snap => {

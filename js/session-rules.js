@@ -81,14 +81,27 @@ const PPNURules = {
   },
 
 
+  _serverOffsetMs: 0,
+
+  setServerOffsetMs(offset) {
+    if (typeof offset === 'number' && !isNaN(offset)) {
+      this._serverOffsetMs = offset;
+    }
+  },
+
+  getNow() {
+    return new Date(Date.now() + this._serverOffsetMs);
+  },
+
   /**
    * Helper paten konversi waktu ke WIB (UTC+7)
-   * Mencegah bug jika HP ustadz/pengurus tersetting ke zona waktu lain (WITA/WIT/Luar Negeri)
-   * @param {Date} [date] - Tanggal acuan (default: new Date())
+   * Terikat ke Firebase Server Time untuk mencegah manipulasi jam HP santri
+   * @param {Date} [date] - Tanggal acuan (default: server-synchronized date)
    * @returns {{ dateISO: string, displayDate: string, timeStr: string, timeWithSec: string, totalMinutes: number, dayIndex: number }}
    */
-  getWIBTime(date = new Date()) {
-    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  getWIBTime(date = null) {
+    const targetDate = date instanceof Date ? date : this.getNow();
+    const utc = targetDate.getTime() + (targetDate.getTimezoneOffset() * 60000);
     const wib = new Date(utc + (3600000 * 7));
     const y = wib.getFullYear();
     const m = String(wib.getMonth() + 1).padStart(2, '0');

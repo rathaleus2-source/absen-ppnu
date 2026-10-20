@@ -954,21 +954,6 @@
       setInterval(update, 1000);
     }
 
-    function checkAuthSession() {
-      const isSessionAuth = sessionStorage.getItem('ppnu_admin_auth') === 'true';
-
-      const overlay = document.getElementById('authGateOverlay');
-      if (isSessionAuth) {
-        if (overlay) overlay.classList.add('hidden');
-        loadAllAdminData();
-        const urlParams = new URLSearchParams(window.location.search);
-        const tabParam = urlParams.get('tab');
-        if (tabParam) switchAdminTab(tabParam);
-      } else {
-        if (overlay) overlay.classList.remove('hidden');
-      }
-    }
-
     const PPNU_SALT = 'PPNU_SECURE_SALT_2026_';
 
     async function hashPassword(plainText) {
@@ -997,6 +982,34 @@
       return cloudAdminPassword || localStorage.getItem('ppnu_admin_password') || null;
     }
 
+    async function getExpectedAdminSessionToken(validHash) {
+      if (!validHash) return '';
+      const todayISO = new Date().toISOString().slice(0, 10);
+      return hashPassword(validHash + '::PPNU_ADMIN_SESSION::' + todayISO);
+    }
+
+    async function checkAuthSession() {
+      const token = sessionStorage.getItem('ppnu_admin_session_token');
+      const valid = getValidAdminPassword();
+      let isSessionAuth = false;
+
+      if (token && valid) {
+        const expected = await getExpectedAdminSessionToken(valid);
+        isSessionAuth = (token === expected);
+      }
+
+      const overlay = document.getElementById('authGateOverlay');
+      if (isSessionAuth) {
+        if (overlay) overlay.classList.add('hidden');
+        loadAllAdminData();
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        if (tabParam) switchAdminTab(tabParam);
+      } else {
+        if (overlay) overlay.classList.remove('hidden');
+      }
+    }
+
     async function handleAdminLogin(e) {
       e.preventDefault();
       const input = (document.getElementById('inputAdminPassword').value || '').trim();
@@ -1016,7 +1029,8 @@
 
       const isMatch = await verifyPassword(input, valid);
       if (isMatch) {
-        sessionStorage.setItem('ppnu_admin_auth', 'true');
+        const sessionToken = await getExpectedAdminSessionToken(valid);
+        sessionStorage.setItem('ppnu_admin_session_token', sessionToken);
         const overlay = document.getElementById('authGateOverlay');
         if (overlay) overlay.classList.add('hidden');
         loadAllAdminData();
@@ -1027,6 +1041,7 @@
     }
 
     function lockAdminSession() {
+      sessionStorage.removeItem('ppnu_admin_session_token');
       sessionStorage.removeItem('ppnu_admin_auth');
       window.location.reload();
     }
@@ -1041,6 +1056,11 @@
 
         db = firebase.database();
         const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+
+        // Sinkronisasi Server Time Offset (Anti-Manipulasi Jam HP)
+        firebase.database().ref('.info/serverTimeOffset').on('value', snap => {
+          if (window.SessionRules) window.SessionRules.setServerOffsetMs(snap.val() || 0);
+        });
 
         // 1. Listen Admin Password
         db.ref(`${root}/adminPassword`).on('value', snap => {

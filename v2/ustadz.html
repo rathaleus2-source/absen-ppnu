@@ -219,6 +219,12 @@
         }
         db = firebase.database();
         const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+
+        // Sinkronisasi Server Time Offset (Anti-Manipulasi Jam HP)
+        firebase.database().ref('.info/serverTimeOffset').on('value', snap => {
+          if (window.SessionRules) window.SessionRules.setServerOffsetMs(snap.val() || 0);
+        });
+
         db.ref(`${root}/ustadzPassword`).on('value', snap => {
           if (snap.exists()) {
             cloudUstadzPassword = String(snap.val()).trim();
@@ -262,8 +268,22 @@
       return cloudUstadzPassword || localStorage.getItem('ppnu_ustadz_password') || null;
     }
 
-    function checkAsatidzAuth() {
-      const isAuth = sessionStorage.getItem('ppnu_ustadz_auth') === 'true';
+    async function getExpectedAsatidzSessionToken(validHash) {
+      if (!validHash) return '';
+      const todayISO = new Date().toISOString().slice(0, 10);
+      return hashPassword(validHash + '::PPNU_USTADZ_SESSION::' + todayISO);
+    }
+
+    async function checkAsatidzAuth() {
+      const token = sessionStorage.getItem('ppnu_ustadz_session_token');
+      const validPin = getValidAsatidzPassword();
+      let isAuth = false;
+
+      if (token && validPin) {
+        const expected = await getExpectedAsatidzSessionToken(validPin);
+        isAuth = (token === expected);
+      }
+
       const modal = document.getElementById('loginModal');
       const main = document.getElementById('mainUstadzContent');
       const bottom = document.getElementById('bottomActionBar');
@@ -307,7 +327,8 @@
 
       const isMatch = await verifyPassword(entered, validPin);
       if (isMatch) {
-        sessionStorage.setItem('ppnu_ustadz_auth', 'true');
+        const sessionToken = await getExpectedAsatidzSessionToken(validPin);
+        sessionStorage.setItem('ppnu_ustadz_session_token', sessionToken);
         const modal = document.getElementById('loginModal');
         const main = document.getElementById('mainUstadzContent');
         const bottom = document.getElementById('bottomActionBar');
@@ -329,6 +350,7 @@
     }
 
     function logoutAsatidz() {
+      sessionStorage.removeItem('ppnu_ustadz_session_token');
       sessionStorage.removeItem('ppnu_ustadz_auth');
       const modal = document.getElementById('loginModal');
       const main = document.getElementById('mainUstadzContent');
