@@ -340,6 +340,7 @@
     let mdnuMatrixData = {};
     let penangguhanData = {};
     let permissionsMap = {};
+    let manualCellOverrides = {};
 
     // State Radar Kamar
     let activeTab = 'radar'; // 'radar' | 'nakal' | 'takzir' | 'sidang'
@@ -530,6 +531,12 @@
         // Surat Izin
         db.ref(`${root}/permissionDetailsMap`).on('value', snap => {
           permissionsMap = snap.val() || {};
+          renderCurrentTab();
+        });
+
+        // Override Manual Admin & Ustadz
+        db.ref(`${root}/manualCellOverrides`).on('value', snap => {
+          manualCellOverrides = snap.val() || {};
           renderCurrentTab();
         });
 
@@ -1033,6 +1040,11 @@
     }
 
     // ================= TAB 4: SIDANG KLARIFIKASI ALPA =================
+    function renderSidangView() {
+      populateSidangSantriDropdown();
+      handleSelectSidangSantri();
+    }
+
     function populateSidangSantriDropdown() {
       const sel = document.getElementById('selectSidangSantri');
       if (!sel || !rawSantriList.length) return;
@@ -1078,7 +1090,14 @@
           const sessionKeys = (kat === 'asrama') ? ['subuh', 'malam'] : ['sore', 'pel1', 'pel2', 'pel3'];
 
           sessionKeys.forEach(sesi => {
-            if (daySessions[sesi] === 'A') {
+            const ovr = manualCellOverrides[`${pin}__${tgl}__${sesi}__${kat}`];
+            const perm = permissionsMap[`${pin}__${tgl}__${sesi}__${kat}`];
+
+            let status = daySessions[sesi];
+            if (ovr !== undefined) status = ovr;
+            if (perm) status = 'I';
+
+            if (status === 'A') {
               alpaItems.push({
                 tanggal: tgl,
                 sesi,
