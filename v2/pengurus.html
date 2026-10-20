@@ -319,11 +319,11 @@
   </div>
 
   <!-- ================= MODUL BISNIS ================= -->
-  <script src="js/config.js"></script>
-  <script src="js/session-rules.js"></script>
-  <script src="js/storage-adapter.js"></script>
-  <script src="js/santri-store.js"></script>
-  <script src="js/initial-seed.js"></script>
+  <script src="js/config.js?v=2.0.4"></script>
+  <script src="js/session-rules.js?v=2.0.4"></script>
+  <script src="js/storage-adapter.js?v=2.0.4"></script>
+  <script src="js/santri-store.js?v=2.0.4"></script>
+  <script src="js/initial-seed.js?v=2.0.4"></script>
 
   <!-- ================= LOGIKA POS KEAMANAN ================= -->
   <script>
@@ -796,6 +796,7 @@
       const root = PPNUConfig.ROOT_PATH;
       const updates = {};
       updates[`${root}/asramaMatrix/${pin}/${radarDateISO}/${radarSession}`] = status;
+      updates[`${root}/manualCellOverrides/${pin}__${radarDateISO}__${radarSession}__asrama`] = status;
       if (status === 'H') {
         const wib = PPNURules.getWIBTime();
         updates[`${root}/asramaMatrix/${pin}/${radarDateISO}/${radarSession}_time`] = wib.timeStr;
@@ -915,6 +916,7 @@
 
       const rootMat = (item.kategori === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
       updates[`${root}/${rootMat}/${pin}/${item.tanggal}/${item.sesi}`] = 'T';
+      updates[`${root}/manualCellOverrides/${pin}__${item.tanggal}__${item.sesi}__${item.kategori}`] = 'T';
       updates[`${root}/permissionDetailsMap/${pin}__${item.tanggal}__${item.sesi}__${item.kategori}`] = {
         alasan: `Takzir: ${hukuman}`,
         pemberiIzin: 'Meja Keamanan Pondok',
@@ -1018,6 +1020,7 @@
       const rootMat = (category === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
       const updates = {};
       updates[`${root}/${rootMat}/${pin}/${dateISO}/${sessionKey}`] = 'H';
+      updates[`${root}/manualCellOverrides/${pin}__${dateISO}__${sessionKey}__${category}`] = 'H';
 
       db.ref().update(updates)
         .then(() => {
@@ -1135,6 +1138,7 @@
 
       const updates = {};
       updates[`${root}/${rootMat}/${pin}/${dateISO}/${sessionKey}`] = 'I';
+      updates[`${root}/manualCellOverrides/${pin}__${dateISO}__${sessionKey}__${category}`] = 'I';
       updates[`${root}/permissionDetailsMap/${pin}__${dateISO}__${sessionKey}__${category}`] = {
         alasan,
         pemberiIzin: 'Sidang Keamanan Tanggal 1',
@@ -1196,6 +1200,7 @@
       const root = PPNUConfig.ROOT_PATH;
       const updates = {};
       updates[`${root}/asramaMatrix/${qmTarget.pin}/${qmTarget.date}/${qmTarget.sesi}`] = qmTarget.targetStatus;
+      updates[`${root}/manualCellOverrides/${qmTarget.pin}__${qmTarget.date}__${qmTarget.sesi}__asrama`] = qmTarget.targetStatus;
       updates[`${root}/permissionDetailsMap/${qmTarget.pin}__${qmTarget.date}__${qmTarget.sesi}__asrama`] = {
         alasan,
         pemberiIzin: pemberi,
