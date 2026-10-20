@@ -317,8 +317,8 @@
       <div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
         <div class="flex flex-wrap items-center gap-2">
           <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">BULAN & TAHUN</label>
-            <select id="selectMonthAsrama" onchange="renderAsramaSpreadsheet()" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+            <label for="selectMonthAsrama" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">BULAN & TAHUN</label>
+            <select id="selectMonthAsrama" name="selectMonthAsrama" onchange="renderAsramaSpreadsheet()" title="Pilih Bulan & Tahun Asrama" aria-label="Pilih Bulan & Tahun Asrama" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
               <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
               <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
               <option value="2026-09">September 2026</option>
@@ -328,8 +328,8 @@
           </div>
 
           <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER SANTRI</label>
-            <select id="selectStatusAsrama" onchange="renderAsramaSpreadsheet()" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+            <label for="selectStatusAsrama" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER SANTRI</label>
+            <select id="selectStatusAsrama" name="selectStatusAsrama" onchange="renderAsramaSpreadsheet()" title="Filter Status Santri Asrama" aria-label="Filter Status Santri Asrama" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
               <option value="mukim" selected>Santri Mukim Saja</option>
               <option value="all">Semua Santri</option>
             </select>
@@ -369,8 +369,8 @@
       <div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
         <div class="flex flex-wrap items-center gap-2">
           <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">BULAN & TAHUN</label>
-            <select id="selectMonthMDNU" onchange="renderMDNUSpreadsheet()" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+            <label for="selectMonthMDNU" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">BULAN & TAHUN</label>
+            <select id="selectMonthMDNU" name="selectMonthMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Bulan & Tahun MDNU" aria-label="Pilih Bulan & Tahun MDNU" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
               <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
               <option value="all">⭐ Rekap Kumulatif (Juli s.d Terbaru)</option>
               <option value="2026-09">September 2026</option>
@@ -380,8 +380,8 @@
           </div>
 
           <div>
-            <label class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER KELAS</label>
-            <select id="selectKelasMDNU" onchange="renderMDNUSpreadsheet()" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
+            <label for="selectKelasMDNU" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER KELAS</label>
+            <select id="selectKelasMDNU" name="selectKelasMDNU" onchange="renderMDNUSpreadsheet()" title="Pilih Jenjang Kelas MDNU" aria-label="Pilih Jenjang Kelas MDNU" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-indigo-500 cursor-pointer">
               <option value="1UA" selected>Kelas 1UA</option>
               <option value="2UA">Kelas 2UA</option>
               <option value="1WA">Kelas 1WA</option>
