@@ -294,7 +294,8 @@
         <p class="text-xs text-slate-500 mt-1">Masukkan kata sandi Superadmin untuk membuka spreadsheet dan pengaturan.</p>
       </div>
       <form onsubmit="handleAdminLogin(event)" class="space-y-3 pt-1">
-        <input type="password" id="inputAdminPassword" placeholder="Kata sandi admin..." class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-center text-sm font-mono tracking-wider focus:outline-hidden focus:ring-2 focus:ring-slate-800" autofocus required>
+        <label for="inputAdminPassword" class="sr-only">Kata Sandi Superadmin</label>
+        <input type="password" id="inputAdminPassword" name="password" autocomplete="current-password" aria-label="Kata Sandi Superadmin" title="Kata Sandi Superadmin" placeholder="Kata sandi admin..." class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-center text-sm font-mono tracking-wider focus:outline-hidden focus:ring-2 focus:ring-slate-800" autofocus required>
         <div id="authErrorMsg" class="text-xs text-rose-600 font-bold hidden">
           Kata sandi salah. Silakan coba lagi.
         </div>
@@ -368,7 +369,7 @@
           </div>
           <div class="flex items-end">
             <label class="flex items-center gap-1.5 cursor-pointer py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-xl w-full">
-              <input type="checkbox" id="chkHideEmptyAsrama" onchange="renderAsramaSpreadsheet()" class="rounded text-emerald-600 focus:ring-0">
+              <input type="checkbox" id="chkHideEmptyAsrama" onchange="renderAsramaSpreadsheet()" title="Sembunyikan Kolom Libur Asrama" aria-label="Sembunyikan Kolom Libur Asrama" class="rounded text-emerald-600 focus:ring-0">
               <span class="text-[11px] font-medium text-slate-700">Sembunyikan Kolom Libur</span>
             </label>
           </div>
@@ -449,7 +450,7 @@
           </div>
           <div class="flex items-end">
             <label class="flex items-center gap-1.5 cursor-pointer py-1.5 px-2 bg-slate-50 border border-slate-200 rounded-xl w-full">
-              <input type="checkbox" id="chkHideEmptyMDNU" onchange="renderMDNUSpreadsheet()" class="rounded text-teal-600 focus:ring-0">
+              <input type="checkbox" id="chkHideEmptyMDNU" onchange="renderMDNUSpreadsheet()" title="Sembunyikan Kolom Libur MDNU" aria-label="Sembunyikan Kolom Libur MDNU" class="rounded text-teal-600 focus:ring-0">
               <span class="text-[11px] font-medium text-slate-700">Sembunyikan Kolom Libur</span>
             </label>
           </div>
@@ -520,7 +521,8 @@
           </div>
 
           <div class="flex-1 min-w-[200px] relative">
-            <input type="text" id="inputSearchSantriInduk" oninput="renderSantriIndukList()" placeholder="Cari nama atau PIN santri..." class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-slate-800">
+            <label for="inputSearchSantriInduk" class="sr-only">Cari nama atau PIN santri</label>
+            <input type="text" id="inputSearchSantriInduk" oninput="renderSantriIndukList()" title="Cari nama atau PIN santri" aria-label="Cari nama atau PIN santri" placeholder="Cari nama atau PIN santri..." class="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-slate-800">
             <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
           </div>
         </div>
@@ -566,8 +568,8 @@
               <input type="date" id="inputTglLibur" title="Pilih Tanggal Libur" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500" required>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Keterangan / Alasan Libur</label>
-              <input type="text" id="inputKetLibur" placeholder="Contoh: Maulid Nabi / Haul Masyayikh" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500" required>
+              <label for="inputKetLibur" class="block text-[11px] font-bold text-slate-600 mb-1">Keterangan / Alasan Libur</label>
+              <input type="text" id="inputKetLibur" title="Keterangan Hari Libur" aria-label="Keterangan Hari Libur" placeholder="Contoh: Maulid Nabi / Haul Masyayikh" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500" required>
             </div>
             <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-2xs transition">
               Simpan Hari Libur
@@ -654,16 +656,16 @@
 
           <form onsubmit="handleGantiPasswordAdmin(event)" class="space-y-2.5">
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Lama</label>
-              <input type="password" id="inputPassLama" placeholder="Kata sandi saat ini..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
+              <label for="inputPassLama" class="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Lama</label>
+              <input type="password" id="inputPassLama" name="oldPassword" autocomplete="current-password" aria-label="Kata Sandi Lama" title="Kata Sandi Lama" placeholder="Kata sandi saat ini..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Baru</label>
-              <input type="password" id="inputPassBaru" placeholder="Kata sandi baru (minimal 6 karakter)..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
+              <label for="inputPassBaru" class="block text-[11px] font-bold text-slate-600 mb-1">Kata Sandi Baru</label>
+              <input type="password" id="inputPassBaru" name="newPassword" autocomplete="new-password" aria-label="Kata Sandi Baru" title="Kata Sandi Baru" placeholder="Kata sandi baru (minimal 6 karakter)..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
             </div>
             <div>
-              <label class="block text-[11px] font-bold text-slate-600 mb-1">Ulangi Kata Sandi Baru</label>
-              <input type="password" id="inputPassBaruConfirm" placeholder="Konfirmasi kata sandi baru..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
+              <label for="inputPassBaruConfirm" class="block text-[11px] font-bold text-slate-600 mb-1">Ulangi Kata Sandi Baru</label>
+              <input type="password" id="inputPassBaruConfirm" name="confirmPassword" autocomplete="new-password" aria-label="Konfirmasi Kata Sandi Baru" title="Konfirmasi Kata Sandi Baru" placeholder="Konfirmasi kata sandi baru..." class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono" required>
             </div>
             <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-2xs transition">
               Simpan Password Baru ke Cloud
