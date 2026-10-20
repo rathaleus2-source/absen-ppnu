@@ -367,10 +367,14 @@
           </div>
 
           <div>
-            <label for="selectStatusAsrama" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER SANTRI</label>
-            <select id="selectStatusAsrama" name="selectStatusAsrama" onchange="renderAsramaSpreadsheet()" title="Filter Status Santri Asrama" aria-label="Filter Status Santri Asrama" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
-              <option value="mukim" selected>Santri Mukim Saja</option>
-              <option value="all">Semua Santri</option>
+            <label for="selectKelasAsrama" class="block text-[10px] font-black text-slate-500 uppercase tracking-wider mb-0.5">FILTER KELAS</label>
+            <select id="selectKelasAsrama" name="selectKelasAsrama" onchange="renderAsramaSpreadsheet()" title="Pilih Jenjang Kelas Asrama" aria-label="Pilih Jenjang Kelas Asrama" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-emerald-500 cursor-pointer">
+              <option value="all" selected>Semua Kelas</option>
+              <option value="1UA">Kelas 1UA</option>
+              <option value="2UA">Kelas 2UA</option>
+              <option value="1WA">Kelas 1WA</option>
+              <option value="2WA">Kelas 2WA</option>
+              <option value="2AA">Kelas 2AA</option>
             </select>
           </div>
         </div>
@@ -757,20 +761,19 @@
       if (!table) return;
 
       const monthVal = document.getElementById('selectMonthAsrama').value; // '2026-10'
-      const filterStatus = document.getElementById('selectStatusAsrama').value;
+      const filterKelas = document.getElementById('selectKelasAsrama')?.value || 'all';
       const hideEmptyLibur = true; // REVISI SENIOR: AUTO HIDE LIBUR SELALU TRUE
-      // Filter santri
+
+      // Filter santri: TETAPKAN HANYA UNTUK SANTRI MUKIM (LAJU, KANTIN & BOYONG TIDAK ADA DI ASRAMA)
       let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
-      if (filterStatus === 'mukim') {
-        list = list.filter(s => {
-          const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
-          return st !== 'laju' && st !== 'kantin' && st !== 'boyong';
-        });
-      } else {
-        list = list.filter(s => {
-          const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
-          return st !== 'boyong';
-        });
+      list = list.filter(s => {
+        const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
+        return st !== 'laju' && st !== 'kantin' && st !== 'boyong';
+      });
+
+      // Filter per kelas
+      if (filterKelas !== 'all') {
+        list = list.filter(s => matchSantriClass(s, filterKelas));
       }
 
       if (searchQuery) {
@@ -913,7 +916,8 @@
       // Update Banner Asrama
       const bTitle = document.getElementById('bannerAsramaTitle');
       const bSub = document.getElementById('bannerAsramaSub');
-      if (bTitle) bTitle.textContent = `REKAPITULASI ASRAMA PUTRA - ${namaBulanLabel.toUpperCase()}`;
+      const labelKelasAsr = (filterKelas && filterKelas !== 'all') ? ` (${filterKelas})` : '';
+      if (bTitle) bTitle.textContent = `REKAPITULASI ASRAMA PUTRA${labelKelasAsr} - ${namaBulanLabel.toUpperCase()}`;
       if (bSub) bSub.textContent = `${dateList.length} Tanggal Aktif (${dateList[0] ? dateList[0].dateISO : ''} s.d ${dateList[dateList.length - 1] ? dateList[dateList.length - 1].dateISO : ''})`;
 
       // BUILD TABLE HEADER
