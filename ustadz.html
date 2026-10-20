@@ -234,6 +234,29 @@
 
     // Autentikasi Asatidz
     let cloudUstadzPassword = null;
+    const PPNU_SALT = 'PPNU_SECURE_SALT_2026_';
+
+    async function hashPassword(plainText) {
+      if (!plainText) return '';
+      const msgUint8 = new TextEncoder().encode(PPNU_SALT + plainText.trim());
+      if (window.crypto && window.crypto.subtle) {
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+      return plainText.trim();
+    }
+
+    async function verifyPassword(inputPassword, storedHashOrPlain) {
+      if (!inputPassword || !storedHashOrPlain) return false;
+      const cleanInput = inputPassword.trim();
+      const cleanStored = storedHashOrPlain.trim();
+      if (cleanStored.length === 64) {
+        const computedHash = await hashPassword(cleanInput);
+        return computedHash === cleanStored;
+      }
+      return cleanInput === cleanStored;
+    }
 
     function getValidAsatidzPassword() {
       return cloudUstadzPassword || localStorage.getItem('ppnu_ustadz_password') || null;
@@ -282,7 +305,8 @@
         } catch (err) {}
       }
 
-      if (validPin && entered === validPin) {
+      const isMatch = await verifyPassword(entered, validPin);
+      if (isMatch) {
         sessionStorage.setItem('ppnu_ustadz_auth', 'true');
         const modal = document.getElementById('loginModal');
         const main = document.getElementById('mainUstadzContent');

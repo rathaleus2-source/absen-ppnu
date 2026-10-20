@@ -393,18 +393,55 @@
       renderCurrentTab();
     }
 
+    const PPNU_SALT = 'PPNU_SECURE_SALT_2026_';
+
+    async function hashPassword(plainText) {
+      if (!plainText) return '';
+      const msgUint8 = new TextEncoder().encode(PPNU_SALT + plainText.trim());
+      if (window.crypto && window.crypto.subtle) {
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+      return plainText.trim();
+    }
+
+    async function verifyPassword(inputPassword, storedHashOrPlain) {
+      if (!inputPassword || !storedHashOrPlain) return false;
+      const cleanInput = inputPassword.trim();
+      const cleanStored = storedHashOrPlain.trim();
+      if (cleanStored.length === 64) {
+        const computedHash = await hashPassword(cleanInput);
+        return computedHash === cleanStored;
+      }
+      return cleanInput === cleanStored;
+    }
+
     function getValidPassword() {
       return cloudPassword || localStorage.getItem('ppnu_admin_password') || '';
     }
 
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       const input = document.getElementById('inputPasswordPengurus');
       const val = (input.value || '').trim();
-      const valid = getValidPassword();
+      let valid = getValidPassword();
       const err = document.getElementById('authErrorMsg');
 
-      if (valid && val === valid) {
+      if (!valid && db) {
+        try {
+          const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+          const snap = await db.ref(`${root}/adminPassword`).once('value');
+          if (snap.exists()) {
+            valid = String(snap.val()).trim();
+            cloudPassword = valid;
+            try { localStorage.setItem('ppnu_admin_password', valid); } catch (e) {}
+          }
+        } catch (err) {}
+      }
+
+      const isMatch = await verifyPassword(val, valid);
+      if (isMatch) {
         sessionStorage.setItem('ppnu_pengurus_logged', 'true');
         err.classList.add('hidden');
         input.value = '';

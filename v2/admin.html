@@ -969,6 +969,30 @@
       }
     }
 
+    const PPNU_SALT = 'PPNU_SECURE_SALT_2026_';
+
+    async function hashPassword(plainText) {
+      if (!plainText) return '';
+      const msgUint8 = new TextEncoder().encode(PPNU_SALT + plainText.trim());
+      if (window.crypto && window.crypto.subtle) {
+        const hashBuffer = await window.crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+      return plainText.trim();
+    }
+
+    async function verifyPassword(inputPassword, storedHashOrPlain) {
+      if (!inputPassword || !storedHashOrPlain) return false;
+      const cleanInput = inputPassword.trim();
+      const cleanStored = storedHashOrPlain.trim();
+      if (cleanStored.length === 64) {
+        const computedHash = await hashPassword(cleanInput);
+        return computedHash === cleanStored;
+      }
+      return cleanInput === cleanStored;
+    }
+
     function getValidAdminPassword() {
       return cloudAdminPassword || localStorage.getItem('ppnu_admin_password') || null;
     }
@@ -990,7 +1014,8 @@
         } catch (err) {}
       }
 
-      if (valid && input === valid) {
+      const isMatch = await verifyPassword(input, valid);
+      if (isMatch) {
         sessionStorage.setItem('ppnu_admin_auth', 'true');
         const overlay = document.getElementById('authGateOverlay');
         if (overlay) overlay.classList.add('hidden');
@@ -2493,7 +2518,8 @@
       const konfirm = document.getElementById('inputPassBaruConfirm').value.trim();
 
       const validLama = getValidAdminPassword();
-      if (lama !== validLama) {
+      const isOldValid = await verifyPassword(lama, validLama);
+      if (!isOldValid) {
         alert("Kata sandi lama salah!");
         return;
       }
@@ -2509,14 +2535,15 @@
       }
 
       try {
-        cloudAdminPassword = baru;
-        try { localStorage.setItem('ppnu_admin_password', baru); } catch (e) {}
+        const newHash = await hashPassword(baru);
+        cloudAdminPassword = newHash;
+        try { localStorage.setItem('ppnu_admin_password', newHash); } catch (e) {}
 
         if (firebase.apps.length) {
-          await firebase.database().ref('absensi_ppnu/adminPassword').set(baru);
+          await firebase.database().ref('absensi_ppnu/adminPassword').set(newHash);
         }
 
-        alert("Kata sandi Admin berhasil diperbarui dan disinkronkan ke Cloud!");
+        alert("Kata sandi Admin berhasil diperbarui dan disinkronkan ke Cloud (Terenkripsi SHA-256)!");
         document.getElementById('inputPassLama').value = '';
         document.getElementById('inputPassBaru').value = '';
         document.getElementById('inputPassBaruConfirm').value = '';
