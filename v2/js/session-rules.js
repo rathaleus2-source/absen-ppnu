@@ -627,8 +627,9 @@ const PPNURules = {
         }
       }
 
-      if (isBeforeStart || isSpecialLibur) {
+      if (isBeforeStart || isSpecialLibur || !isScheduled) {
         res[sess] = 'LIBUR';
+        res[`${sess}_time`] = '';
       } else if (ovr !== undefined) {
         res[sess] = ovr;
       } else if (scanTime) {
@@ -637,8 +638,6 @@ const PPNURules = {
         res[sess] = raw[sess];
       } else if (hasIzin) {
         res[sess] = 'I';
-      } else if (!isScheduled) {
-        res[sess] = 'LIBUR';
       } else if (this.isSesiBelumLewatBatas(dateISO, sess, 'mdnu')) {
         res[sess] = '-';
       } else {
