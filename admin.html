@@ -955,14 +955,13 @@
     }
 
     function checkAuthSession() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const isBypass = urlParams.get('auth') === 'bypass';
       const isSessionAuth = sessionStorage.getItem('ppnu_admin_auth') === 'true';
 
       const overlay = document.getElementById('authGateOverlay');
-      if (isBypass || isSessionAuth) {
+      if (isSessionAuth) {
         if (overlay) overlay.classList.add('hidden');
         loadAllAdminData();
+        const urlParams = new URLSearchParams(window.location.search);
         const tabParam = urlParams.get('tab');
         if (tabParam) switchAdminTab(tabParam);
       } else {
@@ -971,15 +970,27 @@
     }
 
     function getValidAdminPassword() {
-      return cloudAdminPassword || localStorage.getItem('ppnu_admin_password') || (window.PPNUConfig && window.PPNUConfig.DEFAULT_ADMIN_PASSWORD) || 'Ppnu982';
+      return cloudAdminPassword || localStorage.getItem('ppnu_admin_password') || null;
     }
 
-    function handleAdminLogin(e) {
+    async function handleAdminLogin(e) {
       e.preventDefault();
       const input = (document.getElementById('inputAdminPassword').value || '').trim();
-      const valid = getValidAdminPassword();
+      let valid = getValidAdminPassword();
 
-      if (input === valid || input === 'admin123' || input === 'Ppnu982' || input === 'ppnu123') {
+      if (!valid && db) {
+        try {
+          const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+          const snap = await db.ref(`${root}/adminPassword`).once('value');
+          if (snap.exists()) {
+            valid = String(snap.val()).trim();
+            cloudAdminPassword = valid;
+            try { localStorage.setItem('ppnu_admin_password', valid); } catch (e) {}
+          }
+        } catch (err) {}
+      }
+
+      if (valid && input === valid) {
         sessionStorage.setItem('ppnu_admin_auth', 'true');
         const overlay = document.getElementById('authGateOverlay');
         if (overlay) overlay.classList.add('hidden');

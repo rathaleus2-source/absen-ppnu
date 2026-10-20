@@ -25,8 +25,8 @@ const PPNUConfig = {
   // Daftar 5 Kelas Resmi MDNU PPNU
   OFFICIAL_CLASSES: ['2AA', '1WA', '2WA', '1UA', '2UA'],
 
-  // Password Bersama Asatidz (Default fallback, disinkronkan ke cloud)
-  DEFAULT_USTADZ_PIN: 'asatidznu',
+  // Password Bersama Asatidz (Disinkronkan langsung via Cloud Firebase)
+  DEFAULT_USTADZ_PIN: null,
 
   // Versi Sistem
   VERSION: '2.0.0-rc1',

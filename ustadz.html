@@ -222,6 +222,7 @@
         db.ref(`${root}/ustadzPassword`).on('value', snap => {
           if (snap.exists()) {
             cloudUstadzPassword = String(snap.val()).trim();
+            try { localStorage.setItem('ppnu_ustadz_password', cloudUstadzPassword); } catch (e) {}
           }
         });
         loadAllMasterData();
@@ -233,6 +234,10 @@
 
     // Autentikasi Asatidz
     let cloudUstadzPassword = null;
+
+    function getValidAsatidzPassword() {
+      return cloudUstadzPassword || localStorage.getItem('ppnu_ustadz_password') || null;
+    }
 
     function checkAsatidzAuth() {
       const isAuth = sessionStorage.getItem('ppnu_ustadz_auth') === 'true';
@@ -257,15 +262,27 @@
       }
     }
 
-    function verifikasiLoginAsatidz(e) {
+    async function verifikasiLoginAsatidz(e) {
       if (e) e.preventDefault();
       const input = document.getElementById('inputPinUstadz');
       const err = document.getElementById('loginError');
       const entered = (input ? input.value : '').trim();
 
-      const validPin = cloudUstadzPassword || (window.PPNUConfig && window.PPNUConfig.DEFAULT_USTADZ_PIN) || 'asatidznu';
+      let validPin = getValidAsatidzPassword();
 
-      if (entered === validPin || entered === 'asatidznu' || entered === 'asatidz123') {
+      if (!validPin && db) {
+        try {
+          const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+          const snap = await db.ref(`${root}/ustadzPassword`).once('value');
+          if (snap.exists()) {
+            validPin = String(snap.val()).trim();
+            cloudUstadzPassword = validPin;
+            try { localStorage.setItem('ppnu_ustadz_password', validPin); } catch (e) {}
+          }
+        } catch (err) {}
+      }
+
+      if (validPin && entered === validPin) {
         sessionStorage.setItem('ppnu_ustadz_auth', 'true');
         const modal = document.getElementById('loginModal');
         const main = document.getElementById('mainUstadzContent');

@@ -330,7 +330,6 @@
     let db = null;
     let isPengurusLoggedIn = false;
     let cloudPassword = null;
-    const DEFAULT_PASS = 'admin123';
 
     // State Data
     let rawSantriList = [];
@@ -371,13 +370,6 @@
 
     // ================= AUTH GATE =================
     function checkAuthSession() {
-      try {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('auth') === 'bypass') {
-          sessionStorage.setItem('ppnu_pengurus_logged', 'true');
-        }
-      } catch (e) {}
-
       const isLogged = sessionStorage.getItem('ppnu_pengurus_logged') === 'true';
       if (isLogged) {
         showWorkspace();
@@ -402,7 +394,7 @@
     }
 
     function getValidPassword() {
-      return cloudPassword || localStorage.getItem('ppnu_admin_password') || DEFAULT_PASS;
+      return cloudPassword || localStorage.getItem('ppnu_admin_password') || '';
     }
 
     function handleLoginSubmit(e) {
@@ -412,14 +404,14 @@
       const valid = getValidPassword();
       const err = document.getElementById('authErrorMsg');
 
-      if (val === valid) {
+      if (valid && val === valid) {
         sessionStorage.setItem('ppnu_pengurus_logged', 'true');
         err.classList.add('hidden');
         input.value = '';
         showWorkspace();
         showToast('🔓 Pos Keamanan dibuka! Selamat bertugas.', '🛡️');
       } else {
-        err.innerText = 'Kata sandi salah! Silakan periksa kembali.';
+        err.innerText = 'Kata sandi tidak sesuai! Silakan periksa kembali.';
         err.classList.remove('hidden');
         input.select();
       }
