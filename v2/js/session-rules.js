@@ -460,6 +460,7 @@ const PPNURules = {
     holidaysData = {},
     statusSantriAsrama = {},
     tglMulaiLajuSantri = {},
+    tanggalMulaiSantri = {},
   }) {
     const cleanPin = String(pin || '').toUpperCase().trim();
     const is1UA = cleanPin.startsWith('1UA');
@@ -468,6 +469,20 @@ const PPNURules = {
     const isLajuOnDate = isLaju && (!tglLaju || dateISO >= tglLaju);
 
     const raw = (asramaMatrix[cleanPin] && asramaMatrix[cleanPin][dateISO]) || {};
+
+    // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
+    // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-') kecuali jika ada rekaman scan fisik
+    const tglMulaiAsr = (tanggalMulaiSantri && tanggalMulaiSantri[cleanPin]);
+    if (tglMulaiAsr && dateISO < tglMulaiAsr && !raw.subuh_time && !raw.malam_time) {
+      return {
+        subuh: 'BELUM',
+        malam: 'BELUM',
+        subuh_time: '',
+        malam_time: '',
+        isBelum: true
+      };
+    }
+
     const ovrSubuh = manualCellOverrides[`${cleanPin}__${dateISO}__subuh__asrama`];
     const ovrMalam = manualCellOverrides[`${cleanPin}__${dateISO}__malam__asrama`];
     const hasIzinSubuh = permissionDetailsMap[`${cleanPin}__${dateISO}__subuh__asrama`];
@@ -483,10 +498,10 @@ const PPNURules = {
       subuh = 'LAJU';
     } else if (ovrSubuh !== undefined) {
       subuh = ovrSubuh;
+    } else if (raw.subuh_time) {
+      subuh = 'H'; // Scan fisik mesin selalu hadir!
     } else if (raw.subuh && raw.subuh !== '-' && raw.subuh !== '') {
       subuh = raw.subuh;
-    } else if (raw.subuh_time) {
-      subuh = 'H';
     } else if (hasIzinSubuh) {
       subuh = 'I';
     } else if (dayOfWeek === 0 || dayOfWeek === 5) {
@@ -508,10 +523,10 @@ const PPNURules = {
       malam = 'LAJU';
     } else if (ovrMalam !== undefined) {
       malam = ovrMalam;
+    } else if (raw.malam_time) {
+      malam = 'H'; // Scan fisik mesin selalu hadir!
     } else if (raw.malam && raw.malam !== '-' && raw.malam !== '') {
       malam = raw.malam;
-    } else if (raw.malam_time) {
-      malam = 'H';
     } else if (hasIzinMalam) {
       malam = 'I';
     } else if (!isJadwalMalam) {
@@ -543,11 +558,29 @@ const PPNURules = {
     permissionDetailsMap = {},
     settingMalamSabtuPerTanggal = {},
     holidaysData = {},
+    tanggalMulaiSantri = {},
   }) {
     const cleanPin = String(pin || '').toUpperCase().trim();
     const is1UA = cleanPin.startsWith('1UA');
     const is2WA = cleanPin.startsWith('2WA');
     const raw = (mdnuMatrix[cleanPin] && mdnuMatrix[cleanPin][dateISO]) || {};
+
+    // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
+    const tglMulaiMDNU = (tanggalMulaiSantri && tanggalMulaiSantri[cleanPin]);
+    const hasAnyScanMDNU = Boolean(raw.sore_time || raw.pel1_time || raw.pel2_time || raw.pel3_time);
+    if (tglMulaiMDNU && dateISO < tglMulaiMDNU && !hasAnyScanMDNU) {
+      return {
+        sore: 'BELUM',
+        pel1: 'BELUM',
+        pel2: 'BELUM',
+        pel3: 'BELUM',
+        sore_time: '',
+        pel1_time: '',
+        pel2_time: '',
+        pel3_time: '',
+        isBelum: true
+      };
+    }
 
     const isBeforeStart = (dateISO < '2026-07-18');
     const isSpecialLibur = holidaysData && holidaysData[dateISO];
@@ -587,10 +620,10 @@ const PPNURules = {
         res[sess] = 'LIBUR';
       } else if (ovr !== undefined) {
         res[sess] = ovr;
+      } else if (scanTime) {
+        res[sess] = 'H'; // Scan fisik mesin selalu hadir!
       } else if (raw[sess] && raw[sess] !== '-' && raw[sess] !== '') {
         res[sess] = raw[sess];
-      } else if (scanTime) {
-        res[sess] = 'H';
       } else if (hasIzin) {
         res[sess] = 'I';
       } else if (!isScheduled) {

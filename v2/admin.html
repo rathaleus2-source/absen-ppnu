@@ -777,6 +777,7 @@
     let statusSantriAsrama = {};
     let statusSantriMDNU = {};
     let tglMulaiLajuSantri = {};
+    let tanggalMulaiSantri = {};
     let asramaMatrixData = {};
     let mdnuMatrixData = {};
     let rawSantriList = [];
@@ -802,6 +803,9 @@
         const cachedSantri = localStorage.getItem('ppnu_cached_santriList');
         const cachedAsrama = localStorage.getItem('ppnu_cached_statusAsrama');
         const cachedMDNU = localStorage.getItem('ppnu_cached_statusMDNU');
+        const cachedTglMulai = localStorage.getItem('ppnu_cached_tanggalMulaiSantri');
+        if (cachedTglMulai) tanggalMulaiSantri = JSON.parse(cachedTglMulai);
+
         if (cachedSantri) {
           rawSantriList = JSON.parse(cachedSantri);
           statusSantriAsrama = cachedAsrama ? JSON.parse(cachedAsrama) : {};
@@ -953,6 +957,12 @@
         db.ref(`${root}/tglMulaiLajuSantri`).on('value', snap => {
           tglMulaiLajuSantri = snap.val() || {};
           renderSantriIndukList();
+        });
+        db.ref(`${root}/tanggalMulaiSantri`).on('value', snap => {
+          tanggalMulaiSantri = snap.val() || {};
+          try { localStorage.setItem('ppnu_cached_tanggalMulaiSantri', JSON.stringify(tanggalMulaiSantri)); } catch (e) {}
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
         });
 
         // 4. Listen Matrix Asrama & MDNU
@@ -1116,10 +1126,11 @@
                     holidaysData,
                     statusSantriAsrama,
                     tglMulaiLajuSantri,
+                    tanggalMulaiSantri,
                   })
                 : { subuh: '-', malam: '-' };
               const v = cell[sessKey];
-              return v !== 'LIBUR' && v !== 'LAJU';
+              return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
             });
           });
         }
@@ -1205,6 +1216,7 @@
                 holidaysData,
                 statusSantriAsrama,
                 tglMulaiLajuSantri,
+                tanggalMulaiSantri,
               })
             : { subuh: '-', malam: '-', subuh_time: '', malam_time: '', isLaju: false };
 
@@ -1214,7 +1226,7 @@
             const val = cell[sess];
             const scanTime = cell[sess + '_time'];
 
-            if (val !== '-' && val !== 'LIBUR' && val !== 'LAJU') {
+            if (val !== '-' && val !== 'LIBUR' && val !== 'LAJU' && val !== 'BELUM' && val !== 'BELUM_MULAI') {
               totalJP++;
               if (val === 'H') countH++;
               else if (val === 'I') countI++;
@@ -1302,10 +1314,11 @@
                     permissionDetailsMap,
                     settingMalamSabtuPerTanggal,
                     holidaysData,
+                    tanggalMulaiSantri,
                   })
                 : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
               const v = cell[sessKey];
-              return v !== 'LIBUR' && v !== 'LAJU';
+              return v !== 'LIBUR' && v !== 'LAJU' && v !== 'BELUM';
             });
           });
         }
@@ -1391,6 +1404,7 @@
                 permissionDetailsMap,
                 settingMalamSabtuPerTanggal,
                 holidaysData,
+                tanggalMulaiSantri,
               })
             : { sore: '-', pel1: '-', pel2: '-', pel3: '-', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
 
@@ -1400,7 +1414,7 @@
             const val = cell[sess] || '-';
             const scanTime = cell[sess + '_time'] || '';
 
-            if (val !== '-' && val !== 'LIBUR') {
+            if (val !== '-' && val !== 'LIBUR' && val !== 'BELUM' && val !== 'BELUM_MULAI') {
               totalJP++;
               if (val === 'H') countH++;
               else if (val === 'I') countI++;
@@ -1437,6 +1451,10 @@
     function renderBadge(val, category, isLajuBebas, time) {
       if (isLajuBebas && category === 'asrama') {
         return `<span class="badge-cell badge-libur" title="Santri Laju / Bebas Asrama">L</span>`;
+      }
+
+      if (val === 'BELUM' || val === 'BELUM_MULAI' || val === '-') {
+        return `<span class="badge-cell text-slate-400 bg-slate-100 border border-slate-200 select-none cursor-default font-mono text-[11px]" title="Belum Mondok / Belum Wajib Absen">-</span>`;
       }
 
       if (val === 'H') {
