@@ -396,10 +396,40 @@
       const root = PPNUConfig.ROOT_PATH;
 
       // 2. Sinkronkan dengan data terbaru dari Firebase Cloud
-      db.ref(`${root}/santriList`).once('value', snap => {
+      db.ref(`${root}/dataSantriInduk`).once('value', snap => {
         const val = snap.val();
-        rawSantriList = Array.isArray(val) ? val : (val ? Object.values(val) : []);
-        try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+        if (val) {
+          const arr = Array.isArray(val) ? val : Object.values(val);
+          rawSantriList = arr.filter(s => s && (s.nama || s.pin)).map(s => {
+            const pin = String(s.pin || '').toUpperCase().trim();
+            const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
+            return {
+              pin,
+              nama: s.nama || s.name || s.namaMesin || pin,
+              name: s.nama || s.name || s.namaMesin || pin,
+              kelas,
+              kamar: s.kamar || '-',
+              status: s.status || 'mukim'
+            };
+          });
+          try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+          if (rawSantriList.length > 0) {
+            renderClassPills();
+            renderClassStudents();
+          }
+        }
+      });
+
+      db.ref(`${root}/santriList`).once('value', snap => {
+        if (!rawSantriList || rawSantriList.length === 0) {
+          const val = snap.val();
+          rawSantriList = Array.isArray(val) ? val : (val ? Object.values(val) : []);
+          try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+          if (rawSantriList.length > 0) {
+            renderClassPills();
+            renderClassStudents();
+          }
+        }
         
         // Status Santri Asrama & MDNU (Mukim / Laju / Boyong)
         db.ref(`${root}/statusSantriAsrama`).once('value', s1 => {
@@ -539,8 +569,19 @@
           ? `<span class="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Tap ${fpTime}</span>`
           : `<span class="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">Belum Tap</span>`;
 
-        const izinBadge = izinSurat 
-          ? `<div class="text-[10px] text-amber-700 font-medium flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Surat: ${izinSurat}</div>` 
+        let izinText = '';
+        if (izinSurat) {
+          if (typeof izinSurat === 'object') {
+            const alasan = izinSurat.alasan || izinSurat.keterangan || izinSurat.alasan_izin || 'Izin Resmi';
+            const pemberi = izinSurat.pemberiIzin || izinSurat.acc || '';
+            izinText = pemberi ? `${alasan} (Acc: ${pemberi})` : alasan;
+          } else {
+            izinText = String(izinSurat);
+          }
+        }
+
+        const izinBadge = izinText 
+          ? `<div class="text-[10px] text-amber-700 font-medium flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Surat: ${izinText}</div>` 
           : '';
 
         const cardBorder = isA 

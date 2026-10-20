@@ -470,6 +470,17 @@ const PPNURules = {
 
     const raw = (asramaMatrix[cleanPin] && asramaMatrix[cleanPin][dateISO]) || {};
 
+    // Asrama Putra resmi dimulai per 14 Juli 2026 (tanggal sebelumnya pondok belum mulai / libur total)
+    if (dateISO && dateISO < '2026-07-14') {
+      return {
+        subuh: 'LIBUR',
+        malam: 'LIBUR',
+        subuh_time: '',
+        malam_time: '',
+        isLibur: true
+      };
+    }
+
     // Evaluasi Santri Baru Mulai Mondok di Tengah Periode:
     // Tanggal sebelum tanggal mulai mondok -> status BELUM (tanda '-') kecuali jika ada rekaman scan fisik
     const tglMulaiAsr = (tanggalMulaiSantri && tanggalMulaiSantri[cleanPin]);

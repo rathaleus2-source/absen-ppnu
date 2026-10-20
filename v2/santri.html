@@ -612,23 +612,47 @@
           if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
         });
 
-        // Listen Master Santri
-        db.ref(`${root}/santriList`).on('value', snap => {
-          if (snap.exists() && Array.isArray(snap.val())) {
-            rawSantriList = snap.val().map(s => {
+        // Listen Master Santri (dataSantriInduk / santriList)
+        db.ref(`${root}/dataSantriInduk`).on('value', snap => {
+          const val = snap.val();
+          if (val) {
+            const arr = Array.isArray(val) ? val : Object.values(val);
+            rawSantriList = arr.filter(s => s.pin && s.pin !== '-').map(s => {
               const pin = String(s.pin || '').toUpperCase().trim();
               const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
               return {
                 pin,
-                nama: s.nama || pin,
-                name: s.nama || pin,
+                nama: s.nama || s.name || s.namaMesin || pin,
+                name: s.nama || s.name || s.namaMesin || pin,
                 kelas,
-                status: 'mukim'
+                kamar: s.kamar || '-',
+                status: s.status || 'mukim'
               };
             });
             try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
             if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
             if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+          }
+        });
+
+        db.ref(`${root}/santriList`).on('value', snap => {
+          if (!rawSantriList || rawSantriList.length === 0) {
+            if (snap.exists() && Array.isArray(snap.val())) {
+              rawSantriList = snap.val().map(s => {
+                const pin = String(s.pin || '').toUpperCase().trim();
+                const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+                return {
+                  pin,
+                  nama: s.nama || pin,
+                  name: s.nama || pin,
+                  kelas,
+                  status: 'mukim'
+                };
+              });
+              try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
+              if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
+              if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+            }
           }
         });
       } catch (err) {
@@ -770,7 +794,8 @@
         const totalDays = new Date(year, month, 0).getDate();
         namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
 
-        for (let day = 1; day <= totalDays; day++) {
+        const startDay = (monthVal === '2026-07') ? 14 : 1; // Asrama resmi mulai 14 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
           const dd = String(day).padStart(2, '0');
           const dateISO = `${yearStr}-${monthStr}-${dd}`;
           const dt = new Date(year, month - 1, day);
@@ -1037,7 +1062,8 @@
         const totalDays = new Date(year, month, 0).getDate();
         namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
 
-        for (let day = 1; day <= totalDays; day++) {
+        const startDay = (monthVal === '2026-07') ? 18 : 1; // MDNU resmi mulai 18 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
           const dd = String(day).padStart(2, '0');
           const dateISO = `${yearStr}-${monthStr}-${dd}`;
           const dt = new Date(year, month - 1, day);

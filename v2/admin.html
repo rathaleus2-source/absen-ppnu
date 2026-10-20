@@ -533,12 +533,13 @@
             <thead class="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
               <tr>
                 <th class="py-2.5 px-3 w-12">No</th>
-                <th class="py-2.5 px-3 w-24">PIN</th>
+                <th class="py-2.5 px-3 w-20">PIN</th>
                 <th class="py-2.5 px-3">Nama Santri</th>
+                <th class="py-2.5 px-3 w-20">Kamar</th>
                 <th class="py-2.5 px-3 w-20">Kelas</th>
                 <th class="py-2.5 px-3 w-28">Status Asrama</th>
                 <th class="py-2.5 px-3 w-24">Status MDNU</th>
-                <th class="py-2.5 px-3 w-32">Mulai Laju</th>
+                <th class="py-2.5 px-3 w-32">Mulai Laju / Boyong</th>
                 <th class="py-2.5 px-3 w-24 text-center">Aksi</th>
               </tr>
             </thead>
@@ -817,13 +818,16 @@
         } else if (window.PPNU_INITIAL_SEED) {
           rawSantriList = (window.PPNU_INITIAL_SEED.santriList || []).map(s => {
             const pin = String(s.pin || '').toUpperCase().trim();
-            const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+            const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
             return {
-              pin,
+              pin: pin || '-',
               nama: s.nama || pin,
               name: s.nama || pin,
               kelas,
-              status: 'mukim'
+              kamar: s.kamar || '-',
+              status: s.status || 'mukim',
+              tglBoyong: s.tglBoyong || '',
+              tglMulaiLaju: s.tglMulaiLaju || ''
             };
           });
           statusSantriAsrama = window.PPNU_INITIAL_SEED.statusAsrama || {};
@@ -853,13 +857,16 @@
       if (window.PPNU_INITIAL_SEED && window.PPNU_INITIAL_SEED.santriList) {
         return window.PPNU_INITIAL_SEED.santriList.map(s => {
           const pin = String(s.pin || '').toUpperCase().trim();
-          const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3));
+          const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
           return {
-            pin,
+            pin: pin || '-',
             nama: s.nama || pin,
             name: s.nama || pin,
             kelas,
-            status: 'mukim'
+            kamar: s.kamar || '-',
+            status: s.status || 'mukim',
+            tglBoyong: s.tglBoyong || '',
+            tglMulaiLaju: s.tglMulaiLaju || ''
           };
         });
       }
@@ -981,24 +988,54 @@
           if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
         });
 
-        // 5. Listen Santri List
-        db.ref(`${root}/santriList`).on('value', snap => {
+        // 5. Listen Santri Master (dataSantriInduk & santriList)
+        db.ref(`${root}/dataSantriInduk`).on('value', snap => {
           const val = snap.val();
           if (val) {
             const arr = Array.isArray(val) ? val : Object.values(val);
-            rawSantriList = arr.map(s => {
+            rawSantriList = arr.filter(s => s && (s.nama || s.pin)).map(s => {
               const pin = String(s.pin || '').toUpperCase().trim();
+              const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
               return {
-                pin,
-                nama: s.nama || s.name || pin,
-                name: s.nama || s.name || pin,
-                kelas: s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : pin.substring(0, 3)),
-                status: s.status || 'mukim'
+                pin: pin || '-',
+                nama: s.nama || s.name || s.namaMesin || pin,
+                name: s.nama || s.name || s.namaMesin || pin,
+                kelas,
+                kamar: s.kamar || '-',
+                status: s.status || 'mukim',
+                tglBoyong: s.tglBoyong || '',
+                tglMulaiLaju: s.tglMulaiLaju || ''
               };
             });
+            try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
             renderSantriIndukList();
             if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
             if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+          }
+        });
+
+        db.ref(`${root}/santriList`).on('value', snap => {
+          if (!rawSantriList || rawSantriList.length === 0) {
+            const val = snap.val();
+            if (val) {
+              const arr = Array.isArray(val) ? val : Object.values(val);
+              rawSantriList = arr.map(s => {
+                const pin = String(s.pin || '').toUpperCase().trim();
+                return {
+                  pin: pin || '-',
+                  nama: s.nama || s.name || pin,
+                  name: s.nama || s.name || pin,
+                  kelas: s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-')),
+                  kamar: s.kamar || '-',
+                  status: s.status || 'mukim',
+                  tglBoyong: s.tglBoyong || '',
+                  tglMulaiLaju: s.tglMulaiLaju || ''
+                };
+              });
+              renderSantriIndukList();
+              if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+              if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+            }
           }
         });
 
@@ -1082,7 +1119,7 @@
       const hideEmptyLibur = document.getElementById('chkHideEmptyAsrama').checked;
 
       // Filter santri
-      let list = getSantriMasterList();
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
       if (filterStatus === 'mukim') {
         list = list.filter(s => {
           const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
@@ -1170,7 +1207,8 @@
         const totalDays = new Date(year, month, 0).getDate();
         namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
 
-        for (let day = 1; day <= totalDays; day++) {
+        const startDay = (monthVal === '2026-07') ? 14 : 1; // Asrama resmi mulai 14 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
           const dd = String(day).padStart(2, '0');
           const dateISO = `${yearStr}-${monthStr}-${dd}`;
           const dt = new Date(year, month - 1, day);
@@ -1351,8 +1389,8 @@
       const hideEmptyLibur = document.getElementById('chkHideEmptyMDNU').checked;
 
       // Filter santri
-      let list = getSantriMasterList();
-      list = list.filter(s => (statusSantriMDNU[s.pin] !== 'boyong'));
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      list = list.filter(s => ((statusSantriMDNU[s.pin] !== 'boyong') && s.status !== 'boyong'));
       if (filterKelas !== 'all') {
         list = list.filter(s => s.kelas === filterKelas);
       }
@@ -1428,7 +1466,8 @@
         const totalDays = new Date(year, month, 0).getDate();
         namaBulanLabel = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month - 1] + ' ' + year;
 
-        for (let day = 1; day <= totalDays; day++) {
+        const startDay = (monthVal === '2026-07') ? 18 : 1; // MDNU resmi mulai 18 Juli 2026
+        for (let day = startDay; day <= totalDays; day++) {
           const dd = String(day).padStart(2, '0');
           const dateISO = `${yearStr}-${monthStr}-${dd}`;
           const dt = new Date(year, month - 1, day);
@@ -1741,11 +1780,16 @@
       // Counts
       let cAll = list.length, cMukim = 0, cLaju = 0, cKantin = 0, cBoyong = 0;
       list.forEach(s => {
-        const stAsr = statusSantriAsrama[s.pin] || s.status;
-        const stMdn = statusSantriMDNU[s.pin];
-        if (stAsr === 'boyong' || stMdn === 'boyong') cBoyong++;
-        else if (stAsr === 'kantin') cKantin++;
-        else if (stAsr === 'laju') cLaju++;
+        const pin = s.pin;
+        const stAsr = (pin && statusSantriAsrama[pin]) || s.status;
+        const stMdn = (pin && statusSantriMDNU[pin]) || '';
+        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong' || s.status === 'boyong');
+        const isKantin = (s.status === 'kantin' || s.kamar === 'Kantin' || stAsr === 'kantin');
+        const isLaju = (stAsr === 'laju' || s.status === 'laju');
+
+        if (isBoyong) cBoyong++;
+        else if (isKantin) cKantin++;
+        else if (isLaju) cLaju++;
         else cMukim++;
       });
 
@@ -1758,20 +1802,25 @@
 
       // Filter by active tab & search
       let filtered = list.filter(s => {
-        const stAsr = statusSantriAsrama[s.pin] || s.status;
-        const stMdn = statusSantriMDNU[s.pin];
-        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong');
+        const pin = s.pin;
+        const stAsr = (pin && statusSantriAsrama[pin]) || s.status;
+        const stMdn = (pin && statusSantriMDNU[pin]) || '';
+        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong' || s.status === 'boyong');
+        const isKantin = (s.status === 'kantin' || s.kamar === 'Kantin' || stAsr === 'kantin');
+        const isLaju = (stAsr === 'laju' || s.status === 'laju');
+        const isMukim = (!isBoyong && !isKantin && !isLaju);
 
-        if (filterSantriIndukActive === 'mukim' && (isBoyong || stAsr === 'laju' || stAsr === 'kantin')) return false;
-        if (filterSantriIndukActive === 'laju' && (isBoyong || stAsr !== 'laju')) return false;
-        if (filterSantriIndukActive === 'kantin' && (isBoyong || stAsr !== 'kantin')) return false;
+        if (filterSantriIndukActive === 'mukim' && !isMukim) return false;
+        if (filterSantriIndukActive === 'laju' && !isLaju) return false;
+        if (filterSantriIndukActive === 'kantin' && !isKantin) return false;
         if (filterSantriIndukActive === 'boyong' && !isBoyong) return false;
 
         if (search) {
           const matchName = (s.name || s.nama || '').toLowerCase().includes(search);
           const matchPin = (s.pin || '').toLowerCase().includes(search);
           const matchKelas = (s.kelas || '').toLowerCase().includes(search);
-          if (!matchName && !matchPin && !matchKelas) return false;
+          const matchKamar = (s.kamar || '').toLowerCase().includes(search);
+          if (!matchName && !matchPin && !matchKelas && !matchKamar) return false;
         }
 
         return true;
@@ -1779,18 +1828,30 @@
 
       let html = '';
       filtered.forEach((s, idx) => {
-        const stAsr = statusSantriAsrama[s.pin] || s.status || 'mukim';
-        const stMdn = statusSantriMDNU[s.pin] || 'aktif';
-        const tglLaju = tglMulaiLajuSantri[s.pin] || '-';
+        const pin = s.pin;
+        const stAsr = (pin && statusSantriAsrama[pin]) || s.status || 'mukim';
+        const stMdn = (pin && statusSantriMDNU[pin]) || (s.status === 'boyong' ? 'boyong' : 'aktif');
+        const isBoyong = (stAsr === 'boyong' || stMdn === 'boyong' || s.status === 'boyong');
+        const isKantin = (s.status === 'kantin' || s.kamar === 'Kantin' || stAsr === 'kantin');
+        const isLaju = (stAsr === 'laju' || s.status === 'laju');
+        
+        let tglInfo = '-';
+        if (isBoyong && s.tglBoyong) {
+          tglInfo = `Boyong: ${s.tglBoyong}`;
+        } else if (isLaju && (tglMulaiLajuSantri[pin] || s.tglMulaiLaju)) {
+          tglInfo = tglMulaiLajuSantri[pin] || s.tglMulaiLaju;
+        }
+
         const sName = s.name || s.nama || s.pin || '-';
         const sKelas = s.kelas || '-';
+        const sKamar = s.kamar || '-';
 
         let badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[10px]">Mukim</span>`;
-        if (stAsr === 'laju') badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px]">Laju</span>`;
-        else if (stAsr === 'kantin') badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 font-bold text-[10px]">Kantin</span>`;
-        else if (stAsr === 'boyong') badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px]">Boyong</span>`;
+        if (isBoyong) badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px]">Boyong</span>`;
+        else if (isKantin) badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 font-bold text-[10px]">Kantin</span>`;
+        else if (isLaju) badgeAsr = `<span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[10px]">Laju</span>`;
 
-        let badgeMdn = (stMdn === 'boyong') 
+        let badgeMdn = isBoyong 
           ? `<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-800 border border-rose-200 font-bold text-[10px]">Boyong</span>`
           : `<span class="px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200 font-bold text-[10px]">Aktif</span>`;
 
@@ -1798,10 +1859,11 @@
           <td class="py-2.5 px-3 font-mono text-slate-500 text-center">${idx + 1}</td>
           <td class="py-2.5 px-3 font-mono font-bold text-slate-900">${s.pin}</td>
           <td class="py-2.5 px-3 font-semibold text-slate-900">${sName}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${sKamar}</td>
           <td class="py-2.5 px-3 font-mono font-bold text-slate-600">${sKelas}</td>
           <td class="py-2.5 px-3">${badgeAsr}</td>
           <td class="py-2.5 px-3">${badgeMdn}</td>
-          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600">${tglLaju}</td>
+          <td class="py-2.5 px-3 font-mono text-[11px] text-slate-600">${tglInfo}</td>
           <td class="py-2.5 px-3 text-center">
             <button type="button" onclick="openModalEditSantri('${s.pin}')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition">
               Edit
@@ -1811,7 +1873,7 @@
       });
 
       if (filtered.length === 0) {
-        html = `<tr><td colspan="8" class="p-6 text-center text-slate-400 text-xs">Tidak ada data santri yang cocok.</td></tr>`;
+        html = `<tr><td colspan="9" class="p-6 text-center text-slate-400 text-xs">Tidak ada data santri yang cocok.</td></tr>`;
       }
 
       tbody.innerHTML = html;
@@ -2038,7 +2100,7 @@
       }
 
       try {
-        const santriList = getSantriMasterList();
+        const santriList = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
         const updates = {};
 
         santriList.forEach(s => {
@@ -2142,7 +2204,8 @@
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10);
         const totalDays = new Date(year, month, 0).getDate();
-        for (let day = 1; day <= totalDays; day++) {
+        const startDay = (monthVal === '2026-07') ? (category === 'asrama' ? 14 : 18) : 1;
+        for (let day = startDay; day <= totalDays; day++) {
           const dd = String(day).padStart(2, '0');
           exportDates.push({
             dateISO: `${yearStr}-${monthStr}-${dd}`,
@@ -2152,7 +2215,7 @@
         }
       }
 
-      let santriList = getSantriMasterList();
+      let santriList = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
       if (category === 'asrama') {
         santriList = santriList.filter(s => (statusSantriAsrama[s.pin] !== 'boyong'));
       } else {

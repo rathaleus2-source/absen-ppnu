@@ -474,13 +474,37 @@
           }
         });
 
-        // Santri List
-        db.ref(`${root}/santriList`).on('value', snap => {
+        // Santri Master (dataSantriInduk & santriList)
+        db.ref(`${root}/dataSantriInduk`).on('value', snap => {
           const val = snap.val();
           if (val) {
-            rawSantriList = Array.isArray(val) ? val : Object.values(val);
+            const arr = Array.isArray(val) ? val : Object.values(val);
+            rawSantriList = arr.filter(s => s && (s.nama || s.pin)).map(s => {
+              const pin = String(s.pin || '').toUpperCase().trim();
+              const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
+              return {
+                pin,
+                nama: s.nama || s.name || s.namaMesin || pin,
+                name: s.nama || s.name || s.namaMesin || pin,
+                kelas,
+                kamar: s.kamar || '-',
+                status: s.status || 'mukim'
+              };
+            });
+            try { localStorage.setItem('ppnu_cached_santriList', JSON.stringify(rawSantriList)); } catch (e) {}
             populateSidangSantriDropdown();
             renderCurrentTab();
+          }
+        });
+
+        db.ref(`${root}/santriList`).on('value', snap => {
+          if (!rawSantriList || rawSantriList.length === 0) {
+            const val = snap.val();
+            if (val) {
+              rawSantriList = Array.isArray(val) ? val : Object.values(val);
+              populateSidangSantriDropdown();
+              renderCurrentTab();
+            }
           }
         });
 
