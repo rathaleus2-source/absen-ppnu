@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposal &amp; Rekapan Eksekutif PPNU Absensi v2.0</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 10mm 14mm;
+    }
+    
+    .col-pintu { width: 22%; }
+    .col-user { width: 26%; }
+    
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.4;
+      font-size: 9pt;
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+
+    /* KONTROL HALAMAN A4 EKSPLISIT */
+    .page-container {
+      page-break-after: always;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: 275mm;
+      max-height: 275mm;
+      overflow: hidden;
+    }
+    .page-container:last-child {
+      page-break-after: avoid;
+    }
+
+    /* KOP SURAT PESANTREN */
+    .kop-surat {
+      border-bottom: 2.5px double #065f46;
+      padding-bottom: 6px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .kop-logo {
+      width: 48px;
+      height: 48px;
+      background: #065f46;
+      color: #ffffff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18pt;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+    .kop-text h1 {
+      margin: 0;
+      font-size: 13pt;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .kop-text h2 {
+      margin: 2px 0 1px 0;
+      font-size: 10pt;
+      color: #065f46;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .kop-text p {
+      margin: 0;
+      font-size: 7.5pt;
+      color: #64748b;
+    }
+
+    /* KOP MINI UNTUK HALAMAN 2 & 3 */
+    .kop-mini {
+      border-bottom: 1.5px solid #065f46;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .kop-mini-title {
+      font-size: 7.5pt;
+      font-weight: 800;
+      color: #065f46;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .kop-mini-page {
+      font-size: 7.5pt;
+      font-weight: 700;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 1px 7px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* FOOTER RESMI DI SETIAP HALAMAN */
+    .page-footer {
+      margin-top: auto;
+      padding-top: 5px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 7.5pt;
+      color: #94a3b8;
+    }
+
+    /* JUDUL DOKUMEN */
+    .doc-title-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #065f46;
+      padding: 6px 10px;
+      border-radius: 5px;
+      margin-bottom: 8px;
+    }
+    .doc-title-box h3 {
+      margin: 0 0 2px 0;
+      font-size: 11pt;
+      color: #0f172a;
+      font-weight: 800;
+      letter-spacing: 0.2px;
+    }
+    .doc-meta {
+      font-size: 8pt;
+      color: #475569;
+      display: flex;
+      gap: 14px;
+      font-weight: 600;
+    }
+
+    /* SECTION HEADING */
+    h2.section-title {
+      font-size: 10pt;
+      color: #065f46;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 3px;
+      margin-top: 8px;
+      margin-bottom: 5px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    p {
+      margin: 3px 0;
+      text-align: justify;
+      font-size: 8.5pt;
+    }
+
+    /* TABEL PROPOSAL */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 5px 0 8px 0;
+      font-size: 8pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 4px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 7.5pt;
+      letter-spacing: 0.4px;
+    }
+    tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+
+    /* KARTU PILAR */
+    .pillar-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 6px 10px;
+      margin-bottom: 7px;
+    }
+    .pillar-header {
+      font-weight: 800;
+      font-size: 9pt;
+      color: #0f172a;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pillar-tag {
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 7pt;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 700;
+    }
+
+    ul {
+      margin: 2px 0 4px 0;
+      padding-left: 16px;
+      font-size: 8pt;
+    }
+    li {
+      margin-bottom: 1.5px;
+    }
+
+    /* HIGHLIGHT BOX */
+    .callout-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 3.5px solid #16a34a;
+      padding: 5px 8px;
+      border-radius: 5px;
+      margin: 5px 0;
+      font-size: 8pt;
+      color: #14532d;
+    }
+    .callout-warning {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-left: 3.5px solid #d97706;
+      color: #78350f;
+    }
+
+    /* TANDA TANGAN */
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+    .sig-box {
+      text-align: center;
+      font-size: 8.5pt;
+    }
+    .sig-space {
+      height: 42px;
+    }
+    .sig-name {
+      font-weight: 700;
+      text-decoration: underline;
+      color: #0f172a;
+    }
+    .sig-title {
+      font-size: 7.5pt;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= HALAMAN 1 ================= -->
+  <div class="page-container">
+    <!-- KOP SURAT RESMI -->
+    <div class="kop-surat">
+      <div class="kop-logo">NU</div>
+      <div class="kop-text">
+        <h1>Pondok Pesantren Nurul Ummah Putra</h1>
+        <h2>Tim Pengembang Sistem Informasi &amp; Presensi Digital</h2>
+        <p>Jl. Raden Ronggo No. 982, Prenggan, Kotagede, Kota Yogyakarta, D.I. Yogyakarta 55172</p>
+      </div>
+    </div>
+
+    <!-- JUDUL DOKUMEN -->
+    <div class="doc-title-box">
+      <h3>PROPOSAL &amp; RINGKASAN EKSEKUTIF PPNU ABSENSI v2.0</h3>
+      <div class="doc-meta">
+        <span><b>Peruntukan:</b> Senior Divisi &amp; Pimpinan Pondok</span>
+        <span><b>Tanggal:</b> 20 Oktober 2026</span>
+        <span><b>Status Dokumen:</b> Matang / Siap Eksekusi</span>
+      </div>
+    </div>
+
+    <!-- 1. LATAR BELAKANG -->
+    <h2 class="section-title">1. Latar Belakang &amp; Evaluasi Kritis Versi 1.0 (Mengapa v2.0 Wajib Dibuat)</h2>
+    <p>
+      Sistem presensi digital Pondok Pesantren Nurul Ummah saat ini mengelola <b>94 santri aktif</b> (5 kelas MDNU) serta 2 mesin fingerprint fisik (Asrama &amp; MDNU) yang terhubung ke server VPS IDCloudHost dan Cloud Firebase. Berdasarkan audit teknis dan evaluasi lapangan, sistem lama (v1.0) memiliki kendala krusial:
+    </p>
+    <ul>
+      <li><b>Beban Rendering Mobile Berat:</b> File v1.0 berupa monolitik 7.859 baris yang merender seluruh 94 santri sekaligus ke dalam satu tabel (&gt;50.000 sel DOM). Akibatnya, browser di HP Ustadz dan Pengurus sering mengalami <i>lag parah</i>, lambat merespons, bahkan <i>crash/freeze</i>.</li>
+      <li><b>Ketiadaan Validasi Fisik di Kelas:</b> Presensi sebelumnya 100% bergantung pada mesin fingerprint lorong. Terjadi fenomena santri nakal yang sekadar menempelkan sidik jari lalu membolos tidur di kamar atau nongkrong di luar kelas.</li>
+      <li><b>Risiko Bentrokan Data (*Race Condition*):</b> Ketika 5 ustadz mengabsen secara serentak di waktu yang sama, pengiriman matriks besar berisiko saling menimpa data kelas lain (*data stomping*).</li>
+    </ul>
+
+    <div class="callout-box">
+      <b>Solusi Utama Versi 2.0:</b> Memecah sistem menjadi arsitektur modular per-kelas (~20 santri per layar, 10x lebih ringan di HP), menerapkan <b>Model Presensi Hybrid</b> (mesin otomatis + verifikasi ustadz di kelas), dan mengamankan integritas data dengan pengiriman atomik per-kelas.
+    </div>
+
+    <!-- 2. ARSITEKTUR 4 PERAN TERTUTUP -->
+    <h2 class="section-title">2. Arsitektur 4 Pintu Tertutup (Privat Internal Lingkungan Pondok)</h2>
+    <p>
+      Sistem disepakati <b>100% tertutup murni untuk lingkungan internal pesantren</b> (menghapus portal publik/wali santri demi menjaga privasi aib santri dan kesederhanaan operasional). Pembagian peran terbagi menjadi 4 pintu:
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th class="col-pintu">Pintu Akses</th>
+          <th class="col-user">Pengguna</th>
+          <th>Fitur Utama &amp; Mekanisme Kerja</th>
+        </tr>
+
+      </thead>
+      <tbody>
+        <tr>
+          <td><b>1. Portal Santri</b><br><code>santri.html</code></td>
+          <td>Santri Pondok</td>
+          <td>
+            <b>Model 2 Pilihan (Tanpa Akun/Sandi):</b>
+            <br>• <i>Mode Mading:</i> Pilih kelas (2AA, 1WA, 2WA, 1UA, 2UA) ➔ Muncul tabel sekelas.
+            <br>• <i>Mode Rincian:</i> Ketuk nama santri ➔ Muncul rapor personal &amp; toleransi alpa 15%.
+            <br><i>*Rahasia Dapur: Keterangan Laju/Kantin dirahasiakan total dari santri.</i>
+          </td>
+        </tr>
+        <tr>
+          <td><b>2. Portal Ustadz</b><br><code>ustadz.html</code></td>
+          <td>Ustadz MDNU &amp; Asrama</td>
+          <td>
+            <b>Presensi Cepat Ramah Jempol:</b>
+            <br>• Login praktis 1 kata sandi bersama asatidz (ramah ustadz sepuh).
+            <br>• <b>Gembok Jam Kelas:</b> Hanya aktif selama jam pelajaran berlangsung di kelas.
+            <br>• Hak koreksi santri hadir lupa tap (H) atau santri tap tapi bolos (A/T).
+          </td>
+        </tr>
+        <tr>
+          <td><b>3. Portal Pengurus</b><br><code>pengurus.html</code></td>
+          <td>Keamanan &amp; Ketertiban</td>
+          <td>
+            <b>Pusat Penindakan &amp; Radar Asrama:</b>
+            <br>• <b>Deteksi Santri Nakal:</b> Otomatis mendata santri tap mesin tapi di-Alpha Ustadz.
+            <br>• <b>Buku Takziran (T):</b> Rekapitulasi hukuman santri pelanggar disiplin.
+            <br>• <b>Radar Kamar:</b> Memantau santri belum tap Subuh/Malam untuk dioyak.
+            <br>• <b>Meja Sidang Tanggal 1:</b> Hak klarifikasi alpa bulanan santri.
+          </td>
+        </tr>
+        <tr>
+          <td><b>4. Superadmin</b><br><code>admin.html</code></td>
+          <td>Lurah Pondok &amp; IT</td>
+          <td>
+            <b>Kendali Master Data:</b>
+            <br>• Master spreadsheet (fitur sembunyikan kolom libur kosong).
+            <br>• Kelola status santri (Mukim, Laju, Kantin, Boyong, KKN).
+            <br>• Penetapan kalender libur pondok &amp; monitor server VPS port 5005 / Bot WA.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="page-footer">
+      <span>PPNU Absensi v2.0 &bull; Proposal Eksekutif Senior Divisi</span>
+      <span>Halaman 1 dari 3</span>
+    </div>
+  </div>
+
+  <!-- ================= HALAMAN 2 ================= -->
+  <div class="page-container">
+    <div class="kop-mini">
+      <span class="kop-mini-title">Pondok Pesantren Nurul Ummah Putra &bull; Dokumen Eksekutif v2.0</span>
+      <span class="kop-mini-page">Halaman 2 dari 3</span>
+    </div>
+
+    <h2 class="section-title">3. Hasil Bedah Matang 5 Pilar Kebijakan Sistem v2.0 (Bagian 1)</h2>
+    <p>
+      Aturan presensi di bawah ini telah dibedah tuntas bersama Mandor dan diselaraskan 100% dengan disiplin pesantren:
+    </p>
+
+    <!-- PILAR 1 -->
+    <div class="pillar-card">
+      <div class="pillar-header">
+        <span>⏰ PILAR 1: Ketepatan Sesi, Batas Detik &amp; Jam Cutoff Resmi (WIB)</span>
+        <span class="pillar-tag">WAKTU &amp; JADWAL</span>
+      </div>
+      <ul>
+        <li><b>Asrama Subuh (05:00 - 06:30 WIB):</b> Cutoff ketat pukul 06:30:00 WIB. Libur rutin Jumat &amp; Minggu.</li>
+        <li><b>MDNU Putra:</b> Sore (15:00 - 18:00), Pel 1 (18:30 - 19:40), Pel 2 (19:40 - 21:00), Pel 3 (21:00 - 22:30).</li>
+        <li><b>Batas Detik Antar-Sesi:</b> Pukul &le; 19:40:00 WIB sah masuk Pel 1; Pukul &ge; 19:40:01 WIB otomatis beralih ke Pel 2.</li>
+        <li><b>Jadwal Khusus Pesantren:</b>
+          <br>&bull; <i>Kamis Malam (Malam Jumat):</i> MDNU 100% Libur. Asrama Malam (Yasinan/Mujahadah) aktif hingga 23:00 WIB.
+          <br>&bull; <i>Jumat Malam (Malam Sabtu):</i> Asrama Malam meminjam 1 sesi MDNU (default Pel 1). Jam MDNU tersebut libur.
+          <br>&bull; <i>Minggu Malam:</i> Khusus kelas 1UA dialihkan ke Asrama Malam pada jam ke-3 (21:00 - 22:30 WIB).
+          <br>&bull; <i>Sore:</i> Khusus kelas 1UA (Sabtu &amp; Minggu) dan kelas 2WA (Kamis).
+        </li>
+      </ul>
+    </div>
+
+    <!-- PILAR 2 -->
+    <div class="pillar-card">
+      <div class="pillar-header">
+        <span>⚡ PILAR 2: Prinsip Hybrid &amp; Hirarki Status Santri</span>
+        <span class="pillar-tag">HUKUM STATUS</span>
+      </div>
+      <ul>
+        <li><b>Prinsip "Tidak Mengabsen pun Sudah Terabsen":</b> Mesin fingerprint merekam otomatis 24/7 di latar belakang. Saat jam cutoff habis, sistem otomatis mengevaluasi vonis Hadir/Alpha. Ustadz bertindak sebagai <i>hakim koreksi tertinggi</i>, bukan beban administrasi wajib.</li>
+        <li><b>Hirarki Kekuatan Status:</b> Hadir Nyata Ustadz &gt; Tap Mesin &gt; Izin Keamanan &gt; Alpha Otomatis.</li>
+        <li><b>Status Takzir (<code>T</code>):</b> Berdiri mandiri untuk menandai santri yang tap mesin tapi kabur dari kelas.</li>
+        <li><b>Anti-Alpha Prematur:</b> Sebelum jam cutoff habis, status santri wajib netral strip (<code>-</code>). Haram memvonis merah sebelum waktunya.</li>
+        <li><b>Earliest Scan Priority:</b> Jika santri menempelkan jari berkali-kali, jam yang dikunci wajib jam scan paling awal.</li>
+        <li><b>Gembok Jam Kelas:</b> Hak ustadz mengabsen HANYA aktif saat berada di kelas selama jam pelajaran berjalan.</li>
+      </ul>
+    </div>
+
+    <!-- PILAR 3 -->
+    <div class="pillar-card">
+      <div class="pillar-header">
+        <span>👥 PILAR 3: Status Santri (Mukim, Laju, Kantin, Boyong &amp; KKN)</span>
+        <span class="pillar-tag">DATA KEPENDUDUKAN</span>
+      </div>
+      <ul>
+        <li><b>Santri Baru:</b> Kehadiran hanya dihitung sejak data fingerprint dan namanya terdaftar di mesin fisik. Tanggal sebelumnya berstatus netral (<code>-</code>), tidak boleh dicap alpa.</li>
+        <li><b>Santri Laju &amp; Tugas Kantin:</b> Mutlak bebas tagihan asrama (otomatis disembunyikan dari tabel Subuh/Malam). Santri piket kantin diperlakukan mutlak sama seperti laju. Keterangan ini menjadi rahasia dapur admin.</li>
+        <li><b>Santri Boyong:</b> Tersembunyi otomatis dari seluruh tabel sejak tanggal boyongnya (data historis masa lalu tetap utuh).</li>
+        <li><b>Dispensasi KKN / Tugas Luar:</b> Mendapatkan kode resmi status <b><code>K</code></b> (Dispensasi sah, bukan alpa).</li>
+      </ul>
+    </div>
+
+    <div class="callout-box">
+      <b>Keharmonisan Pesantren:</b> Hak-hak khusus santri (laju &amp; kantin) dijaga sebagai rahasia dapur agar santri mukim tidak merasa iri atau timbul polemik di asrama.
+    </div>
+
+    <div class="page-footer">
+      <span>PPNU Absensi v2.0 &bull; Proposal Eksekutif Senior Divisi</span>
+      <span>Halaman 2 dari 3</span>
+    </div>
+  </div>
+
+  <!-- ================= HALAMAN 3 ================= -->
+  <div class="page-container">
+    <div class="kop-mini">
+      <span class="kop-mini-title">Pondok Pesantren Nurul Ummah Putra &bull; Dokumen Eksekutif v2.0</span>
+      <span class="kop-mini-page">Halaman 3 dari 3</span>
+    </div>
+
+    <h2 class="section-title">3. Hasil Bedah Matang 5 Pilar Kebijakan Sistem v2.0 (Bagian 2)</h2>
+
+    <!-- PILAR 4 -->
+    <div class="pillar-card">
+      <div class="pillar-header">
+        <span>🖧 PILAR 4: Infrastruktur Mesin "2 Mesin 1 Data Utama" &amp; Server VPS 5005</span>
+        <span class="pillar-tag">INFRASTRUKTUR TEKNIS</span>
+      </div>
+      <ul>
+        <li><b>Prinsip "2 Mesin 1 Data Utama" (Pooled Failover):</b> Mesin Asrama (SN: <code>C2696422DF192430</code>) dan Mesin MDNU (SN: <code>C2636CF4DB271E34</code>) bermuara ke satu wadah data terpadu berdasarkan jam WIB. Jika salah satu mesin rusak atau <i>freeze</i>, pondok tetap aman 100% menggunakan 1 mesin yang menyala.</li>
+        <li><b>Ketahanan Mode Offline:</b> Jika internet/wifi pondok mati, mesin tetap merekam di memori internal fisik. Begitu internet pulih, seluruh antrean scan otomatis disemburkan ke VPS tanpa ada data santri yang hilang.</li>
+        <li><b>Gembok Data Historis (Freeze Data):</b> Seluruh data kehadiran sebelum <b>30 September 2026</b> terkunci mutlak dari penulisan ulang.</li>
+        <li><b>Sanitasi PIN:</b> Seluruh PIN santri dipaksa huruf besar (<code>UPPERCASE</code>) untuk mencegah perpecahan data di database.</li>
+      </ul>
+    </div>
+
+    <!-- PILAR 5 -->
+    <div class="pillar-card">
+      <div class="pillar-header">
+        <span>🎯 PILAR 5: Kebijakan Kedisiplinan 15% Alpha &amp; Audit Santri Nakal</span>
+        <span class="pillar-tag">KEDISIPLINAN PONDOK</span>
+      </div>
+      <ul>
+        <li><b>Batas Toleransi Alpha Maksimal 15%:</b>
+          <br>&bull; <i>Santri Aman (&le; 15%):</i> Sistem otomatis menampilkan ucapan apresiasi (*congratulate them*) untuk istiqomah.
+          <br>&bull; <i>Santri Melebihi Batas (&gt; 15%):</i> Sistem menghitung cerdas: <i>"Kamu butuh hadir minimal [N] jam pelajaran berturut-turut tanpa alpa agar kehadiranmu kembali aman!"</i>.
+        </li>
+        <li><b>Audit Trail Santri Nakal:</b> Santri yang terbukti tap jempol di mesin tapi diubah menjadi Alpha/Takzir oleh Ustadz di kelas otomatis terdata di meja Pengurus Keamanan sebagai barang bukti penindakan titip absen/bolos.</li>
+        <li><b>Meja Sidang Tanggal 1:</b> Tanggal 1 awal bulan adalah masa klarifikasi resmi alpa santri kepada Pengurus Keamanan sebelum eksekusi hukuman/takzir pesantren dijatuhkan.</li>
+      </ul>
+    </div>
+
+    <!-- KOMITMEN SISTEM & KANDANG LAMA -->
+    <div class="callout-box callout-warning">
+      <b>Jaminan Keamanan &amp; Nol Risiko (Zero Risk Commitment):</b>
+      <br>1. Folder sistem lama (<code>web absen/</code>) tetap berjalan aktif melayani absensi pondok harian dan tidak disentuh sedikit pun.
+      <br>2. Sistem v2.0 menggunakan database Firebase yang sama, sehingga tidak membutuhkan penggantian alat atau biaya server baru.
+    </div>
+
+    <!-- LEMBAR PENGESAHAN DOKUMEN -->
+    <div class="signature-grid">
+      <div class="sig-box">
+        <div>Mengetahui &amp; Menyetujui,</div>
+        <div class="sig-title">Senior Divisi / Pengurus Keamanan PPNU</div>
+        <div class="sig-space"></div>
+        <div class="sig-name">( .................................................... )</div>
+        <div class="sig-title">PP. Nurul Ummah Putra Kotagede</div>
+      </div>
+      <div class="sig-box">
+        <div>Yogyakarta, 20 Oktober 2026</div>
+        <div class="sig-title">Penanggung Jawab Teknis / Mandor Sistem</div>
+        <div class="sig-space"></div>
+        <div class="sig-name">( Tim Pengembang v2.0 )</div>
+        <div class="sig-title">Informatika &amp; Presensi Digital PPNU</div>
+      </div>
+    </div>
+
+    <div class="page-footer">
+      <span>PPNU Absensi v2.0 &bull; Proposal Eksekutif Senior Divisi</span>
+      <span>Halaman 3 dari 3</span>
+    </div>
+  </div>
+
+</body>
+</html>

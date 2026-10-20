@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratorium Desain: 3 Pilihan Antarmuka Ustadz (Temporal)</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans pb-32 overflow-x-hidden">
+
+  <!-- ================= TOP SWITCHER (UNTUK MANDOR MEMILIH OPSI) ================= -->
+  <div class="sticky top-0 z-50 bg-amber-500 text-slate-900 shadow-md border-b border-amber-600">
+    <div class="max-w-md mx-auto px-3 py-2">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-[11px] font-extrabold uppercase tracking-wider text-amber-950 flex items-center gap-1">
+          🛠️ Laboratorium Desain (Uji Coba Jempol)
+        </span>
+        <span class="text-[10px] bg-amber-600 text-white font-bold px-2 py-0.5 rounded-full">Temporal</span>
+      </div>
+      
+      <!-- 4 TAB PEMILIH OPSI (TERMASUK OPSI 4 DARI DRIVE) -->
+      <div class="grid grid-cols-4 gap-1 bg-amber-600/40 p-1 rounded-xl">
+        <button type="button" onclick="setOpsiMode('opsi1')" id="tabOpsi1" class="py-1.5 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center bg-white text-slate-900 shadow-xs">
+          <span>Opsi 1</span>
+          <span class="text-[9px] font-normal text-slate-600">Kartu</span>
+        </button>
+        <button type="button" onclick="setOpsiMode('opsi2')" id="tabOpsi2" class="py-1.5 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center text-amber-950 hover:bg-amber-400">
+          <span>Opsi 2</span>
+          <span class="text-[9px] font-normal text-amber-900">Baris</span>
+        </button>
+        <button type="button" onclick="setOpsiMode('opsi3')" id="tabOpsi3" class="py-1.5 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center text-amber-950 hover:bg-amber-400">
+          <span>Opsi 3</span>
+          <span class="text-[9px] font-normal text-amber-900">Kilat</span>
+        </button>
+        <button type="button" onclick="setOpsiMode('opsi4')" id="tabOpsi4" class="py-1.5 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center text-amber-950 hover:bg-amber-400">
+          <span>Opsi 4</span>
+          <span class="text-[9px] font-extrabold text-amber-950">⭐ Drive</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP BAR APLIKASI -->
+  <header class="bg-slate-900 text-white shadow-sm border-b border-slate-800">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-sm tracking-wider shadow-xs">
+          NU
+        </div>
+        <div>
+          <h1 class="text-sm font-bold tracking-tight leading-tight">Presensi Ustadz</h1>
+          <p class="text-[11px] text-slate-400 font-medium">PP. Nurul Ummah Putra</p>
+        </div>
+      </div>
+      
+      <div class="text-right">
+        <div id="clockWIB" class="text-xs font-mono font-bold text-emerald-400 leading-tight">18:45:12 WIB</div>
+        <div class="text-[10px] text-slate-400">Pelajaran 1</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTAINER UTAMA -->
+  <main class="max-w-md mx-auto px-3.5 pt-3 space-y-3">
+
+    <!-- DESKRIPSI SINGKAT OPSI YANG AKTIF -->
+    <section class="bg-white rounded-2xl p-3 border border-slate-200 shadow-xs" id="opsiBannerDesc">
+      <div class="flex items-start justify-between gap-2">
+        <span class="text-xs font-bold text-slate-900 flex-1 min-w-0 leading-tight" id="opsiTitle">Opsi 1: Model Kartu Santri Ramah Jempol</span>
+        <span class="text-[10px] bg-slate-100 font-mono text-slate-600 px-2 py-0.5 rounded border border-slate-200 shrink-0">24 Santri</span>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-1" id="opsiSubtitle">
+        Setiap santri memiliki kotak kartu tersendiri dengan 4 tombol status lebar jempol (Hadir, Izin, Alpha, Takzir).
+      </p>
+    </section>
+
+    <!-- COUNTER REKAP STATISTIK -->
+    <section class="bg-white rounded-xl p-2.5 border border-slate-200 flex items-center justify-between text-xs font-semibold text-slate-600 shadow-2xs">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+        <span>Hadir: <b class="text-slate-900 font-mono" id="statHadir">0</b></span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+        <span>Izin: <b class="text-slate-900 font-mono" id="statIzin">0</b></span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+        <span>Alpha: <b class="text-slate-900 font-mono" id="statAlpha">0</b></span>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span>
+        <span>Takzir: <b class="text-slate-900 font-mono" id="statTakzir">0</b></span>
+      </div>
+    </section>
+
+    <!-- WADAH DAFTAR SANTRI (DINAMIS MENGIKUTI OPSI) -->
+    <section id="santriContainer" class="space-y-2">
+      <!-- Konten dirender oleh Javascript -->
+    </section>
+
+  </main>
+
+  <!-- FLOATING BOTTOM BAR -->
+  <div class="fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-3 z-40 shadow-lg">
+    <div class="max-w-md mx-auto flex items-center gap-2">
+      <button type="button" onclick="setSemuaHadir()" class="touch-target px-3.5 py-2 rounded-xl border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold transition active:scale-95 shrink-0">
+        Semua Hadir
+      </button>
+      <button type="button" onclick="simpanDemo()" class="touch-target flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-sm shadow-md transition flex items-center justify-center gap-2 active:scale-[0.98]">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span>Simpan Absen (Pel 1)</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFIKASI -->
+  <div id="toastBox" class="fixed top-24 inset-x-4 max-w-sm mx-auto z-50 pointer-events-none transition-all duration-300 transform -translate-y-8 opacity-0">
+    <div class="bg-slate-900/90 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow-lg backdrop-blur-xs flex items-center gap-2 border border-slate-700" id="toastMessage">
+      Pesan notifikasi
+    </div>
+  </div>
+
+  <!-- DATA DUMMY & LOGIKA PEMILIH OPSI -->
+  <script>
+    // Data Dummy Santri Riil
+    let DUMMY_SANTRI = [
+      { pin: '1UA01', nama: 'Ahmad Faizurrahman', fp: '18:32', status: 'H' },
+      { pin: '1UA02', nama: 'Ali Ma\'sum Al-Hafidz', fp: '18:34', status: 'H' },
+      { pin: '1UA03', nama: 'Baqir Masyhur (Laju)', fp: '', status: 'H' },
+      { pin: '1UA04', nama: 'Fajar Shodiq', fp: '18:38', status: 'H' },
+      { pin: '1UA05', nama: 'Farhan Dwi Cahyo', fp: '', status: 'A' },
+      { pin: '1UA06', nama: 'Habibullah (Laju)', fp: '18:40', status: 'H' },
+      { pin: '1UA07', nama: 'Hasan Basri', fp: '', status: 'I', izin: 'Sakit Pos Kesehatan' },
+      { pin: '1UA08', nama: 'Ibnu Hajar', fp: '18:31', status: 'H' },
+      { pin: '1UA09', nama: 'Miftah Farid', fp: '', status: 'A' },
+      { pin: '1UA10', nama: 'Muh. Wildan Pratama', fp: '18:35', status: 'H' },
+    ];
+
+    let currentMode = 'opsi1'; // 'opsi1' | 'opsi2' | 'opsi3'
+
+    function setOpsiMode(mode, silent = false) {
+      currentMode = mode;
+      
+      // Update styling tab
+      ['opsi1', 'opsi2', 'opsi3', 'opsi4'].forEach(m => {
+        const btn = document.getElementById(`tab${m.charAt(0).toUpperCase() + m.slice(1)}`);
+        if (btn) {
+          if (m === mode) {
+            btn.className = 'py-1.5 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center bg-white text-slate-900 shadow-xs';
+            btn.querySelector('span:last-child').className = 'text-[9px] font-normal text-slate-600';
+          } else {
+            btn.className = 'py-1.5 px-1 rounded-lg text-xs font-bold transition flex flex-col items-center justify-center text-amber-950 hover:bg-amber-400';
+            btn.querySelector('span:last-child').className = 'text-[9px] font-normal text-amber-900';
+          }
+        }
+      });
+
+      // Update banner penjelasan
+      const t = document.getElementById('opsiTitle');
+      const st = document.getElementById('opsiSubtitle');
+      if (mode === 'opsi1') {
+        t.innerText = 'Opsi 1: Model Kartu Santri Ramah Jempol';
+        st.innerText = 'Kotak kartu per santri dengan 4 tombol segmen lebar jempol (Hadir, Izin, Alpha, Takzir). Paling nyaman untuk Ustadz sepuh.';
+      } else if (mode === 'opsi2') {
+        t.innerText = 'Opsi 2: Model Baris Buku Presensi Ringkas';
+        st.innerText = '1 baris per santri mirip buku presensi kertas. 1 layar HP bisa memuat 8–10 santri sekaligus. Ketuk badge status untuk menggulir status (H -> I -> A -> T).';
+      } else if (mode === 'opsi3') {
+        t.innerText = 'Opsi 3: Model Kilat "Hanya Absen yang Bolos"';
+        st.innerText = 'Santri diasumsikan hadir (sesuai mesin). Ustadz hanya perlu mencari yang TIDAK HADIR. Ketuk kartu langsung menandai santri bolos / takzir.';
+      } else if (mode === 'opsi4') {
+        t.innerText = 'Opsi 4: Sintesis Drive (Jadwal & Kartu Aksen)';
+        st.innerText = 'Paduan 3 referensi Drive: Session bar ala jadwal sholat, Date strip mingguan horizontal, filter pills kelas, dan kartu beraksen garis vertikal.';
+      }
+
+      renderList();
+      if (!silent) {
+        tampilkanToast(`Beralih ke ${t.innerText}`);
+      }
+    }
+
+    function renderList() {
+      const container = document.getElementById('santriContainer');
+      let html = '';
+
+      if (currentMode === 'opsi1') {
+        // ================= OPSI 1: KARTU RAMAH JEMPOL =================
+        DUMMY_SANTRI.forEach((s) => {
+          const isH = (s.status === 'H');
+          const isI = (s.status === 'I');
+          const isA = (s.status === 'A');
+          const isT = (s.status === 'T');
+
+          const fpBadge = s.fp 
+            ? `<span class="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">Tap ${s.fp}</span>`
+            : `<span class="text-[10px] font-mono text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200">Belum Tap</span>`;
+
+          const izinInfo = s.izin ? `<div class="text-[10px] text-amber-700 font-medium mt-0.5">&bull; Surat: ${s.izin}</div>` : '';
+
+          html += `
+            <div class="bg-white rounded-2xl p-3 border ${isA ? 'border-rose-200 bg-rose-50/20' : (isT ? 'border-indigo-200 bg-indigo-50/20' : 'border-slate-200')} shadow-2xs">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">${s.pin}</span>
+                    <h4 class="text-xs font-bold text-slate-900 truncate">${s.nama}</h4>
+                  </div>
+                  ${izinInfo}
+                </div>
+                ${fpBadge}
+              </div>
+
+              <!-- 4 SEGMENTED STATUS BUTTONS -->
+              <div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl">
+                <button type="button" onclick="ubahStatus('${s.pin}', 'H')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isH ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Hadir</button>
+                <button type="button" onclick="ubahStatus('${s.pin}', 'I')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isI ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Izin</button>
+                <button type="button" onclick="ubahStatus('${s.pin}', 'A')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isA ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Alpha</button>
+                <button type="button" onclick="ubahStatus('${s.pin}', 'T')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isT ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Takzir</button>
+              </div>
+            </div>
+          `;
+        });
+
+      } else if (currentMode === 'opsi2') {
+        // ================= OPSI 2: BARIS BUKU PRESENSI RINGKAS =================
+        html = '<div class="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 shadow-2xs overflow-hidden">';
+        DUMMY_SANTRI.forEach((s, idx) => {
+          let badgeClass = 'bg-slate-100 text-slate-600 border-slate-200';
+          let badgeLabel = 'Netral (-)';
+          if (s.status === 'H') { badgeClass = 'bg-emerald-600 text-white border-emerald-700'; badgeLabel = 'Hadir (H)'; }
+          if (s.status === 'I') { badgeClass = 'bg-amber-500 text-white border-amber-600'; badgeLabel = 'Izin (I)'; }
+          if (s.status === 'A') { badgeClass = 'bg-rose-600 text-white border-rose-700'; badgeLabel = 'Alpha (A)'; }
+          if (s.status === 'T') { badgeClass = 'bg-indigo-600 text-white border-indigo-700'; badgeLabel = 'Takzir (T)'; }
+
+          html += `
+            <div class="px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-slate-50/80 transition">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="text-[11px] font-mono text-slate-400 w-4 text-center">${idx + 1}</span>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[11px] font-mono font-bold text-slate-500">${s.pin}</span>
+                    <span class="text-xs font-bold text-slate-800 truncate">${s.nama}</span>
+                  </div>
+                  <div class="text-[10px] text-slate-400 font-mono">Finger: ${s.fp || 'Belum'}</div>
+                </div>
+              </div>
+
+              <!-- TOMBOL STATUS GULIR (TAP UNTUK GANTI STATUS) -->
+              <button type="button" onclick="cycleStatus('${s.pin}')" class="touch-target px-3 py-1.5 rounded-lg text-xs font-extrabold border shadow-2xs transition active:scale-95 flex items-center justify-center shrink-0 ${badgeClass}" title="Ketuk untuk ganti status (H -> I -> A -> T)">
+                ${badgeLabel}
+              </button>
+            </div>
+          `;
+        });
+        html += '</div>';
+
+      } else if (currentMode === 'opsi3') {
+        // ================= OPSI 3: MODE KILAT (HANYA SENTUH YANG BOLOS) =================
+        html += `
+          <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between">
+            <span>💡 Mode Kilat: Ketuk santri yang <b>TIDAK ADA</b> di kelas untuk menandai alpa/takzir.</span>
+          </div>
+        `;
+        DUMMY_SANTRI.forEach((s) => {
+          const isHadir = (s.status === 'H');
+          const isAlpha = (s.status === 'A');
+          const isTakzir = (s.status === 'T');
+          const isIzin = (s.status === 'I');
+
+          let cardBorder = 'border-slate-200 bg-white';
+          let statusText = '<span class="text-emerald-700 font-bold text-xs">🟢 Hadir</span>';
+
+          if (isAlpha) {
+            cardBorder = 'border-rose-400 bg-rose-50/40 ring-1 ring-rose-300';
+            statusText = '<span class="text-rose-700 font-bold text-xs">🔴 Bolos (Alpha)</span>';
+          } else if (isTakzir) {
+            cardBorder = 'border-indigo-400 bg-indigo-50/40 ring-1 ring-indigo-300';
+            statusText = '<span class="text-indigo-700 font-bold text-xs">🟣 Takzir (Tap Kabur)</span>';
+          } else if (isIzin) {
+            cardBorder = 'border-amber-300 bg-amber-50/40';
+            statusText = '<span class="text-amber-700 font-bold text-xs">🟡 Izin Resmi</span>';
+          }
+
+          html += `
+            <div onclick="cycleStatusModeKilat('${s.pin}')" class="touch-target p-3 rounded-2xl border ${cardBorder} shadow-2xs transition cursor-pointer active:scale-[0.99] flex items-center justify-between gap-2">
+              <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">${s.pin}</span>
+                  <span class="text-xs font-bold text-slate-900 truncate">${s.nama}</span>
+                </div>
+                <div class="text-[10px] text-slate-400 mt-0.5 font-mono">Finger: ${s.fp || 'Belum tap'} &bull; Ketuk untuk ubah</div>
+              </div>
+
+              <div class="shrink-0 text-right">
+                ${statusText}
+              </div>
+            </div>
+          `;
+        });
+      } else if (currentMode === 'opsi4') {
+        // ================= OPSI 4: SINTESIS REFERENSI DRIVE MANDOR =================
+        
+        // 1. Session Bar (Inspirasi Gbr 3 Jadwal Sholat) + Date Strip (Inspirasi Gbr 2 Kalender)
+        html += `
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-3">
+            <!-- Session Tracker Live -->
+            <div>
+              <div class="flex items-center justify-between text-[11px] font-bold mb-1.5">
+                <span class="text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  Sesi Presensi Pondok
+                </span>
+                <span class="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Pel 1 Aktif
+                </span>
+              </div>
+              <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 text-xs font-semibold">
+                <div class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-400 shrink-0 flex items-center gap-1">
+                  <span class="text-[10px]">🔒</span> Subuh
+                </div>
+                <div class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-400 shrink-0 flex items-center gap-1">
+                  <span class="text-[10px]">🔒</span> Sore
+                </div>
+                <div class="px-3 py-1.5 rounded-xl bg-emerald-700 text-white shadow-xs shrink-0 flex items-center gap-1.5 ring-2 ring-emerald-400/40">
+                  <span>Pel 1</span>
+                  <span class="text-[10px] font-mono opacity-90 font-normal">19:40</span>
+                </div>
+                <div class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-400 shrink-0">
+                  Pel 2
+                </div>
+                <div class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-400 shrink-0">
+                  Pel 3
+                </div>
+              </div>
+            </div>
+
+            <!-- Date Strip Horizontal Geser Jempol (Gbr 2 Kalender) -->
+            <div class="pt-2 border-t border-slate-100">
+              <div class="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1.5">
+                <span class="uppercase tracking-wider">Pilih Tanggal</span>
+                <span class="text-slate-600 font-mono text-[10px] shrink-0">Okt 2026</span>
+              </div>
+              <div class="grid grid-cols-5 gap-1.5">
+                <button type="button" class="py-1.5 rounded-xl text-center hover:bg-slate-50 transition border border-transparent">
+                  <div class="text-[9px] text-slate-400 uppercase font-semibold">Sab</div>
+                  <div class="text-xs font-mono font-bold text-slate-600">17</div>
+                </button>
+                <button type="button" class="py-1.5 rounded-xl text-center hover:bg-slate-50 transition border border-transparent">
+                  <div class="text-[9px] text-slate-400 uppercase font-semibold">Ahd</div>
+                  <div class="text-xs font-mono font-bold text-slate-600">18</div>
+                </button>
+                <button type="button" class="py-1.5 rounded-xl text-center hover:bg-slate-50 transition border border-transparent">
+                  <div class="text-[9px] text-slate-400 uppercase font-semibold">Sen</div>
+                  <div class="text-xs font-mono font-bold text-slate-600">19</div>
+                </button>
+                <button type="button" class="py-1.5 rounded-xl text-center bg-emerald-600 text-white shadow-xs font-bold border border-emerald-700">
+                  <div class="text-[9px] text-emerald-100 uppercase font-semibold">Sel</div>
+                  <div class="text-xs font-mono font-extrabold">20</div>
+                </button>
+                <button type="button" class="py-1.5 rounded-xl text-center hover:bg-slate-50 transition border border-transparent">
+                  <div class="text-[9px] text-slate-400 uppercase font-semibold">Rab</div>
+                  <div class="text-xs font-mono font-bold text-slate-600">21</div>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Class Pills Filter (Gbr 1 College Corner) -->
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            <button type="button" class="px-3.5 py-1.5 rounded-xl bg-slate-900 text-white font-extrabold text-xs shadow-xs shrink-0 flex items-center gap-1.5">
+              <span>Kelas 1UA</span>
+              <span class="text-[10px] bg-slate-700 text-slate-300 px-1.5 rounded-full font-mono">19</span>
+            </button>
+            <button type="button" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shrink-0">
+              <span>2UA</span>
+            </button>
+            <button type="button" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shrink-0">
+              <span>1WA</span>
+            </button>
+            <button type="button" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shrink-0">
+              <span>2WA</span>
+            </button>
+            <button type="button" class="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 shrink-0">
+              <span>2AA</span>
+            </button>
+          </div>
+        `;
+
+        // 2. Daftar Santri dengan Garis Aksen Vertikal (border-l-4) & 4 Tombol Segmen Jempol
+        DUMMY_SANTRI.forEach((s, idx) => {
+          const isH = (s.status === 'H');
+          const isI = (s.status === 'I');
+          const isA = (s.status === 'A');
+          const isT = (s.status === 'T');
+
+          let accentBorder = 'border-l-emerald-500 bg-white';
+          if (isI) accentBorder = 'border-l-amber-500 bg-amber-50/15';
+          if (isA) accentBorder = 'border-l-rose-500 bg-rose-50/20';
+          if (isT) accentBorder = 'border-l-indigo-500 bg-indigo-50/20';
+
+          const fpBadge = s.fp 
+            ? `<span class="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Tap ${s.fp}</span>`
+            : `<span class="text-[10px] font-mono text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full border border-slate-200">Belum Tap</span>`;
+
+          const izinInfo = s.izin ? `<div class="text-[10px] text-amber-700 font-medium flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Surat: ${s.izin}</div>` : '';
+
+          const strIdx = String(idx + 1).padStart(2, '0');
+
+          html += `
+            <div class="bg-white rounded-2xl p-3 border-y border-r border-slate-200 border-l-[5px] ${accentBorder} shadow-2xs space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-start gap-2 min-w-0 flex-1">
+                  <span class="text-xs font-mono font-bold text-slate-400 pt-0.5">${strIdx}</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">${s.pin}</span>
+                      <h4 class="text-xs font-bold text-slate-900 truncate">${s.nama}</h4>
+                    </div>
+                    ${izinInfo}
+                  </div>
+                </div>
+                <div class="shrink-0">
+                  ${fpBadge}
+                </div>
+              </div>
+
+              <!-- 4 SEGMENTED STATUS BUTTONS (LEBAR JEMPOL 44PX) -->
+              <div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl">
+                <button type="button" onclick="ubahStatus('${s.pin}', 'H')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isH ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Hadir</button>
+                <button type="button" onclick="ubahStatus('${s.pin}', 'I')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isI ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Izin</button>
+                <button type="button" onclick="ubahStatus('${s.pin}', 'A')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isA ? 'bg-rose-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Alpha</button>
+                <button type="button" onclick="ubahStatus('${s.pin}', 'T')" class="touch-target py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center ${isT ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}">Takzir</button>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      container.innerHTML = html;
+      updateStats();
+    }
+
+    function ubahStatus(pin, newStatus) {
+      const s = DUMMY_SANTRI.find(item => item.pin === pin);
+      if (s) {
+        s.status = newStatus;
+        renderList();
+      }
+    }
+
+    function cycleStatus(pin) {
+      const s = DUMMY_SANTRI.find(item => item.pin === pin);
+      if (s) {
+        // Urutan: H -> I -> A -> T -> H
+        if (s.status === 'H') s.status = 'I';
+        else if (s.status === 'I') s.status = 'A';
+        else if (s.status === 'A') s.status = 'T';
+        else s.status = 'H';
+        renderList();
+      }
+    }
+
+    function cycleStatusModeKilat(pin) {
+      const s = DUMMY_SANTRI.find(item => item.pin === pin);
+      if (s) {
+        // Mode kilat: Hadir -> Alpha -> Takzir -> Hadir
+        if (s.status === 'H') s.status = 'A';
+        else if (s.status === 'A') s.status = 'T';
+        else s.status = 'H';
+        renderList();
+      }
+    }
+
+    function setSemuaHadir() {
+      DUMMY_SANTRI.forEach(s => { s.status = 'H'; });
+      renderList();
+      tampilkanToast('✅ Semua santri ditandai Hadir');
+    }
+
+    function updateStats() {
+      const h = DUMMY_SANTRI.filter(s => s.status === 'H').length;
+      const i = DUMMY_SANTRI.filter(s => s.status === 'I').length;
+      const a = DUMMY_SANTRI.filter(s => s.status === 'A').length;
+      const t = DUMMY_SANTRI.filter(s => s.status === 'T').length;
+
+      document.getElementById('statHadir').innerText = h;
+      document.getElementById('statIzin').innerText = i;
+      document.getElementById('statAlpha').innerText = a;
+      document.getElementById('statTakzir').innerText = t;
+    }
+
+    function simpanDemo() {
+      tampilkanToast('🎉 Demonstrasi Simpan Berhasil! Data siap dikunci.');
+    }
+
+    function tampilkanToast(pesan) {
+      const box = document.getElementById('toastBox');
+      const msg = document.getElementById('toastMessage');
+      msg.innerText = pesan;
+      box.classList.remove('-translate-y-8', 'opacity-0');
+      box.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        box.classList.add('-translate-y-8', 'opacity-0');
+        box.classList.remove('translate-y-0', 'opacity-100');
+      }, 2000);
+    }
+
+    // Deteksi parameter URL atau hash untuk screenshot & deep link
+    const urlParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash.replace('#', '');
+    if (urlParams.get('mode')) {
+      setOpsiMode(urlParams.get('mode'), true);
+    } else if (hash && ['opsi1', 'opsi2', 'opsi3', 'opsi4'].includes(hash)) {
+      setOpsiMode(hash, true);
+    } else {
+      setOpsiMode('opsi1', true);
+    }
+  </script>
+</body>
+</html>

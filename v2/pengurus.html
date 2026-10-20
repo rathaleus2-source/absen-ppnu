@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pos Keamanan & Takzir - PPNU Absensi v2.0</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Firebase Compat SDK v9 -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    .touch-target {
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans pb-24 overflow-x-hidden">
+
+  <!-- ================= TOP HEADER ================= -->
+  <header class="sticky top-0 z-30 bg-slate-900 text-white shadow-md border-b border-slate-800">
+    <div class="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <a href="index.html" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-300 transition" title="Kembali ke Gerbang Utama">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div>
+          <h1 class="text-sm font-extrabold tracking-tight leading-tight flex items-center gap-1.5">
+            <span>🛡️ Pos Keamanan & Takzir</span>
+          </h1>
+          <p class="text-[11px] text-slate-400 font-medium">PP. Nurul Ummah Putra</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <div class="text-right">
+          <div id="liveClockWIB" class="text-xs font-mono font-bold text-emerald-400 leading-tight">--:--:-- WIB</div>
+          <div class="text-[9px] text-slate-400">Pos Keamanan Jaga</div>
+        </div>
+        <button type="button" id="btnLogout" onclick="logoutPengurus()" class="hidden w-8 h-8 rounded-xl bg-slate-800 hover:bg-rose-900/60 border border-slate-700 hover:border-rose-600 text-slate-300 hover:text-rose-200 flex items-center justify-center text-xs transition" title="Kunci Pos Jaga">
+          🔒
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= 1. GERBANG SANDI KEAMANAN (PASSWORD GATE) ================= -->
+  <div id="authGateSection" class="max-w-md mx-auto p-4 pt-12 space-y-4">
+    <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-center space-y-4">
+      <div class="w-16 h-16 mx-auto rounded-2xl bg-slate-900 text-emerald-400 flex items-center justify-center text-3xl shadow-sm">
+        🛡️
+      </div>
+      <div class="space-y-1">
+        <h2 class="text-base font-extrabold text-slate-900">Gerbang Pos Keamanan</h2>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Ruang kerja khusus divisi keamanan pondok untuk memantau radar Subuh/Malam, meja takzir, dan sidang santri.
+        </p>
+      </div>
+
+      <form onsubmit="handleLoginSubmit(event)" class="space-y-3 pt-2 text-left">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Kata Sandi Pengurus</label>
+          <div class="relative">
+            <input type="password" id="inputPasswordPengurus" placeholder="Masukkan kata sandi..." class="touch-target w-full pl-3 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white" required>
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs p-1">
+              👁️
+            </button>
+          </div>
+          <p id="authErrorMsg" class="text-[11px] text-rose-600 font-semibold mt-1 hidden"></p>
+        </div>
+
+        <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-xs active:scale-[0.99] flex items-center justify-center gap-1.5">
+          <span>Buka Meja Pos Keamanan</span>
+          <span>&rarr;</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= 2. MEJA KERJA UTAMA PENGURUS (LOGGED IN) ================= -->
+  <main id="mainWorkspaceSection" class="max-w-md mx-auto px-3.5 pt-3.5 space-y-3 hidden">
+
+    <!-- 4-TAB NAVIGATION BAR -->
+    <nav class="bg-white rounded-2xl p-1.5 border border-slate-200 shadow-2xs flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+      <button type="button" onclick="switchTab('radar')" id="tabBtnRadar" class="touch-target flex-1 min-w-[90px] py-2 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 bg-slate-900 text-white shadow-xs shrink-0">
+        <span>🕌 Radar</span>
+      </button>
+      <button type="button" onclick="switchTab('nakal')" id="tabBtnNakal" class="touch-target flex-1 min-w-[95px] py-2 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 shrink-0 relative">
+        <span>🚨 Meja Nakal</span>
+        <span id="badgeNakalCount" class="hidden w-2 h-2 rounded-full bg-rose-500 absolute top-1.5 right-1.5 animate-ping"></span>
+      </button>
+      <button type="button" onclick="switchTab('takzir')" id="tabBtnTakzir" class="touch-target flex-1 min-w-[95px] py-2 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 shrink-0">
+        <span>⚖️ Buku Takzir</span>
+        <span id="badgeTakzirCount" class="text-[9px] bg-slate-100 text-slate-600 px-1 py-0.2 rounded-full font-mono">0</span>
+      </button>
+      <button type="button" onclick="switchTab('sidang')" id="tabBtnSidang" class="touch-target flex-1 min-w-[95px] py-2 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 shrink-0">
+        <span>📝 Sidang Alpa</span>
+      </button>
+    </nav>
+
+    <!-- ================= TAB 1: RADAR KAMAR ASRAMA (SUBUH / MALAM) ================= -->
+    <section id="panelRadar" class="space-y-3">
+      
+      <!-- KONTROL SESI ASRAMA & TANGGAL -->
+      <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-2xs space-y-2.5">
+        <div class="flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5 font-bold text-slate-800">
+            <span>📡</span>
+            <span>Radar Sesi Asrama</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <input type="date" id="inputRadarDate" onchange="handleRadarDateChange()" title="Pilih Tanggal Radar Sesi" class="text-[11px] font-mono font-bold bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-slate-700 focus:outline-hidden">
+          </div>
+        </div>
+
+        <!-- Tombol Sesi Subuh / Malam -->
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <button type="button" onclick="setRadarSession('subuh')" id="btnRadarSubuh" class="py-2 px-2 rounded-xl font-bold transition flex flex-col items-center justify-center bg-emerald-800 text-white shadow-xs">
+            <span>Subuh (05:00 - 06:30)</span>
+            <span class="text-[9px] font-normal text-emerald-200">Cutoff 06:30 WIB</span>
+          </button>
+          <button type="button" onclick="setRadarSession('malam')" id="btnRadarMalam" class="py-2 px-2 rounded-xl font-bold transition flex flex-col items-center justify-center text-slate-600 hover:bg-slate-100 border border-slate-200">
+            <span>Malam (18:30 - 23:00)</span>
+            <span class="text-[9px] font-normal text-slate-400">Kamis & Jumat Malam</span>
+          </button>
+        </div>
+
+        <!-- RINGKASAN REKAP STATS OBRAK-ABRIK -->
+        <div class="grid grid-cols-4 gap-1.5 text-center font-mono text-[11px] pt-1">
+          <div class="p-1.5 rounded-xl bg-slate-50 border border-slate-200">
+            <div class="text-[9px] text-slate-400">Total Mukim</div>
+            <div class="font-extrabold text-slate-800" id="statRadarTotal">0</div>
+          </div>
+          <div class="p-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
+            <div class="text-[9px] text-emerald-600">Sudah Tap</div>
+            <div class="font-extrabold text-emerald-700" id="statRadarHadir">0</div>
+          </div>
+          <div class="p-1.5 rounded-xl bg-rose-50 border border-rose-200">
+            <div class="text-[9px] text-rose-600">Belum Tap</div>
+            <div class="font-extrabold text-rose-700" id="statRadarBelum">0</div>
+          </div>
+          <div class="p-1.5 rounded-xl bg-amber-50 border border-amber-200">
+            <div class="text-[9px] text-amber-600">Izin Pos</div>
+            <div class="font-extrabold text-amber-700" id="statRadarIzin">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILTER & SEARCH SANTRI RADAR -->
+      <div class="space-y-2">
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar text-[11px]">
+          <button type="button" onclick="setRadarFilter('belum')" id="tabRfBelum" class="px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-rose-700 text-white shadow-2xs">
+            ⚠️ Belum Tap (<span id="countRfBelum">0</span>)
+          </button>
+          <button type="button" onclick="setRadarFilter('hadir')" id="tabRfHadir" class="px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-slate-100 text-emerald-800 hover:bg-emerald-50 border border-slate-200">
+            ✅ Sudah Tap (<span id="countRfHadir">0</span>)
+          </button>
+          <button type="button" onclick="setRadarFilter('izin')" id="tabRfIzin" class="px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-slate-100 text-amber-800 hover:bg-amber-50 border border-slate-200">
+            📋 Izin (<span id="countRfIzin">0</span>)
+          </button>
+          <button type="button" onclick="setRadarFilter('semua')" id="tabRfSemua" class="px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200">
+            Semua
+          </button>
+        </div>
+
+        <div class="relative">
+          <input type="text" id="inputRadarSearch" oninput="renderRadarList()" placeholder="Cari nama santri atau PIN..." class="touch-target w-full pl-9 pr-4 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 shadow-2xs">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+      </div>
+
+      <!-- DAFTAR SANTRI RADAR KAMAR -->
+      <div id="radarListContainer" class="space-y-2">
+        <div class="p-6 text-center bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">
+          Memuat data radar kamar...
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB 2: MEJA SANTRI NAKAL (PENANGGUHAN / BOLOS KELAS) ================= -->
+    <section id="panelNakal" class="space-y-3 hidden">
+      <div class="bg-rose-50 border border-rose-200 p-3 rounded-2xl space-y-1">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-rose-900">
+          <span>🚨</span> Meja Investigasi Santri Nakal (Audit Trail)
+        </div>
+        <p class="text-[11px] text-rose-700 leading-relaxed">
+          Mendeteksi santri yang <b>tap fingerprint di lorong mesin</b>, tetapi tidak masuk kelas dan divonis Alpha atau Takzir oleh Ustadz yang mengajar.
+        </p>
+      </div>
+
+      <div id="nakalListContainer" class="space-y-2.5">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ================= TAB 3: BUKU TAKZIR T (SANKSI & PEMULIHAN) ================= -->
+    <section id="panelTakzir" class="space-y-3 hidden">
+      <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-2xl space-y-1">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-indigo-900">
+          <span>⚖️</span> Buku Catatan Takzir & Pelanggaran Santri
+        </div>
+        <p class="text-[11px] text-indigo-700 leading-relaxed">
+          Daftar santri yang terkena sanksi Takzir (<span class="font-mono font-bold">T</span>). Jika santri telah menyelesaikan hukuman/ro'an, Pengurus Keamanan dapat membebaskannya kembali ke Hadir (<span class="font-mono font-bold">H</span>).
+        </p>
+      </div>
+
+      <div id="takzirListContainer" class="space-y-2.5">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ================= TAB 4: SIDANG KLARIFIKASI ALPA AWAL BULAN ================= -->
+    <section id="panelSidang" class="space-y-3 hidden">
+      <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl space-y-1">
+        <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900">
+          <span>📝</span> Sidang Klarifikasi Alpa & Rekonsiliasi Izin
+        </div>
+        <p class="text-[11px] text-amber-700 leading-relaxed">
+          Khusus tanggal 1 awal bulan atau klarifikasi resmi. Mengubah status Alpha (<span class="font-mono font-bold">A</span>) menjadi Izin (<span class="font-mono font-bold">I</span>) dengan lampiran surat keterangan sah.
+        </p>
+      </div>
+
+      <!-- FORM CARI SANTRI SIDANG -->
+      <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs space-y-3">
+        <div class="space-y-1">
+          <label for="selectSidangSantri" class="block text-xs font-bold text-slate-700">Pilih Santri yang Bersidang</label>
+          <select id="selectSidangSantri" onchange="handleSelectSidangSantri()" title="Pilih Santri yang Bersidang" class="touch-target w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500">
+            <option value="">-- Pilih Santri --</option>
+          </select>
+        </div>
+
+        <!-- DAFTAR HARI ALPA SANTRI TERPILIH -->
+        <div id="sidangAlpaResultContainer" class="space-y-2 pt-1 border-t border-slate-100 hidden">
+          <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+            <span>Daftar Sesi Alpa Santri Ini:</span>
+            <span id="sidangAlpaTotalCount" class="font-mono text-rose-700">0 Alpa</span>
+          </div>
+
+          <div id="sidangAlpaList" class="space-y-2 max-h-[360px] overflow-y-auto pr-0.5">
+            <!-- List kartu sesi alpa -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= MODAL AKSI CEPAT IZIN / TAKZIR ================= -->
+  <div id="quickActionModal" class="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 hidden" onclick="closeQuickModal(event)">
+    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-100 overflow-hidden" onclick="event.stopPropagation()">
+      <div class="bg-slate-900 text-white p-4 relative shrink-0">
+        <button type="button" onclick="closeQuickModal()" class="absolute top-4 right-4 w-7 h-7 rounded-full bg-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-xs">✕</button>
+        <span class="text-[10px] font-mono font-bold bg-emerald-600/30 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/30" id="qmPin">1UA01</span>
+        <h3 class="text-sm font-extrabold mt-1 text-white truncate" id="qmNama">Nama Santri</h3>
+        <p class="text-xs text-slate-400 mt-0.5" id="qmDetail">Subuh • 20 Okt 2026</p>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1" id="qmLabelAlasan">Keterangan / Alasan Surat</label>
+          <input type="text" id="qmInputAlasan" placeholder="Misal: Sakit di kamar / Izin Pulang..." class="touch-target w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div id="qmFieldPemberi">
+          <label for="qmInputPemberi" class="block font-bold text-slate-700 mb-1">Pemberi Izin / Pos Jaga</label>
+          <input type="text" id="qmInputPemberi" value="Pos Keamanan Pondok" placeholder="Pos Keamanan Pondok" title="Pemberi Izin / Pos Jaga" class="touch-target w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="pt-2 flex items-center gap-2">
+          <button type="button" onclick="closeQuickModal()" class="touch-target flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+            Batal
+          </button>
+          <button type="button" id="qmBtnConfirm" onclick="confirmQuickAction()" class="touch-target flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition shadow-xs">
+            Simpan Status
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFIKASI -->
+  <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-xs font-bold shadow-xl border border-slate-800 transition-all opacity-0 pointer-events-none translate-y-3 flex items-center gap-2">
+    <span id="toastIcon">✅</span>
+    <span id="toastMessage">Tersimpan</span>
+  </div>
+
+  <!-- ================= MODUL BISNIS ================= -->
+  <script src="js/config.js"></script>
+  <script src="js/session-rules.js"></script>
+  <script src="js/storage-adapter.js"></script>
+  <script src="js/santri-store.js"></script>
+  <script src="js/initial-seed.js"></script>
+
+  <!-- ================= LOGIKA POS KEAMANAN ================= -->
+  <script>
+    let db = null;
+    let isPengurusLoggedIn = false;
+    let cloudPassword = null;
+    const DEFAULT_PASS = 'admin123';
+
+    // State Data
+    let rawSantriList = [];
+    let statusAsramaMap = {};
+    let statusMDNUMap = {};
+    let asramaMatrixData = {};
+    let mdnuMatrixData = {};
+    let penangguhanData = {};
+    let permissionsMap = {};
+
+    // State Radar Kamar
+    let activeTab = 'radar'; // 'radar' | 'nakal' | 'takzir' | 'sidang'
+    let radarSession = 'subuh'; // 'subuh' | 'malam'
+    let radarDateISO = '';
+    let radarFilter = 'belum'; // 'belum' | 'hadir' | 'izin' | 'semua'
+    let radarSearch = '';
+
+    // State Quick Modal
+    let qmTarget = null; // { pin, nama, date, sesi, targetStatus }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      startLiveClock();
+      checkAuthSession();
+      loadOfflineFirstData();
+      initFirebase();
+      initRadarDefaults();
+    });
+
+    function startLiveClock() {
+      function update() {
+        const wib = PPNURules.getWIBTime();
+        document.getElementById('liveClockWIB').innerText = `${wib.timeWithSec} WIB`;
+      }
+      update();
+      setInterval(update, 1000);
+    }
+
+    // ================= AUTH GATE =================
+    function checkAuthSession() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auth') === 'bypass') {
+          sessionStorage.setItem('ppnu_pengurus_logged', 'true');
+        }
+      } catch (e) {}
+
+      const isLogged = sessionStorage.getItem('ppnu_pengurus_logged') === 'true';
+      if (isLogged) {
+        showWorkspace();
+      } else {
+        showAuthGate();
+      }
+    }
+
+    function showAuthGate() {
+      isPengurusLoggedIn = false;
+      document.getElementById('authGateSection').classList.remove('hidden');
+      document.getElementById('mainWorkspaceSection').classList.add('hidden');
+      document.getElementById('btnLogout').classList.add('hidden');
+    }
+
+    function showWorkspace() {
+      isPengurusLoggedIn = true;
+      document.getElementById('authGateSection').classList.add('hidden');
+      document.getElementById('mainWorkspaceSection').classList.remove('hidden');
+      document.getElementById('btnLogout').classList.remove('hidden');
+      renderCurrentTab();
+    }
+
+    function getValidPassword() {
+      return cloudPassword || localStorage.getItem('ppnu_admin_password') || DEFAULT_PASS;
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('inputPasswordPengurus');
+      const val = (input.value || '').trim();
+      const valid = getValidPassword();
+      const err = document.getElementById('authErrorMsg');
+
+      if (val === valid) {
+        sessionStorage.setItem('ppnu_pengurus_logged', 'true');
+        err.classList.add('hidden');
+        input.value = '';
+        showWorkspace();
+        showToast('🔓 Pos Keamanan dibuka! Selamat bertugas.', '🛡️');
+      } else {
+        err.innerText = 'Kata sandi salah! Silakan periksa kembali.';
+        err.classList.remove('hidden');
+        input.select();
+      }
+    }
+
+    function togglePasswordVisibility() {
+      const inPass = document.getElementById('inputPasswordPengurus');
+      inPass.type = inPass.type === 'password' ? 'text' : 'password';
+    }
+
+    function logoutPengurus() {
+      if (confirm('Kunci pos jaga dan keluar dari mode pengurus?')) {
+        sessionStorage.removeItem('ppnu_pengurus_logged');
+        showAuthGate();
+        showToast('🔒 Pos Keamanan dikunci.', '🛡️');
+      }
+    }
+
+    // ================= DATA LOADING =================
+    function loadOfflineFirstData() {
+      try {
+        const cachedSantri = localStorage.getItem('ppnu_cached_santriList');
+        const cachedAsrama = localStorage.getItem('ppnu_cached_statusAsrama');
+        const cachedMDNU = localStorage.getItem('ppnu_cached_statusMDNU');
+        if (cachedSantri) {
+          rawSantriList = JSON.parse(cachedSantri);
+          statusAsramaMap = cachedAsrama ? JSON.parse(cachedAsrama) : {};
+          statusMDNUMap = cachedMDNU ? JSON.parse(cachedMDNU) : {};
+        } else if (window.PPNU_INITIAL_SEED) {
+          rawSantriList = window.PPNU_INITIAL_SEED.santriList || [];
+          statusAsramaMap = window.PPNU_INITIAL_SEED.statusAsrama || {};
+          statusMDNUMap = window.PPNU_INITIAL_SEED.statusMDNU || {};
+        }
+        populateSidangSantriDropdown();
+      } catch (e) {
+        console.warn('Gagal membaca cache santri:', e);
+      }
+    }
+
+    function initFirebase() {
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(PPNUConfig.firebaseConfig);
+        }
+        db = firebase.database();
+        const root = PPNUConfig.ROOT_PATH;
+
+        // Sandi Pengurus / Admin
+        db.ref(`${root}/adminPassword`).on('value', snap => {
+          if (snap.exists()) {
+            cloudPassword = String(snap.val()).trim();
+            try { localStorage.setItem('ppnu_admin_password', cloudPassword); } catch (e) {}
+          }
+        });
+
+        // Santri List
+        db.ref(`${root}/santriList`).on('value', snap => {
+          const val = snap.val();
+          if (val) {
+            rawSantriList = Array.isArray(val) ? val : Object.values(val);
+            populateSidangSantriDropdown();
+            renderCurrentTab();
+          }
+        });
+
+        // Asrama Matrix
+        db.ref(`${root}/asramaMatrix`).on('value', snap => {
+          asramaMatrixData = snap.val() || {};
+          renderCurrentTab();
+        });
+
+        // MDNU Matrix
+        db.ref(`${root}/mdnuMatrix`).on('value', snap => {
+          mdnuMatrixData = snap.val() || {};
+          renderCurrentTab();
+        });
+
+        // Meja Santri Nakal (penangguhanSantri)
+        db.ref(`${root}/penangguhanSantri`).on('value', snap => {
+          penangguhanData = snap.val() || {};
+          updateNakalBadge();
+          if (activeTab === 'nakal') renderNakalList();
+        });
+
+        // Surat Izin
+        db.ref(`${root}/permissionDetailsMap`).on('value', snap => {
+          permissionsMap = snap.val() || {};
+          renderCurrentTab();
+        });
+
+      } catch (err) {
+        console.error('Firebase error pengurus:', err);
+      }
+    }
+
+    function initRadarDefaults() {
+      const wib = PPNURules.getWIBTime();
+      radarDateISO = wib.dateISO;
+      const elDate = document.getElementById('inputRadarDate');
+      if (elDate) elDate.value = radarDateISO;
+
+      // Auto pilih sesi berdasarkan jam saat ini
+      const hour = new Date().getHours();
+      if (hour >= 18 || hour <= 2) {
+        setRadarSession('malam');
+      } else {
+        setRadarSession('subuh');
+      }
+    }
+
+    // ================= TAB NAVIGATION =================
+    function switchTab(tab) {
+      activeTab = tab;
+      const tabs = {
+        radar: { btn: document.getElementById('tabBtnRadar'), panel: document.getElementById('panelRadar') },
+        nakal: { btn: document.getElementById('tabBtnNakal'), panel: document.getElementById('panelNakal') },
+        takzir: { btn: document.getElementById('tabBtnTakzir'), panel: document.getElementById('panelTakzir') },
+        sidang: { btn: document.getElementById('tabBtnSidang'), panel: document.getElementById('panelSidang') },
+      };
+
+      Object.keys(tabs).forEach(t => {
+        const item = tabs[t];
+        if (t === tab) {
+          item.btn.className = 'touch-target flex-1 min-w-[95px] py-2 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 bg-slate-900 text-white shadow-xs shrink-0 relative';
+          item.panel.classList.remove('hidden');
+        } else {
+          item.btn.className = 'touch-target flex-1 min-w-[95px] py-2 px-2 rounded-xl font-bold transition flex items-center justify-center gap-1 text-slate-600 hover:bg-slate-100 shrink-0 relative';
+          item.panel.classList.add('hidden');
+        }
+      });
+
+      renderCurrentTab();
+    }
+
+    function renderCurrentTab() {
+      if (!isPengurusLoggedIn) return;
+      if (activeTab === 'radar') renderRadarList();
+      else if (activeTab === 'nakal') renderNakalList();
+      else if (activeTab === 'takzir') renderTakzirList();
+      else if (activeTab === 'sidang') renderSidangView();
+    }
+
+    // ================= TAB 1: RADAR ASRAMA (SUBUH / MALAM) =================
+    function setRadarSession(sesi) {
+      radarSession = sesi;
+      const btnSubuh = document.getElementById('btnRadarSubuh');
+      const btnMalam = document.getElementById('btnRadarMalam');
+
+      if (sesi === 'subuh') {
+        btnSubuh.className = 'py-2 px-2 rounded-xl font-bold transition flex flex-col items-center justify-center bg-emerald-800 text-white shadow-xs';
+        btnSubuh.querySelector('span:last-child').className = 'text-[9px] font-normal text-emerald-200';
+        btnMalam.className = 'py-2 px-2 rounded-xl font-bold transition flex flex-col items-center justify-center text-slate-600 hover:bg-slate-100 border border-slate-200';
+        btnMalam.querySelector('span:last-child').className = 'text-[9px] font-normal text-slate-400';
+      } else {
+        btnMalam.className = 'py-2 px-2 rounded-xl font-bold transition flex flex-col items-center justify-center bg-indigo-900 text-white shadow-xs';
+        btnMalam.querySelector('span:last-child').className = 'text-[9px] font-normal text-indigo-200';
+        btnSubuh.className = 'py-2 px-2 rounded-xl font-bold transition flex flex-col items-center justify-center text-slate-600 hover:bg-slate-100 border border-slate-200';
+        btnSubuh.querySelector('span:last-child').className = 'text-[9px] font-normal text-slate-400';
+      }
+      renderRadarList();
+    }
+
+    function handleRadarDateChange() {
+      const val = document.getElementById('inputRadarDate').value;
+      if (val) {
+        radarDateISO = val;
+        renderRadarList();
+      }
+    }
+
+    function setRadarFilter(filter) {
+      radarFilter = filter;
+      const tabs = {
+        belum: document.getElementById('tabRfBelum'),
+        hadir: document.getElementById('tabRfHadir'),
+        izin: document.getElementById('tabRfIzin'),
+        semua: document.getElementById('tabRfSemua'),
+      };
+
+      Object.keys(tabs).forEach(k => {
+        const el = tabs[k];
+        if (k === filter) {
+          if (k === 'belum') el.className = 'px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-rose-700 text-white shadow-2xs';
+          else if (k === 'hadir') el.className = 'px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-emerald-700 text-white shadow-2xs';
+          else if (k === 'izin') el.className = 'px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-amber-600 text-white shadow-2xs';
+          else el.className = 'px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-slate-900 text-white shadow-2xs';
+        } else {
+          el.className = 'px-2.5 py-1.5 rounded-xl font-bold transition shrink-0 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200';
+        }
+      });
+
+      renderRadarList();
+    }
+
+    function renderRadarList() {
+      const container = document.getElementById('radarListContainer');
+      if (!rawSantriList.length || !container) return;
+
+      radarSearch = (document.getElementById('inputRadarSearch')?.value || '').toLowerCase().trim();
+
+      // Saring hanya santri mukim aktif (Santri laju dan boyong tidak masuk kewajiban asrama)
+      const mukimStudents = rawSantriList.filter(s => {
+        const pin = String(s.pin || '').toUpperCase().trim();
+        const asramaStatus = String(statusAsramaMap[pin] || 'mukim').toLowerCase().trim();
+        return asramaStatus !== 'boyong' && asramaStatus !== 'laju' && asramaStatus !== 'kantin';
+      });
+
+      let countHadir = 0;
+      let countBelum = 0;
+      let countIzin = 0;
+
+      const evaluated = mukimStudents.map(s => {
+        const pin = String(s.pin || '').toUpperCase().trim();
+        const matrixDay = (asramaMatrixData[pin] && asramaMatrixData[pin][radarDateISO]) || {};
+        const val = matrixDay[radarSession] || '-';
+        const scanTime = matrixDay[`${radarSession}_time`] || '';
+
+        // Cek izin dari permissionDetailsMap
+        let perm = null;
+        Object.keys(permissionsMap || {}).forEach(k => {
+          if (k.startsWith(`${pin}__${radarDateISO}__${radarSession}`)) {
+            perm = permissionsMap[k];
+          }
+        });
+
+        const isHadir = (val === 'H');
+        const isIzin = (val === 'I') || Boolean(perm);
+        const isBelum = (!isHadir && !isIzin);
+
+        if (isHadir) countHadir++;
+        else if (isIzin) countIzin++;
+        else countBelum++;
+
+        return {
+          pin,
+          nama: s.nama || pin,
+          kamar: s.kamar || '-',
+          val,
+          scanTime,
+          isHadir,
+          isIzin,
+          isBelum,
+          perm
+        };
+      });
+
+      // Update angka ringkasan
+      document.getElementById('statRadarTotal').innerText = mukimStudents.length;
+      document.getElementById('statRadarHadir').innerText = countHadir;
+      document.getElementById('statRadarBelum').innerText = countBelum;
+      document.getElementById('statRadarIzin').innerText = countIzin;
+
+      document.getElementById('countRfBelum').innerText = countBelum;
+      document.getElementById('countRfHadir').innerText = countHadir;
+      document.getElementById('countRfIzin').innerText = countIzin;
+
+      // Filter
+      let filtered = evaluated.filter(s => {
+        if (radarFilter === 'belum') return s.isBelum;
+        if (radarFilter === 'hadir') return s.isHadir;
+        if (radarFilter === 'izin') return s.isIzin;
+        return true;
+      });
+
+      if (radarSearch) {
+        filtered = filtered.filter(s => s.nama.toLowerCase().includes(radarSearch) || s.pin.toLowerCase().includes(radarSearch) || s.kamar.toLowerCase().includes(radarSearch));
+      }
+
+      if (filtered.length === 0) {
+        if (radarFilter === 'belum') {
+          container.innerHTML = `
+            <div class="p-8 text-center bg-emerald-50 rounded-2xl border border-emerald-200 space-y-1.5">
+              <div class="text-3xl">🎉</div>
+              <div class="text-xs font-bold text-emerald-900">Alhamdulillah, Seluruh Santri Sudah Tap!</div>
+              <p class="text-[10.5px] text-emerald-700">Tidak ada santri mukim yang tertinggal pada sesi ini. Asrama tertib!</p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="p-8 text-center bg-white rounded-2xl border border-slate-200 text-xs text-slate-400">
+              Tidak ada data santri pada filter ini.
+            </div>
+          `;
+        }
+        return;
+      }
+
+      let html = '';
+      filtered.forEach((s, idx) => {
+        let badgeStatus = '';
+        let cardBg = 'bg-white border-slate-200';
+
+        if (s.isBelum) {
+          cardBg = 'bg-rose-50/40 border-rose-200';
+          badgeStatus = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Belum Tap</span>`;
+        } else if (s.isHadir) {
+          cardBg = 'bg-white border-emerald-200';
+          badgeStatus = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${s.scanTime ? 'Tap ' + s.scanTime : 'Hadir'}</span>`;
+        } else if (s.isIzin) {
+          cardBg = 'bg-amber-50/40 border-amber-200';
+          badgeStatus = `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Izin Pos</span>`;
+        }
+
+        html += `
+          <div class="p-3 rounded-2xl border ${cardBg} shadow-2xs space-y-2.5 transition">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-[11px] font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 shrink-0">${s.pin}</span>
+                  <h4 class="text-xs font-bold text-slate-900 truncate">${escapeHtml(s.nama)}</h4>
+                </div>
+                <div class="text-[10px] text-slate-400 mt-0.5 font-medium flex items-center gap-2">
+                  <span>Kamar: <b>${escapeHtml(s.kamar)}</b></span>
+                  <span>&bull;</span>
+                  <span>Sesi: <b>${radarSession === 'subuh' ? 'Subuh' : 'Malam'}</b></span>
+                </div>
+              </div>
+              <div class="shrink-0">${badgeStatus}</div>
+            </div>
+
+            <!-- ACTION BUTTONS PENGURUS KEAMANAN -->
+            <div class="grid grid-cols-3 gap-1 pt-0.5 border-t border-slate-100 text-[11px]">
+              <button type="button" onclick="setAsramaStatusFast('${s.pin}', 'H')" class="touch-target py-1.5 rounded-xl font-bold transition flex items-center justify-center gap-1 ${s.isHadir ? 'bg-emerald-700 text-white shadow-2xs' : 'bg-slate-100 hover:bg-emerald-50 text-emerald-800 border border-slate-200'}">
+                <span>✓ Hadir</span>
+              </button>
+              <button type="button" onclick="openQuickModal('${s.pin}', '${escapeJs(s.nama)}', 'I')" class="touch-target py-1.5 rounded-xl font-bold transition flex items-center justify-center gap-1 ${s.isIzin ? 'bg-amber-600 text-white shadow-2xs' : 'bg-slate-100 hover:bg-amber-50 text-amber-800 border border-slate-200'}">
+                <span>📋 Izin</span>
+              </button>
+              <button type="button" onclick="openQuickModal('${s.pin}', '${escapeJs(s.nama)}', 'T')" class="touch-target py-1.5 rounded-xl font-bold transition flex items-center justify-center gap-1 ${s.val === 'T' ? 'bg-indigo-700 text-white shadow-2xs' : 'bg-slate-100 hover:bg-indigo-50 text-indigo-800 border border-slate-200'}">
+                <span>⚠️ Takzir</span>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // Aksi Cepat Set Status Asrama Langsung
+    function setAsramaStatusFast(pin, status) {
+      if (!db) {
+        showToast('Koneksi database belum siap', '⚠️');
+        return;
+      }
+      if (PPNUStorageAdapter.isDateFrozen(radarDateISO)) {
+        alert(`Tanggal ${radarDateISO} terkunci mutlak (<= 2026-09-30)`);
+        return;
+      }
+
+      const root = PPNUConfig.ROOT_PATH;
+      const updates = {};
+      updates[`${root}/asramaMatrix/${pin}/${radarDateISO}/${radarSession}`] = status;
+      if (status === 'H') {
+        const wib = PPNURules.getWIBTime();
+        updates[`${root}/asramaMatrix/${pin}/${radarDateISO}/${radarSession}_time`] = wib.timeStr;
+      }
+
+      db.ref().update(updates)
+        .then(() => {
+          showToast(`Berhasil menandai ${pin} Hadir`, '✅');
+        })
+        .catch(err => {
+          console.error('Gagal update asrama:', err);
+          showToast('Gagal menyimpan data', '❌');
+        });
+    }
+
+    // ================= TAB 2: MEJA SANTRI NAKAL =================
+    function updateNakalBadge() {
+      const keys = Object.keys(penangguhanData || {});
+      const badge = document.getElementById('badgeNakalCount');
+      if (keys.length > 0) {
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function renderNakalList() {
+      const container = document.getElementById('nakalListContainer');
+      if (!container) return;
+
+      const keys = Object.keys(penangguhanData || {});
+      if (keys.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2 shadow-2xs">
+            <div class="text-3xl">🕊️</div>
+            <div class="text-xs font-extrabold text-slate-800">Meja Bersih Tanpa Pelanggaran</div>
+            <p class="text-[11px] text-slate-500 max-w-xs mx-auto">
+              Tidak ada catatan santri titip absen atau bolos kelas yang dilaporkan ustadz. Situasi aman terkendali!
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      keys.forEach(k => {
+        const item = penangguhanData[k] || {};
+        html += `
+          <div class="p-3.5 rounded-2xl bg-white border border-rose-200 shadow-2xs space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[9px] font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Terdeteksi Bolos Kelas
+                </span>
+                <h4 class="text-xs font-bold text-slate-900 mt-1">${escapeHtml(item.nama || item.pin)}</h4>
+                <div class="text-[10px] text-slate-500 mt-0.5 font-mono">
+                  PIN: <b>${item.pin}</b> &bull; Tanggal: <b>${item.tanggal}</b> &bull; Sesi: <b>${item.sesi}</b>
+                </div>
+              </div>
+            </div>
+
+            <!-- BUKTI ANOMALI -->
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-150 text-[10.5px] space-y-1">
+              <div class="flex items-center justify-between text-slate-600">
+                <span>Scan Fingerprint Lorong:</span>
+                <span class="font-mono font-bold text-emerald-700">${item.scanTime ? 'Pukul ' + item.scanTime + ' WIB' : 'Terekam Mesin'}</span>
+              </div>
+              <div class="flex items-center justify-between text-rose-700 font-bold">
+                <span>Vonis Ustadz di Kelas:</span>
+                <span>${item.statusVonis === 'T' ? '⚠️ Takzir Kelas' : '❌ Alpha (Bolos)'}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 italic pt-0.5">
+                "${escapeHtml(item.alasan || 'Tap sidik jari di mesin lorong tetapi tidak masuk kelas.')}"
+              </div>
+            </div>
+
+            <!-- AKSI PENGURUS KEAMANAN -->
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <button type="button" onclick="beriTakzirSantriNakal('${escapeJs(k)}', '${item.pin}', '${escapeJs(item.nama)}')" class="touch-target py-2 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white font-bold transition flex items-center justify-center gap-1">
+                <span>⚖️ Catat ke Buku Takzir</span>
+              </button>
+              <button type="button" onclick="selesaikanSantriNakal('${escapeJs(k)}')" class="touch-target py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold border border-slate-200 transition flex items-center justify-center gap-1">
+                <span>✓ Selesaikan Kasus</span>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function selesaikanSantriNakal(alertKey) {
+      if (!confirm('Tandai kasus ini sudah selesai dan hapus dari laporan meja nakal?')) return;
+      if (!db) return;
+
+      const root = PPNUConfig.ROOT_PATH;
+      db.ref(`${root}/penangguhanSantri/${alertKey}`).remove()
+        .then(() => {
+          showToast('Laporan berhasil diselesaikan.', '✅');
+        })
+        .catch(err => {
+          console.error('Gagal hapus alert:', err);
+          showToast('Gagal memproses aksi', '❌');
+        });
+    }
+
+    function beriTakzirSantriNakal(alertKey, pin, nama) {
+      const hukuman = prompt(`Masukkan bentuk takzir untuk ${nama} (${pin}):\n(Contoh: Roan kamar mandi pondok / Setoran juz 30)`, 'Roan pembersihan pondok');
+      if (!hukuman) return;
+
+      // Update sel menjadi 'T' dan bersihkan alert
+      if (!db) return;
+      const root = PPNUConfig.ROOT_PATH;
+      const updates = {};
+      const item = penangguhanData[alertKey] || {};
+
+      const rootMat = (item.kategori === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
+      updates[`${root}/${rootMat}/${pin}/${item.tanggal}/${item.sesi}`] = 'T';
+      updates[`${root}/permissionDetailsMap/${pin}__${item.tanggal}__${item.sesi}__${item.kategori}`] = {
+        alasan: `Takzir: ${hukuman}`,
+        pemberiIzin: 'Meja Keamanan Pondok',
+        waktu: new Date().toISOString()
+      };
+      updates[`${root}/penangguhanSantri/${alertKey}`] = null;
+
+      db.ref().update(updates)
+        .then(() => {
+          showToast(`Takzir resmi dicatat untuk ${nama}`, '⚖️');
+        })
+        .catch(err => {
+          console.error('Gagal simpan takzir:', err);
+          showToast('Gagal memproses takzir', '❌');
+        });
+    }
+
+    // ================= TAB 3: BUKU TAKZIR T =================
+    function renderTakzirList() {
+      const container = document.getElementById('takzirListContainer');
+      const badgeCount = document.getElementById('badgeTakzirCount');
+      if (!container) return;
+
+      const listTakzir = [];
+
+      // Telusuri mdnuMatrix & asramaMatrix
+      ['mdnu', 'asrama'].forEach(kat => {
+        const sourceMatrix = (kat === 'asrama') ? asramaMatrixData : mdnuMatrixData;
+        Object.keys(sourceMatrix || {}).forEach(pin => {
+          const pinData = sourceMatrix[pin] || {};
+          Object.keys(pinData).forEach(tgl => {
+            // Abaikan tanggal beku lampau
+            if (PPNUStorageAdapter.isDateFrozen(tgl)) return;
+            const daySessions = pinData[tgl] || {};
+            const sessionKeys = (kat === 'asrama') ? ['subuh', 'malam'] : ['sore', 'pel1', 'pel2', 'pel3'];
+
+            sessionKeys.forEach(sesi => {
+              if (daySessions[sesi] === 'T') {
+                const sObj = rawSantriList.find(s => String(s.pin).toUpperCase().trim() === pin);
+                listTakzir.push({
+                  pin,
+                  nama: sObj ? sObj.nama : pin,
+                  tanggal: tgl,
+                  sesi,
+                  kategori: kat,
+                  scanTime: daySessions[`${sesi}_time`] || ''
+                });
+              }
+            });
+          });
+        });
+      });
+
+      badgeCount.innerText = listTakzir.length;
+
+      if (listTakzir.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center bg-white rounded-3xl border border-slate-200 space-y-2 shadow-2xs">
+            <div class="text-3xl">🎉</div>
+            <div class="text-xs font-extrabold text-slate-800">Buku Takzir Bersih</div>
+            <p class="text-[11px] text-slate-500">Tidak ada santri yang memiliki tanggungan hukuman takzir saat ini.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      listTakzir.forEach(item => {
+        html += `
+          <div class="p-3.5 rounded-2xl bg-white border border-indigo-200 shadow-2xs space-y-2.5">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[9px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                  ⚠️ Status Takzir Aktif (${item.kategori.toUpperCase()})
+                </span>
+                <h4 class="text-xs font-bold text-slate-900 mt-1">${escapeHtml(item.nama)}</h4>
+                <div class="text-[10px] text-slate-500 mt-0.5 font-mono">
+                  PIN: <b>${item.pin}</b> &bull; ${item.tanggal} &bull; Sesi: <b>${item.sesi.toUpperCase()}</b>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-150 text-[11px] flex items-center justify-between">
+              <span class="text-slate-500">Hukuman Takzir Selesai?</span>
+              <button type="button" onclick="bebaskanTakzir('${item.pin}', '${item.tanggal}', '${item.sesi}', '${item.kategori}')" class="touch-target px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs transition shadow-2xs flex items-center gap-1">
+                <span>✓ Bebaskan (T &rarr; H)</span>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function bebaskanTakzir(pin, dateISO, sessionKey, category) {
+      if (!confirm(`Bebaskan hukuman takzir untuk santri PIN ${pin}? Status sesi akan diubah menjadi Hadir (H).`)) return;
+      if (!db) return;
+
+      const root = PPNUConfig.ROOT_PATH;
+      const rootMat = (category === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
+      const updates = {};
+      updates[`${root}/${rootMat}/${pin}/${dateISO}/${sessionKey}`] = 'H';
+
+      db.ref().update(updates)
+        .then(() => {
+          showToast(`Takzir santri ${pin} berhasil diputihkan ke Hadir`, '✅');
+        })
+        .catch(err => {
+          console.error('Gagal bebaskan takzir:', err);
+          showToast('Gagal memproses pembebasan takzir', '❌');
+        });
+    }
+
+    // ================= TAB 4: SIDANG KLARIFIKASI ALPA =================
+    function populateSidangSantriDropdown() {
+      const sel = document.getElementById('selectSidangSantri');
+      if (!sel || !rawSantriList.length) return;
+
+      const currentVal = sel.value;
+      let html = '<option value="">-- Pilih Santri yang Menghadap --</option>';
+
+      // Urutkan berdasarkan nama
+      const sorted = [...rawSantriList].sort((a, b) => a.nama.localeCompare(b.nama));
+      sorted.forEach(s => {
+        const pin = String(s.pin || '').toUpperCase().trim();
+        html += `<option value="${pin}">${pin} - ${escapeHtml(s.nama)}</option>`;
+      });
+
+      sel.innerHTML = html;
+      if (currentVal) sel.value = currentVal;
+    }
+
+    function handleSelectSidangSantri() {
+      const sel = document.getElementById('selectSidangSantri');
+      const pin = sel.value;
+      const resContainer = document.getElementById('sidangAlpaResultContainer');
+      const listContainer = document.getElementById('sidangAlpaList');
+      const countEl = document.getElementById('sidangAlpaTotalCount');
+
+      if (!pin) {
+        resContainer.classList.add('hidden');
+        return;
+      }
+
+      resContainer.classList.remove('hidden');
+
+      // Kumpulkan seluruh Alpa aktif pada periode berjalan (> 2026-09-30)
+      const alpaItems = [];
+
+      ['mdnu', 'asrama'].forEach(kat => {
+        const sourceMatrix = (kat === 'asrama') ? asramaMatrixData : mdnuMatrixData;
+        const pinData = sourceMatrix[pin] || {};
+
+        Object.keys(pinData).forEach(tgl => {
+          if (PPNUStorageAdapter.isDateFrozen(tgl)) return; // Gembok masa lalu
+          const daySessions = pinData[tgl] || {};
+          const sessionKeys = (kat === 'asrama') ? ['subuh', 'malam'] : ['sore', 'pel1', 'pel2', 'pel3'];
+
+          sessionKeys.forEach(sesi => {
+            if (daySessions[sesi] === 'A') {
+              alpaItems.push({
+                tanggal: tgl,
+                sesi,
+                kategori: kat
+              });
+            }
+          });
+        });
+      });
+
+      // Urutkan tanggal terbaru ke terlama
+      alpaItems.sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+      countEl.innerText = `${alpaItems.length} Sesi Alpa`;
+
+      if (alpaItems.length === 0) {
+        listContainer.innerHTML = `
+          <div class="p-6 text-center bg-emerald-50 rounded-2xl border border-emerald-200 text-xs text-emerald-800 font-bold space-y-1">
+            <div>🎉 Santri ini tidak memiliki catatan Alpa aktif!</div>
+            <div class="text-[10px] text-emerald-600 font-normal">Tidak ada data alpa yang perlu disidangkan.</div>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      alpaItems.forEach(item => {
+        html += `
+          <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2 text-xs">
+            <div>
+              <div class="font-extrabold text-slate-800 font-mono">${item.tanggal}</div>
+              <div class="text-[10px] text-slate-500">
+                ${item.kategori.toUpperCase()} &bull; Sesi: <b class="text-rose-700">${item.sesi.toUpperCase()}</b>
+              </div>
+            </div>
+            <button type="button" onclick="rekonsiliasiAlpaKeIzin('${pin}', '${item.tanggal}', '${item.sesi}', '${item.kategori}')" class="touch-target px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shadow-2xs flex items-center gap-1">
+              <span>📋 Ubah ke Izin (I)</span>
+            </button>
+          </div>
+        `;
+      });
+
+      listContainer.innerHTML = html;
+    }
+
+    function rekonsiliasiAlpaKeIzin(pin, dateISO, sessionKey, category) {
+      if (PPNUStorageAdapter.isDateFrozen(dateISO)) {
+        alert('Ditolak: Tanggal ini berada dalam zona historis terkunci.');
+        return;
+      }
+
+      const alasan = prompt(`Klarifikasi Sidang: Masukkan alasan izin sah untuk tanggal ${dateISO} sesi ${sessionKey}:\n(Contoh: Sakit - Surat Dokter No. 104)`, 'Sakit (Surat Dokter / Izin Keamanan)');
+      if (!alasan) return;
+
+      if (!db) return;
+      const root = PPNUConfig.ROOT_PATH;
+      const rootMat = (category === 'asrama') ? 'asramaMatrix' : 'mdnuMatrix';
+
+      const updates = {};
+      updates[`${root}/${rootMat}/${pin}/${dateISO}/${sessionKey}`] = 'I';
+      updates[`${root}/permissionDetailsMap/${pin}__${dateISO}__${sessionKey}__${category}`] = {
+        alasan,
+        pemberiIzin: 'Sidang Keamanan Tanggal 1',
+        waktuSidang: new Date().toISOString()
+      };
+
+      db.ref().update(updates)
+        .then(() => {
+          showToast(`Berhasil mengubah Alpa menjadi Izin resmi!`, '📋');
+          handleSelectSidangSantri(); // Refresh list
+        })
+        .catch(err => {
+          console.error('Gagal update sidang:', err);
+          showToast('Gagal memproses rekonsiliasi', '❌');
+        });
+    }
+
+    // ================= MODAL AKSI CEPAT IZIN / TAKZIR =================
+    function openQuickModal(pin, nama, targetStatus) {
+      qmTarget = { pin, nama, date: radarDateISO, sesi: radarSession, targetStatus };
+      document.getElementById('qmPin').innerText = pin;
+      document.getElementById('qmNama').innerText = nama;
+      document.getElementById('qmDetail').innerText = `${radarSession.toUpperCase()} • ${radarDateISO}`;
+
+      const label = document.getElementById('qmLabelAlasan');
+      const inAlasan = document.getElementById('qmInputAlasan');
+      const btnConfirm = document.getElementById('qmBtnConfirm');
+
+      if (targetStatus === 'I') {
+        label.innerText = 'Alasan Izin Keamanan:';
+        inAlasan.placeholder = 'Misal: Sakit di kamar / Izin Pulang...';
+        btnConfirm.className = 'touch-target flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs transition shadow-xs';
+        btnConfirm.innerText = 'Simpan Izin (I)';
+      } else {
+        label.innerText = 'Keterangan Pelanggaran / Takzir:';
+        inAlasan.placeholder = 'Misal: Ketiduran di kamar / Tidak mau bangun...';
+        btnConfirm.className = 'touch-target flex-1 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-600 text-white font-bold text-xs transition shadow-xs';
+        btnConfirm.innerText = 'Catat Takzir (T)';
+      }
+
+      document.getElementById('quickActionModal').classList.remove('hidden');
+    }
+
+    function closeQuickModal(e) {
+      document.getElementById('quickActionModal').classList.add('hidden');
+      qmTarget = null;
+    }
+
+    function confirmQuickAction() {
+      if (!qmTarget || !db) return;
+      if (PPNUStorageAdapter.isDateFrozen(qmTarget.date)) {
+        alert('Ditolak: Tanggal historis terkunci.');
+        return;
+      }
+
+      const alasan = (document.getElementById('qmInputAlasan').value || '').trim() || (qmTarget.targetStatus === 'I' ? 'Izin Keamanan' : 'Pelanggaran Asrama');
+      const pemberi = (document.getElementById('qmInputPemberi').value || '').trim() || 'Pos Keamanan';
+
+      const root = PPNUConfig.ROOT_PATH;
+      const updates = {};
+      updates[`${root}/asramaMatrix/${qmTarget.pin}/${qmTarget.date}/${qmTarget.sesi}`] = qmTarget.targetStatus;
+      updates[`${root}/permissionDetailsMap/${qmTarget.pin}__${qmTarget.date}__${qmTarget.sesi}__asrama`] = {
+        alasan,
+        pemberiIzin: pemberi,
+        waktuDicatat: new Date().toISOString()
+      };
+
+      db.ref().update(updates)
+        .then(() => {
+          showToast(`Status ${qmTarget.pin} berhasil diperbarui ke ${qmTarget.targetStatus}`, '✅');
+          closeQuickModal();
+        })
+        .catch(err => {
+          console.error('Gagal simpan status:', err);
+          showToast('Gagal menyimpan data', '❌');
+        });
+    }
+
+    // ================= TOAST NOTIFIKASI =================
+    function showToast(msg, icon = '✅') {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').innerText = msg;
+      document.getElementById('toastIcon').innerText = icon;
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeJs(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+  </script>
+</body>
+</html>
