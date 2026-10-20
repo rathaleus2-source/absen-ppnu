@@ -523,6 +523,28 @@
       return [];
     }
 
+    function matchSantriClass(s, filterKelas) {
+      if (!filterKelas || filterKelas === 'all') return true;
+      const cleanTarget = String(filterKelas).toUpperCase().trim();
+      const pin = String(s?.pin || '').toUpperCase().trim();
+      if (pin && pin !== '-' && pin.substring(0, cleanTarget.length) === cleanTarget) {
+        return true;
+      }
+      if (window.PPNUSantriStore && window.PPNUSantriStore.matchClass) {
+        return window.PPNUSantriStore.matchClass(s, filterKelas);
+      }
+      if (s?.kelas) {
+        const k = String(s.kelas).toUpperCase();
+        if (cleanTarget === '1UA' && k.includes('1') && k.includes('ULYA')) return true;
+        if (cleanTarget === '2UA' && k.includes('2') && k.includes('ULYA')) return true;
+        if (cleanTarget === '1WA' && k.includes('1') && k.includes('WUSTHO')) return true;
+        if (cleanTarget === '2WA' && k.includes('2') && k.includes('WUSTHO')) return true;
+        if (cleanTarget === '2AA' && k.includes('2') && k.includes('AWALIYAH')) return true;
+        if (k === cleanTarget) return true;
+      }
+      return false;
+    }
+
     function startLiveClock() {
       const clockEl = document.getElementById('liveClockSantri');
       const update = () => {
@@ -698,7 +720,7 @@
       const filterStatus = document.getElementById('selectStatusAsrama').value;
       const hideEmptyLibur = true; // REVISI SENIOR: AUTO HIDE LIBUR SELALU TRUE
       // Filter santri
-      let list = getSantriMasterList();
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
       if (filterStatus === 'mukim') {
         list = list.filter(s => {
           const st = (statusSantriAsrama && statusSantriAsrama[s.pin]) || s.status;
@@ -977,10 +999,10 @@
       const hideEmptyLibur = true; // REVISI SENIOR: AUTO HIDE LIBUR SELALU TRUE
 
       // Filter santri
-      let list = getSantriMasterList();
-      list = list.filter(s => (statusSantriMDNU[s.pin] !== 'boyong'));
+      let list = getSantriMasterList().filter(s => s.pin && s.pin !== '-');
+      list = list.filter(s => (statusSantriMDNU[s.pin] !== 'boyong' && s.status !== 'boyong'));
       if (filterKelas !== 'all') {
-        list = list.filter(s => s.kelas === filterKelas);
+        list = list.filter(s => matchSantriClass(s, filterKelas));
       }
 
       if (searchQuery) {

@@ -26,6 +26,31 @@ const PPNUSantriStore = {
   },
 
   /**
+   * Cek apakah santri cocok dengan filter kelas (1UA, 2UA, 1WA, 2WA, 2AA, all)
+   * Mendukung format PIN (1UA01) maupun format teks nama kelas (1 Ulya A)
+   */
+  matchClass(santri, filterKelas) {
+    if (!filterKelas || filterKelas === 'all') return true;
+    const cleanTarget = String(filterKelas).toUpperCase().trim();
+    const pin = String(santri?.pin || '').toUpperCase().trim();
+    if (pin && pin !== '-' && pin.substring(0, cleanTarget.length) === cleanTarget) {
+      return true;
+    }
+    const pinClass = this.extractClassFromPin(pin);
+    if (pinClass === cleanTarget) return true;
+    if (santri?.kelas) {
+      const k = String(santri.kelas).toUpperCase();
+      if (cleanTarget === '1UA' && k.includes('1') && k.includes('ULYA')) return true;
+      if (cleanTarget === '2UA' && k.includes('2') && k.includes('ULYA')) return true;
+      if (cleanTarget === '1WA' && k.includes('1') && k.includes('WUSTHO')) return true;
+      if (cleanTarget === '2WA' && k.includes('2') && k.includes('WUSTHO')) return true;
+      if (cleanTarget === '2AA' && k.includes('2') && k.includes('AWALIYAH')) return true;
+      if (k === cleanTarget) return true;
+    }
+    return false;
+  },
+
+  /**
    * Filter santri per kelas & aturan mukim/laju/boyong
    * @param {Array} rawSantriList - Data santriList dari Firebase
    * @param {string} targetClass - '1UA', '2WA', dll
