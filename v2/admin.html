@@ -323,6 +323,9 @@
       <button type="button" onclick="switchAdminTab('santri')" id="tabNavSantri" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
         <span>👥</span> Kelola Santri (<span id="badgeTotalSantri">0</span>)
       </button>
+      <button type="button" onclick="switchAdminTab('malamSabtu')" id="tabNavMalamSabtu" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
+        <span>🌙</span> Malam Sabtu
+      </button>
       <button type="button" onclick="switchAdminTab('libur')" id="tabNavLibur" class="px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shrink-0 text-slate-600 hover:bg-slate-100">
         <span>🏖️</span> Jadwal Libur
       </button>
@@ -544,6 +547,42 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </section>
+
+    <!-- ================= TAB: ALOKASI JAM ASRAMA MALAM SABTU ================= -->
+    <section id="panelMalamSabtu" class="space-y-3 hidden">
+      <!-- HEADER CARD MALAM SABTU -->
+      <div class="bg-amber-950 text-white p-4 rounded-2xl shadow-xs border border-amber-900/60 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center text-xl shrink-0">
+            🌙
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-black tracking-tight uppercase">Alokasi Jam Belajar Asrama Malam Sabtu</h2>
+              <span class="bg-amber-500 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">Fleksibel</span>
+            </div>
+            <p class="text-xs text-amber-200/90 mt-0.5">
+              Setiap Jumat malam (Malam Sabtu), Asrama meminjam 1 sesi pelajaran MDNU. Dua sesi sisanya tetap aktif di MDNU.
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label for="selectBulanMalamSabtu" class="text-[11px] font-bold text-amber-200">Pilih Bulan:</label>
+          <select id="selectBulanMalamSabtu" onchange="renderAdminPanelMalamSabtu()" class="text-xs font-bold bg-amber-900/80 border border-amber-400/40 rounded-xl px-2.5 py-1.5 text-white focus:ring-1 focus:ring-amber-300 cursor-pointer">
+            <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+            <option value="2026-09">September 2026</option>
+            <option value="2026-08">Agustus 2026</option>
+            <option value="2026-07">Juli 2026</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- CONTAINER TABS TANGGAL JUMAT & PILIHAN JAM -->
+      <div id="containerMalamSabtuContent" class="space-y-3">
+        <!-- Rendered dynamically by JS -->
       </div>
     </section>
 
@@ -1085,6 +1124,8 @@
           settingMalamSabtuPerTanggal = snap.val() || {};
           try { localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal)); } catch (e) {}
           if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
+          if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+          if (currentAdminTab === 'malamSabtu') renderAdminPanelMalamSabtu();
         });
 
       } catch (e) {
@@ -1105,6 +1146,7 @@
         asrama: { btn: document.getElementById('tabNavAsrama'), panel: document.getElementById('panelAsrama') },
         mdnu: { btn: document.getElementById('tabNavMDNU'), panel: document.getElementById('panelMDNU') },
         santri: { btn: document.getElementById('tabNavSantri'), panel: document.getElementById('panelSantri') },
+        malamSabtu: { btn: document.getElementById('tabNavMalamSabtu'), panel: document.getElementById('panelMalamSabtu') },
         libur: { btn: document.getElementById('tabNavLibur'), panel: document.getElementById('panelLibur') },
         security: { btn: document.getElementById('tabNavSecurity'), panel: document.getElementById('panelSecurity') }
       };
@@ -1124,6 +1166,7 @@
       if (tab === 'asrama') renderAsramaSpreadsheet();
       if (tab === 'mdnu') renderMDNUSpreadsheet();
       if (tab === 'santri') renderSantriIndukList();
+      if (tab === 'malamSabtu') renderAdminPanelMalamSabtu();
       if (tab === 'libur') renderLiburTable();
     }
 
@@ -1298,9 +1341,28 @@
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-emerald-100 text-emerald-950');
         const displayLabel = d.displayLabel || d.day;
+        let malamSabtuSelector = '';
+        if (d.isJumat) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const isFrozen = (d.dateISO <= '2026-09-30');
+          if (isFrozen) {
+            const slotLabel = curVal === 'pel1' ? 'Jam 1' : (curVal === 'pel2' ? 'Jam 2' : 'Jam 3');
+            malamSabtuSelector = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight" title="Data Historis Terkunci">Mlm: ${slotLabel} 🧊</span></div>`;
+          } else {
+            malamSabtuSelector = `
+              <div class="mt-0.5 flex flex-col items-center">
+                <select onchange="ubahSettingMalamSabtuTanggal('${d.dateISO}', this.value)" title="Alokasi Jam Asrama Malam Sabtu" class="text-[9.5px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500">
+                  <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (18:30)</option>
+                  <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (19:40)</option>
+                  <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (21:00)</option>
+                </select>
+              </div>`;
+          }
+        }
         html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
           <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuSelector}
         </th>`;
       });
 
@@ -1316,7 +1378,12 @@
         d.sessions.forEach((sess, sIdx) => {
           const isLast = (sIdx === d.sessions.length - 1);
           const borderThick = isLast ? 'border-r-thick' : '';
-          const label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          let label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          if (sess === 'malam' && d.isJumat) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            const slotName = curVal === 'pel1' ? 'J1' : (curVal === 'pel2' ? 'J2' : 'J3');
+            label = `Malam (${slotName})`;
+          }
           html += `<th class="col-sesi bg-emerald-50 text-emerald-950 ${borderThick}">${label}</th>`;
         });
       });
@@ -1554,9 +1621,28 @@
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-indigo-100 text-indigo-950');
         const displayLabel = d.displayLabel || d.day;
+        let malamSabtuSelector = '';
+        if (d.dayOfWeek === 5) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const isFrozen = (d.dateISO <= '2026-09-30');
+          if (isFrozen) {
+            const slotLabel = curVal === 'pel1' ? 'Jam 1 Asr' : (curVal === 'pel2' ? 'Jam 2 Asr' : 'Jam 3 Asr');
+            malamSabtuSelector = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight" title="Data Historis Terkunci">Mlm: ${slotLabel} 🧊</span></div>`;
+          } else {
+            malamSabtuSelector = `
+              <div class="mt-0.5 flex flex-col items-center">
+                <select onchange="ubahSettingMalamSabtuTanggal('${d.dateISO}', this.value)" title="Alokasi Sesi Asrama Malam Sabtu" class="text-[9.5px] font-bold bg-white text-amber-950 border border-amber-400 rounded px-1 py-0.5 shadow-2xs cursor-pointer focus:ring-1 focus:ring-amber-500">
+                  <option value="pel1" ${curVal === 'pel1' ? 'selected' : ''}>Jam 1 (ke Asr)</option>
+                  <option value="pel2" ${curVal === 'pel2' ? 'selected' : ''}>Jam 2 (ke Asr)</option>
+                  <option value="pel3" ${curVal === 'pel3' ? 'selected' : ''}>Jam 3 (ke Asr)</option>
+                </select>
+              </div>`;
+          }
+        }
         html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
           <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuSelector}
         </th>`;
       });
 
@@ -1576,6 +1662,13 @@
           if (sess === 'pel1') label = 'P1';
           else if (sess === 'pel2') label = 'P2';
           else if (sess === 'pel3') label = 'P3';
+
+          if (d.dayOfWeek === 5) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            if (sess === curVal) {
+              label = `<span class="text-rose-700 font-bold" title="Slot ini dipinjam Asrama (Libur di MDNU)">${label} (Asr)</span>`;
+            }
+          }
           html += `<th class="col-sesi bg-indigo-50 text-indigo-950 ${borderThick}">${label}</th>`;
         });
       });
@@ -2029,6 +2122,229 @@
       renderSantriIndukList();
       renderAsramaSpreadsheet();
       renderMDNUSpreadsheet();
+    }
+
+    // ================= TAB: ALOKASI JAM ASRAMA MALAM SABTU =================
+    let activeMalamSabtuDate = '';
+
+    function setTabMalamSabtuAktif(dateISO) {
+      activeMalamSabtuDate = dateISO;
+      renderAdminPanelMalamSabtu();
+    }
+
+    function renderAdminPanelMalamSabtu() {
+      const container = document.getElementById('containerMalamSabtuContent');
+      if (!container) return;
+
+      const selectBulan = document.getElementById('selectBulanMalamSabtu');
+      const monthVal = selectBulan ? selectBulan.value : '2026-10';
+      const [yearStr, monthStr] = monthVal.split('-');
+      const year = parseInt(yearStr, 10);
+      const month = parseInt(monthStr, 10);
+      const totalDays = new Date(year, month, 0).getDate();
+
+      // Kumpulkan seluruh tanggal Jumat dalam bulan ini
+      const jumatDates = [];
+      const startDay = (monthVal === '2026-07') ? 14 : 1;
+      for (let day = startDay; day <= totalDays; day++) {
+        const dt = new Date(year, month - 1, day);
+        if (dt.getDay() === 5) { // 5 = Jumat
+          const dd = String(day).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dd}`;
+          jumatDates.push({
+            day,
+            month,
+            dateISO,
+            displayLabel: `${dd}/${monthStr}/${yearStr}`,
+            isFrozen: (dateISO <= '2026-09-30')
+          });
+        }
+      }
+
+      if (jumatDates.length === 0) {
+        container.innerHTML = `<div class="bg-white border border-amber-200 rounded-2xl p-6 text-center text-xs text-amber-800 italic">Tidak ada tanggal Jumat (Malam Sabtu) pada bulan yang dipilih.</div>`;
+        return;
+      }
+
+      if (!activeMalamSabtuDate || !jumatDates.some(d => d.dateISO === activeMalamSabtuDate)) {
+        activeMalamSabtuDate = jumatDates[0].dateISO;
+      }
+
+      const activeObj = jumatDates.find(d => d.dateISO === activeMalamSabtuDate) || jumatDates[0];
+      const curSetting = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[activeObj.dateISO]) || 'pel1';
+      const isFrozen = activeObj.isFrozen;
+
+      // 1. Tab Navigasi Tanggal Jumat
+      let tabsHtml = `<div class="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-black text-slate-500 uppercase tracking-wider">Pilih Tanggal Jumat Malam:</span>
+          <span class="text-[11px] font-mono font-bold text-amber-800">${jumatDates.length} Tanggal Jumat</span>
+        </div>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">`;
+
+      jumatDates.forEach(d => {
+        const isSelected = (d.dateISO === activeMalamSabtuDate);
+        const dVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+        const slotLabel = dVal === 'pel1' ? 'Jam 1' : (dVal === 'pel2' ? 'Jam 2' : 'Jam 3');
+
+        const btnClass = isSelected
+          ? 'bg-amber-600 text-white shadow-xs border-amber-600 font-extrabold ring-2 ring-amber-400/40'
+          : 'bg-slate-50 text-slate-700 hover:bg-amber-50 hover:border-amber-300 border-slate-200 font-semibold';
+        const badgeClass = isSelected
+          ? 'bg-amber-900 text-amber-100'
+          : 'bg-white text-amber-900 border border-amber-200';
+
+        tabsHtml += `
+          <button type="button" onclick="setTabMalamSabtuAktif('${d.dateISO}')"
+            class="touch-target px-3.5 py-2 rounded-xl text-xs border transition flex items-center gap-2 shrink-0 cursor-pointer ${btnClass}">
+            <span>Jumat, ${d.displayLabel}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${badgeClass}">${slotLabel}</span>
+            ${d.isFrozen ? '<span title="Data Historis Terkunci">🧊</span>' : ''}
+          </button>
+        `;
+      });
+
+      tabsHtml += `</div></div>`;
+
+      // 2. Options Card Jam 1, Jam 2, Jam 3
+      const options = [
+        {
+          key: 'pel1',
+          title: 'Jam 1 (Sesi Awal)',
+          jam: '18:30 - 19:40 WIB',
+          asrama: 'Asrama mengambil Jam 1 (Cutoff 19:40 WIB)',
+          mdnu: 'MDNU: Pel 2 (19:40-21:00) & Pel 3 (21:00-22:30) Aktif',
+          mdnuLibur: 'Pel 1 MDNU: Libur (Dipinjam Asrama)'
+        },
+        {
+          key: 'pel2',
+          title: 'Jam 2 (Sesi Tengah)',
+          jam: '19:40 - 21:00 WIB',
+          asrama: 'Asrama mengambil Jam 2 (Cutoff 21:00 WIB)',
+          mdnu: 'MDNU: Pel 1 (18:30-19:40) & Pel 3 (21:00-22:30) Aktif',
+          mdnuLibur: 'Pel 2 MDNU: Libur (Dipinjam Asrama)'
+        },
+        {
+          key: 'pel3',
+          title: 'Jam 3 (Sesi Akhir)',
+          jam: '21:00 - 22:30 WIB',
+          asrama: 'Asrama mengambil Jam 3 (Cutoff 22:30 WIB)',
+          mdnu: 'MDNU: Pel 1 (18:30-19:40) & Pel 2 (19:40-21:00) Aktif',
+          mdnuLibur: 'Pel 3 MDNU: Libur (Dipinjam Asrama)'
+        }
+      ];
+
+      let frozenWarning = '';
+      if (isFrozen) {
+        frozenWarning = `
+          <div class="bg-amber-50 border border-amber-300 rounded-xl p-3 text-xs text-amber-900 flex items-center gap-2">
+            <span class="text-base">🧊</span>
+            <div>
+              <b>Gembok Proteksi Historis:</b> Tanggal <span class="font-mono font-bold">${activeObj.dateISO}</span> berada pada periode sebelum 1 Oktober 2026. Nilai ini terkunci mutlak demi integritas data arsip pesantren dan tidak dapat diubah.
+            </div>
+          </div>
+        `;
+      }
+
+      let cardsHtml = `
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-xl bg-amber-500 text-white font-black text-sm flex items-center justify-center shrink-0">📅</span>
+              <div>
+                <h3 class="font-extrabold text-slate-900 text-sm">Pengaturan Tanggal: <span class="text-amber-800 font-mono">${activeObj.dateISO}</span> (Jumat Malam)</h3>
+                <p class="text-[11px] text-slate-500">Pilih alokasi jam belajar Asrama untuk tanggal terpilih di atas:</p>
+              </div>
+            </div>
+            <span class="self-start sm:self-auto text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-950 border border-amber-300 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-600 animate-pulse"></span>
+              Terpilih: ${curSetting === 'pel1' ? 'Jam 1 (Sesi Awal)' : (curSetting === 'pel2' ? 'Jam 2 (Sesi Tengah)' : 'Jam 3 (Sesi Akhir)')}
+            </span>
+          </div>
+
+          ${frozenWarning}
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+      `;
+
+      options.forEach(opt => {
+        const isSelected = (curSetting === opt.key);
+        const cardClass = isSelected
+          ? 'bg-amber-50/80 border-2 border-amber-500 ring-2 ring-amber-400/30 shadow-xs'
+          : (isFrozen
+              ? 'bg-slate-50 border border-slate-200 opacity-60 cursor-not-allowed'
+              : 'bg-slate-50/70 border border-slate-200 hover:border-amber-300 hover:bg-amber-50/40 cursor-pointer');
+
+        const checkIcon = isSelected
+          ? `<span class="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center font-black">✓</span>`
+          : `<span class="w-5 h-5 rounded-full border border-slate-300 bg-white"></span>`;
+
+        const clickAction = isFrozen
+          ? `alert('Tanggal ini sudah di-freeze (kunci mutlak) untuk menjaga integritas data historis.')`
+          : `ubahSettingMalamSabtuTanggal('${activeObj.dateISO}', '${opt.key}')`;
+
+        cardsHtml += `
+          <div onclick="${clickAction}"
+            class="p-4 rounded-xl transition flex flex-col justify-between gap-3 ${cardClass}">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="font-extrabold text-xs sm:text-sm text-slate-900 block">${opt.title}</span>
+                <span class="font-mono text-[11px] font-bold text-amber-800 block mt-0.5">${opt.jam}</span>
+              </div>
+              ${checkIcon}
+            </div>
+            <div class="space-y-1.5 pt-2 border-t border-slate-200/60 text-[11px]">
+              <div class="text-slate-800 font-semibold flex items-start gap-1.5">
+                <span class="text-amber-600 font-bold shrink-0">🏠</span>
+                <span>${opt.asrama}</span>
+              </div>
+              <div class="text-emerald-700 font-semibold flex items-start gap-1.5">
+                <span class="text-emerald-600 font-bold shrink-0">📚</span>
+                <span>${opt.mdnu}</span>
+              </div>
+              <div class="text-slate-500 text-[10px] italic flex items-start gap-1.5 pt-0.5">
+                <span class="text-slate-400 font-bold shrink-0">⚪</span>
+                <span>${opt.mdnuLibur}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      cardsHtml += `
+          </div>
+        </div>
+      `;
+
+      container.innerHTML = tabsHtml + cardsHtml;
+    }
+
+    function ubahSettingMalamSabtuTanggal(dateISO, sesi) {
+      if (dateISO <= '2026-09-30') {
+        alert('Tanggal ini sudah di-freeze (kunci mutlak) untuk menjaga integritas data historis.');
+        return;
+      }
+      if (!db) {
+        alert('Koneksi Firebase belum siap.');
+        return;
+      }
+
+      settingMalamSabtuPerTanggal[dateISO] = sesi;
+      try {
+        localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal));
+      } catch (e) {}
+
+      const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
+      db.ref(`${root}/settingMalamSabtuPerTanggal/${dateISO}`).set(sesi)
+        .then(() => {
+          renderAdminPanelMalamSabtu();
+          if (typeof renderAsramaSpreadsheet === 'function') renderAsramaSpreadsheet();
+          if (typeof renderMDNUSpreadsheet === 'function') renderMDNUSpreadsheet();
+        })
+        .catch(err => {
+          console.error('Gagal menyimpan setting Malam Sabtu:', err);
+          alert('Gagal menyimpan ke Firebase: ' + err.message);
+        });
     }
 
     // ================= TAB 4: MANAJEMEN HARI LIBUR =================

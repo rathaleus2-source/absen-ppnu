@@ -632,6 +632,7 @@
           settingMalamSabtuPerTanggal = snap.val() || {};
           try { localStorage.setItem('ppnu_cached_settingMalamSabtu', JSON.stringify(settingMalamSabtuPerTanggal)); } catch (e) {}
           if (currentSantriTab === 'mdnu') renderMDNUSpreadsheet();
+          if (currentSantriTab === 'asrama') renderAsramaSpreadsheet();
         });
 
         // Listen Master Santri (dataSantriInduk / santriList)
@@ -889,9 +890,16 @@
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-emerald-100 text-emerald-950');
         const displayLabel = d.displayLabel || d.day;
+        let malamSabtuBadge = '';
+        if (d.isJumat) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const slotName = curVal === 'pel1' ? 'Jam 1' : (curVal === 'pel2' ? 'Jam 2' : 'Jam 3');
+          malamSabtuBadge = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight">Mlm Sabtu: ${slotName}</span></div>`;
+        }
         html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
           <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuBadge}
         </th>`;
       });
 
@@ -907,7 +915,12 @@
         d.sessions.forEach((sess, sIdx) => {
           const isLast = (sIdx === d.sessions.length - 1);
           const borderThick = isLast ? 'border-r-thick' : '';
-          const label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          let label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          if (sess === 'malam' && d.isJumat) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            const slotName = curVal === 'pel1' ? 'J1' : (curVal === 'pel2' ? 'J2' : 'J3');
+            label = `Malam (${slotName})`;
+          }
           html += `<th class="col-sesi bg-emerald-50 text-emerald-950 ${borderThick}">${label}</th>`;
         });
       });
@@ -1154,9 +1167,16 @@
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-indigo-100 text-indigo-950');
         const displayLabel = d.displayLabel || d.day;
+        let malamSabtuBadge = '';
+        if (d.isJumat) {
+          const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+          const slotName = curVal === 'pel1' ? 'Jam 1 Asr' : (curVal === 'pel2' ? 'Jam 2 Asr' : 'Jam 3 Asr');
+          malamSabtuBadge = `<div class="mt-0.5"><span class="text-[9px] font-bold text-amber-900 bg-amber-200/90 px-1 py-0.2 rounded-md leading-tight">Mlm Sabtu: ${slotName}</span></div>`;
+        }
         html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
           <span class="block text-[10.5px] font-mono font-semibold">${displayLabel}</span>
+          ${malamSabtuBadge}
         </th>`;
       });
 
@@ -1176,6 +1196,13 @@
           if (sess === 'pel1') label = 'P1';
           else if (sess === 'pel2') label = 'P2';
           else if (sess === 'pel3') label = 'P3';
+
+          if (d.isJumat) {
+            const curVal = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[d.dateISO]) || 'pel1';
+            if (sess === curVal) {
+              label = `<span class="text-rose-700 font-bold" title="Slot ini dipinjam Asrama (Libur di MDNU)">${label} (Asr)</span>`;
+            }
+          }
           html += `<th class="col-sesi bg-indigo-50 text-indigo-950 ${borderThick}">${label}</th>`;
         });
       });
