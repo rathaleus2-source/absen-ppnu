@@ -1087,7 +1087,8 @@
         });
       }
 
-      // Generate date array
+      // Generate date array dengan evaluasi per-sesi cerdas
+      const activePinsAsr = list.map(s => s.pin);
       const dateList = [];
       for (let day = 1; day <= totalDays; day++) {
         const dd = String(day).padStart(2, '0');
@@ -1098,22 +1099,44 @@
         const isJumat = (dayOfWeek === 5);
         const isMinggu = (dayOfWeek === 0);
         const isHoliday = holidaysData && holidaysData[dateISO];
-        const isLiburSubuh = isJumat || isMinggu || !!isHoliday;
 
-        if (hideEmptyLibur && isLiburSubuh) {
-          continue;
+        let sessions = ['subuh', 'malam'];
+        if (hideEmptyLibur) {
+          sessions = sessions.filter(sessKey => {
+            return activePinsAsr.some(pin => {
+              const cell = (window.PPNURules && window.PPNURules.getAsramaCell)
+                ? window.PPNURules.getAsramaCell({
+                    pin,
+                    dateISO,
+                    dayOfWeek,
+                    asramaMatrix: asramaMatrixData,
+                    manualCellOverrides,
+                    permissionDetailsMap,
+                    specialLiburAsrama,
+                    holidaysData,
+                    statusSantriAsrama,
+                    tglMulaiLajuSantri,
+                  })
+                : { subuh: '-', malam: '-' };
+              const v = cell[sessKey];
+              return v !== 'LIBUR' && v !== 'LAJU';
+            });
+          });
         }
 
-        dateList.push({
-          day,
-          dateISO,
-          dayOfWeek,
-          dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
-          isJumat,
-          isMinggu,
-          isHoliday: !!isHoliday,
-          holidayDesc: isHoliday || ''
-        });
+        if (sessions.length > 0) {
+          dateList.push({
+            day,
+            dateISO,
+            dayOfWeek,
+            dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+            isJumat,
+            isMinggu,
+            isHoliday: !!isHoliday,
+            holidayDesc: isHoliday || '',
+            sessions
+          });
+        }
       }
 
       // Update Banner Asrama
@@ -1131,10 +1154,10 @@
             TOTAL REKAPITULASI
           </th>`;
 
-      // Header Tanggal Asrama
+      // Header Tanggal Asrama (Dynamic Colspan)
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-emerald-100 text-emerald-950');
-        html += `<th colspan="2" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
+        html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
           <span class="block text-[10.5px] font-mono font-semibold">${d.day}</span>
         </th>`;
@@ -1148,9 +1171,13 @@
           <th class="col-stat bg-slate-100 text-slate-800 font-bold" title="Total Jam Pelajaran / Pertemuan">JP</th>
           <th class="col-pct border-r-thick bg-red-100 text-red-900 font-black" title="Persentase Alpha">%</th>`;
 
-      dateList.forEach(() => {
-        html += `<th class="col-sesi bg-emerald-50 text-emerald-950">Subuh</th>
-                 <th class="col-sesi bg-emerald-50 text-emerald-950 border-r-thick">Malam</th>`;
+      dateList.forEach(d => {
+        d.sessions.forEach((sess, sIdx) => {
+          const isLast = (sIdx === d.sessions.length - 1);
+          const borderThick = isLast ? 'border-r-thick' : '';
+          const label = (sess === 'subuh') ? 'Subuh' : 'Malam';
+          html += `<th class="col-sesi bg-emerald-50 text-emerald-950 ${borderThick}">${label}</th>`;
+        });
       });
 
       html += `</tr>
@@ -1163,7 +1190,6 @@
         const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50';
 
         const isLaju = (statusSantriAsrama[santri.pin] === 'laju' || statusSantriAsrama[santri.pin] === 'kantin');
-        const tglLaju = tglMulaiLajuSantri[santri.pin];
 
         let sessionCells = '';
         dateList.forEach(d => {
@@ -1182,33 +1208,25 @@
               })
             : { subuh: '-', malam: '-', subuh_time: '', malam_time: '', isLaju: false };
 
-          // Subuh
-          const valSubuh = cell.subuh;
-          const timeSubuh = cell.subuh_time;
-          if (valSubuh !== '-' && valSubuh !== 'LIBUR' && valSubuh !== 'LAJU') {
-            totalJP++;
-            if (valSubuh === 'H') countH++;
-            else if (valSubuh === 'I') countI++;
-            else if (valSubuh === 'A') countA++;
-          }
+          d.sessions.forEach((sess, sIdx) => {
+            const isLast = (sIdx === d.sessions.length - 1);
+            const borderThick = isLast ? 'border-r-thick' : '';
+            const val = cell[sess];
+            const scanTime = cell[sess + '_time'];
 
-          // Malam
-          const valMalam = cell.malam;
-          const timeMalam = cell.malam_time;
-          if (valMalam !== '-' && valMalam !== 'LIBUR' && valMalam !== 'LAJU') {
-            totalJP++;
-            if (valMalam === 'H') countH++;
-            else if (valMalam === 'I') countI++;
-            else if (valMalam === 'A') countA++;
-          }
+            if (val !== '-' && val !== 'LIBUR' && val !== 'LAJU') {
+              totalJP++;
+              if (val === 'H') countH++;
+              else if (val === 'I') countI++;
+              else if (val === 'A') countA++;
+            }
 
-          if (cell.isLaju) {
-            sessionCells += `<td class="col-sesi select-none">${renderBadge(valSubuh, 'asrama', true, timeSubuh)}</td>`;
-            sessionCells += `<td class="col-sesi border-r-thick select-none">${renderBadge(valMalam, 'asrama', true, timeMalam)}</td>`;
-          } else {
-            sessionCells += `<td class="col-sesi cursor-pointer hover:bg-emerald-100/60 transition select-none" onclick="openModalEditCell('asrama', '${santri.pin}', '${d.dateISO}', 'subuh')" title="Klik untuk ubah presensi Subuh">${renderBadge(valSubuh, 'asrama', false, timeSubuh)}</td>`;
-            sessionCells += `<td class="col-sesi border-r-thick cursor-pointer hover:bg-emerald-100/60 transition select-none" onclick="openModalEditCell('asrama', '${santri.pin}', '${d.dateISO}', 'malam')" title="Klik untuk ubah presensi Malam">${renderBadge(valMalam, 'asrama', false, timeMalam)}</td>`;
-          }
+            if (cell.isLaju) {
+              sessionCells += `<td class="col-sesi ${borderThick} select-none">${renderBadge(val, 'asrama', true, scanTime)}</td>`;
+            } else {
+              sessionCells += `<td class="col-sesi ${borderThick} cursor-pointer hover:bg-emerald-100/60 transition select-none" onclick="openModalEditCell('asrama', '${santri.pin}', '${d.dateISO}', '${sess}')" title="Klik untuk ubah presensi ${sess.toUpperCase()}">${renderBadge(val, 'asrama', false, scanTime)}</td>`;
+            }
+          });
         });
 
         // Persentase Alpha seperti web utama
@@ -1258,7 +1276,8 @@
         list = list.filter(s => s.kelas === filterKelas);
       }
 
-      // Generate date array
+      // Generate date array dengan evaluasi per-sesi cerdas MDNU
+      const activePinsMDN = list.map(s => s.pin);
       const dateList = [];
       for (let day = 1; day <= totalDays; day++) {
         const dd = String(day).padStart(2, '0');
@@ -1269,19 +1288,40 @@
         const isJumat = (dayOfWeek === 5);
         const isHoliday = holidaysData && holidaysData[dateISO];
 
-        if (hideEmptyLibur && (isJumat || isHoliday)) {
-          continue;
+        let sessions = ['sore', 'pel1', 'pel2', 'pel3'];
+        if (hideEmptyLibur) {
+          sessions = sessions.filter(sessKey => {
+            return activePinsMDN.some(pin => {
+              const cell = (window.PPNURules && window.PPNURules.getMDNUCell)
+                ? window.PPNURules.getMDNUCell({
+                    pin,
+                    dateISO,
+                    dayOfWeek,
+                    mdnuMatrix: mdnuMatrixData,
+                    manualCellOverrides,
+                    permissionDetailsMap,
+                    settingMalamSabtuPerTanggal,
+                    holidaysData,
+                  })
+                : { sore: '-', pel1: '-', pel2: '-', pel3: '-' };
+              const v = cell[sessKey];
+              return v !== 'LIBUR' && v !== 'LAJU';
+            });
+          });
         }
 
-        dateList.push({
-          day,
-          dateISO,
-          dayOfWeek,
-          dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
-          isJumat,
-          isHoliday: !!isHoliday,
-          holidayDesc: isHoliday || ''
-        });
+        if (sessions.length > 0) {
+          dateList.push({
+            day,
+            dateISO,
+            dayOfWeek,
+            dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
+            isJumat,
+            isHoliday: !!isHoliday,
+            holidayDesc: isHoliday || '',
+            sessions
+          });
+        }
       }
 
       // Update Banner MDNU
@@ -1301,10 +1341,10 @@
             TOTAL REKAPITULASI
           </th>`;
 
-      // Header Tanggal MDNU
+      // Header Tanggal MDNU (Dynamic Colspan)
       dateList.forEach(d => {
         const bgHead = d.isHoliday ? 'bg-amber-200 text-amber-950' : (d.isJumat ? 'bg-amber-100 text-amber-950' : 'bg-indigo-100 text-indigo-950');
-        html += `<th colspan="4" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
+        html += `<th colspan="${d.sessions.length}" class="${bgHead} border-r-thick py-1 px-1" title="${d.holidayDesc}">
           <span class="block text-xs font-black uppercase">${d.dayName}</span>
           <span class="block text-[10.5px] font-mono font-semibold">${d.day}</span>
         </th>`;
@@ -1318,11 +1358,16 @@
           <th class="col-stat bg-slate-100 text-slate-800 font-bold" title="Total Jam Pelajaran / Pertemuan">JP</th>
           <th class="col-pct border-r-thick bg-red-100 text-red-900 font-black" title="Persentase Alpha">%</th>`;
 
-      dateList.forEach(() => {
-        html += `<th class="col-sesi bg-indigo-50 text-indigo-950">Sr</th>
-                 <th class="col-sesi bg-indigo-50 text-indigo-950">P1</th>
-                 <th class="col-sesi bg-indigo-50 text-indigo-950">P2</th>
-                 <th class="col-sesi bg-indigo-50 text-indigo-950 border-r-thick">P3</th>`;
+      dateList.forEach(d => {
+        d.sessions.forEach((sess, sIdx) => {
+          const isLast = (sIdx === d.sessions.length - 1);
+          const borderThick = isLast ? 'border-r-thick' : '';
+          let label = 'Sr';
+          if (sess === 'pel1') label = 'P1';
+          else if (sess === 'pel2') label = 'P2';
+          else if (sess === 'pel3') label = 'P3';
+          html += `<th class="col-sesi bg-indigo-50 text-indigo-950 ${borderThick}">${label}</th>`;
+        });
       });
 
       html += `</tr>
@@ -1349,17 +1394,19 @@
               })
             : { sore: '-', pel1: '-', pel2: '-', pel3: '-', sore_time: '', pel1_time: '', pel2_time: '', pel3_time: '' };
 
-          const sessions = ['sore', 'pel1', 'pel2', 'pel3'];
-          sessions.forEach((sess, sIdx) => {
+          d.sessions.forEach((sess, sIdx) => {
+            const isLast = (sIdx === d.sessions.length - 1);
+            const borderThick = isLast ? 'border-r-thick' : '';
             const val = cell[sess] || '-';
             const scanTime = cell[sess + '_time'] || '';
+
             if (val !== '-' && val !== 'LIBUR') {
               totalJP++;
               if (val === 'H') countH++;
               else if (val === 'I') countI++;
               else if (val === 'A') countA++;
             }
-            const borderThick = (sIdx === 3) ? 'border-r-thick' : '';
+
             sessionCells += `<td class="col-sesi ${borderThick} cursor-pointer hover:bg-indigo-100/60 transition select-none" onclick="openModalEditCell('mdnu', '${santri.pin}', '${d.dateISO}', '${sess}')" title="Klik untuk ubah presensi ${sess.toUpperCase()}">${renderBadge(val, 'mdnu', false, scanTime)}</td>`;
           });
         });
