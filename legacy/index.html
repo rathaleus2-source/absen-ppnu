@@ -2668,7 +2668,7 @@
                     res[sesi] = 'LIBUR'; // Libur Khusus yang ditetapkan Admin
                 } else if (ovr !== undefined) {
                     res[sesi] = ovr;
-                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== '') {
+                } else if (raw[sesi] !== undefined && raw[sesi] !== '-' && raw[sesi] !== '' && raw[sesi] !== 'LIBUR') {
                     res[sesi] = raw[sesi]; // Ambil nilai riil database (H, A, I, LIBUR)
                 } else if (hasIzin) {
                     res[sesi] = 'I'; // Ada surat izin resmi -> WAJIB IZIN

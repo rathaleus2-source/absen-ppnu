@@ -647,10 +647,10 @@ const PPNURules = {
         res[sess] = ovr;
       } else if (scanTime) {
         res[sess] = 'H'; // Scan fisik mesin selalu hadir!
-      } else if (raw[sess] && raw[sess] !== '-' && raw[sess] !== '') {
-        res[sess] = raw[sess];
       } else if (hasIzin) {
-        res[sess] = 'I';
+        res[sess] = 'I'; // Izin resmi Pos Keamanan / Kesiswaan
+      } else if (raw[sess] && raw[sess] !== '-' && raw[sess] !== '' && raw[sess] !== 'LIBUR') {
+        res[sess] = raw[sess];
       } else if (this.isSesiBelumLewatBatas(dateISO, sess, 'mdnu')) {
         res[sess] = '-';
       } else {
