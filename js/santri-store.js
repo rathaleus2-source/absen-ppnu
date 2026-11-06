@@ -12,6 +12,33 @@ const PPNUSantriStore = {
   _cachedDispen: {},
   _cachedPermissions: {},
 
+  // Urutan Hierarki Kelas Resmi Pesantren: 2UA > 1UA > 2WA > 1WA > 2AA
+  classOrder: ['2UA', '1UA', '2WA', '1WA', '2AA'],
+
+  getClassPriority(pin) {
+    const p = String(pin || '').toUpperCase().trim();
+    for (let i = 0; i < this.classOrder.length; i++) {
+      if (p.startsWith(this.classOrder[i])) return i;
+    }
+    return 999;
+  },
+
+  /**
+   * Fungsi pembanding urutan santri standar PPNU:
+   * 1. Berdasarkan hierarki kelas: 2UA > 1UA > 2WA > 1WA > 2AA
+   * 2. Di dalam kelas yang sama, urut berdasarkan nomor PIN ascending (2UA01, 2UA02, ...)
+   */
+  compareSantri(a, b) {
+    const pinA = String(a?.pin || a || '').toUpperCase().trim();
+    const pinB = String(b?.pin || b || '').toUpperCase().trim();
+    const prioA = PPNUSantriStore.getClassPriority(pinA);
+    const prioB = PPNUSantriStore.getClassPriority(pinB);
+    if (prioA !== prioB) {
+      return prioA - prioB;
+    }
+    return pinA.localeCompare(pinB, undefined, { numeric: true, sensitivity: 'base' });
+  },
+
   /**
    * Ekstraksi Kode Kelas dari PIN Santri
    * Contoh: '1UA05' -> '1UA', '2WA12' -> '2WA'
@@ -100,7 +127,7 @@ const PPNUSantriStore = {
           statusKependudukan: asramaStatus,
         };
       })
-      .sort((a, b) => a.pin.localeCompare(b.pin));
+      .sort((a, b) => PPNUSantriStore.compareSantri(a, b));
   },
 
   /**

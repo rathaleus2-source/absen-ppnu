@@ -901,10 +901,38 @@
       }
     }
 
+    // Urutan Hierarki Kelas Resmi Pesantren: 2UA > 1UA > 2WA > 1WA > 2AA
+    const classOrder = ['2UA', '1UA', '2WA', '1WA', '2AA'];
+    function getClassPriority(pin) {
+      const p = String(pin || '').toUpperCase().trim();
+      for (let i = 0; i < classOrder.length; i++) {
+        if (p.startsWith(classOrder[i])) return i;
+      }
+      return 999;
+    }
+
+    /**
+     * Standar Pembanding Urutan Santri PPNU:
+     * 1. Hierarki jenjang kelas: 2UA > 1UA > 2WA > 1WA > 2AA
+     * 2. Di dalam kelas yang sama, urut nomor PIN ascending (2UA01, 2UA02, ...)
+     */
+    function compareSantri(a, b) {
+      const pinA = String(a?.pin || a || '').toUpperCase().trim();
+      const pinB = String(b?.pin || b || '').toUpperCase().trim();
+      const prioA = getClassPriority(pinA);
+      const prioB = getClassPriority(pinB);
+      if (prioA !== prioB) {
+        return prioA - prioB;
+      }
+      return pinA.localeCompare(pinB, undefined, { numeric: true, sensitivity: 'base' });
+    }
+
     function getSantriMasterList() {
-      if (rawSantriList && rawSantriList.length > 0) return rawSantriList;
-      if (window.PPNU_INITIAL_SEED && window.PPNU_INITIAL_SEED.santriList) {
-        return window.PPNU_INITIAL_SEED.santriList.map(s => {
+      let src = [];
+      if (rawSantriList && rawSantriList.length > 0) {
+        src = rawSantriList;
+      } else if (window.PPNU_INITIAL_SEED && window.PPNU_INITIAL_SEED.santriList) {
+        src = window.PPNU_INITIAL_SEED.santriList.map(s => {
           const pin = String(s.pin || '').toUpperCase().trim();
           const kelas = s.kelas || (window.PPNUSantriStore ? window.PPNUSantriStore.extractClassFromPin(pin) : (pin && pin !== '-' ? pin.substring(0, 3) : '-'));
           return {
@@ -919,7 +947,7 @@
           };
         });
       }
-      return [];
+      return [...src].sort(compareSantri);
     }
 
     function matchSantriClass(s, filterKelas) {
@@ -1315,6 +1343,7 @@
       if (filterKelas !== 'all') {
         list = list.filter(s => matchSantriClass(s, filterKelas));
       }
+      list.sort(compareSantri);
 
       const activePinsAsr = list.map(s => s.pin);
 
@@ -1609,6 +1638,7 @@
       if (filterKelas !== 'all') {
         list = list.filter(s => matchSantriClass(s, filterKelas));
       }
+      list.sort(compareSantri);
 
       const activePinsMDN = list.map(s => s.pin);
 
