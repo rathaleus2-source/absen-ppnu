@@ -620,6 +620,79 @@
               <label for="inputKetLibur" class="block text-[11px] font-bold text-slate-600 mb-1">Keterangan / Alasan Libur</label>
               <input type="text" id="inputKetLibur" title="Keterangan Hari Libur" aria-label="Keterangan Hari Libur" placeholder="Contoh: Maulid Nabi / Haul Masyayikh" class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500" required>
             </div>
+
+            <!-- PILIHAN JAM / SESI LIBUR -->
+            <div class="pt-1">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+                <span>⏰</span> Pilih Jam / Sesi yang Diliburkan:
+              </label>
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 text-xs font-semibold text-slate-800 transition">
+                  <input type="radio" name="liburScope" value="all" checked onchange="toggleLiburScope(this.value)" class="text-emerald-600 focus:ring-emerald-500">
+                  <span>Seharian (Semua Sesi)</span>
+                </label>
+                <label class="flex items-center gap-2 p-2 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 text-xs font-semibold text-slate-800 transition">
+                  <input type="radio" name="liburScope" value="custom" onchange="toggleLiburScope(this.value)" class="text-emerald-600 focus:ring-emerald-500">
+                  <span>Pilih Sesi Tertentu</span>
+                </label>
+              </div>
+
+              <!-- Container Checkbox Sesi Tertentu -->
+              <div id="containerCustomLiburSessions" class="hidden p-3 rounded-xl border border-slate-200 bg-slate-50/90 space-y-3">
+                <!-- Sesi Asrama -->
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-extrabold text-emerald-900 uppercase tracking-wide flex items-center gap-1">
+                      <span>🕌</span> Asrama Putra
+                    </span>
+                    <button type="button" onclick="selectAllLiburSess('asrama')" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 underline">Pilih Asrama</button>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <label class="flex items-center gap-2 text-xs text-slate-700 font-medium p-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-emerald-50/50">
+                      <input type="checkbox" name="liburSess" value="asrama_subuh" class="rounded text-emerald-600 focus:ring-emerald-500">
+                      <span>Subuh (05:00 - 06:30)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 font-medium p-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-emerald-50/50">
+                      <input type="checkbox" name="liburSess" value="asrama_malam" class="rounded text-emerald-600 focus:ring-emerald-500">
+                      <span>Malam (18:30 - 23:00)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Sesi MDNU -->
+                <div class="border-t border-slate-200 pt-2.5">
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-extrabold text-indigo-900 uppercase tracking-wide flex items-center gap-1">
+                      <span>📖</span> MDNU Putra
+                    </span>
+                    <button type="button" onclick="selectAllLiburSess('mdnu')" class="text-[10px] font-bold text-indigo-700 hover:text-indigo-900 underline">Pilih MDNU</button>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    <label class="flex items-center gap-2 text-xs text-slate-700 font-medium p-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-indigo-50/50">
+                      <input type="checkbox" name="liburSess" value="mdnu_sore" class="rounded text-indigo-600 focus:ring-indigo-500">
+                      <span>Sore (15:00 - 18:00)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 font-medium p-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-indigo-50/50">
+                      <input type="checkbox" name="liburSess" value="mdnu_pel1" class="rounded text-indigo-600 focus:ring-indigo-500">
+                      <span>Pel 1 (18:30 - 19:40)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 font-medium p-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-indigo-50/50">
+                      <input type="checkbox" name="liburSess" value="mdnu_pel2" class="rounded text-indigo-600 focus:ring-indigo-500">
+                      <span>Pel 2 (19:40 - 21:00)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-slate-700 font-medium p-1.5 rounded-lg bg-white border border-slate-200 cursor-pointer hover:bg-indigo-50/50">
+                      <input type="checkbox" name="liburSess" value="mdnu_pel3" class="rounded text-indigo-600 focus:ring-indigo-500">
+                      <span>Pel 3 (21:00 - 22:30)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-1 border-t border-slate-200">
+                  <button type="button" onclick="selectAllLiburSess('none')" class="text-[10px] text-slate-500 hover:text-slate-800 font-semibold px-2 py-1 rounded bg-slate-100">Bersihkan Pilihan</button>
+                </div>
+              </div>
+            </div>
+
             <button type="submit" class="touch-target w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-2xs transition">
               Simpan Hari Libur
             </button>
@@ -638,9 +711,10 @@
               <thead class="bg-slate-50 border-b border-slate-200 font-bold text-slate-700">
                 <tr>
                   <th class="py-2 px-3 w-10">No</th>
-                  <th class="py-2 px-3 w-32">Tanggal</th>
+                  <th class="py-2 px-3 w-28">Tanggal</th>
                   <th class="py-2 px-3">Keterangan</th>
-                  <th class="py-2 px-3 w-20 text-center">Aksi</th>
+                  <th class="py-2 px-3 w-48">Jam / Sesi Libur</th>
+                  <th class="py-2 px-3 w-16 text-center">Aksi</th>
                 </tr>
               </thead>
               <tbody id="tbodyLiburKhusus" class="divide-y divide-slate-100">
@@ -1412,7 +1486,7 @@
                 isJumat,
                 isMinggu,
                 isHoliday: !!isHoliday,
-                holidayDesc: isHoliday || '',
+                holidayDesc: ((window.PPNURules && window.PPNURules.getHolidayDescription) ? window.PPNURules.getHolidayDescription(holidaysData, dateISO) + (window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) ? " (" + window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) + ")" : "") : (typeof isHoliday === "string" ? isHoliday : (isHoliday && isHoliday.desc ? isHoliday.desc : ""))),
                 sessions,
                 displayLabel: `${day}/${mm}`
               });
@@ -1472,7 +1546,7 @@
               isJumat,
               isMinggu,
               isHoliday: !!isHoliday,
-              holidayDesc: isHoliday || '',
+              holidayDesc: ((window.PPNURules && window.PPNURules.getHolidayDescription) ? window.PPNURules.getHolidayDescription(holidaysData, dateISO) + (window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) ? " (" + window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) + ")" : "") : (typeof isHoliday === "string" ? isHoliday : (isHoliday && isHoliday.desc ? isHoliday.desc : ""))),
               sessions,
               displayLabel: `${day}`
             });
@@ -1703,7 +1777,7 @@
                 dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
                 isJumat,
                 isHoliday: !!isHoliday,
-                holidayDesc: isHoliday || '',
+                holidayDesc: ((window.PPNURules && window.PPNURules.getHolidayDescription) ? window.PPNURules.getHolidayDescription(holidaysData, dateISO) + (window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) ? " (" + window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) + ")" : "") : (typeof isHoliday === "string" ? isHoliday : (isHoliday && isHoliday.desc ? isHoliday.desc : ""))),
                 sessions,
                 displayLabel: `${day}/${mm}`
               });
@@ -1759,7 +1833,7 @@
               dayName: ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'][dayOfWeek],
               isJumat,
               isHoliday: !!isHoliday,
-              holidayDesc: isHoliday || '',
+              holidayDesc: ((window.PPNURules && window.PPNURules.getHolidayDescription) ? window.PPNURules.getHolidayDescription(holidaysData, dateISO) + (window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) ? " (" + window.PPNURules.getHolidaySessionLabels(holidaysData, dateISO) + ")" : "") : (typeof isHoliday === "string" ? isHoliday : (isHoliday && isHoliday.desc ? isHoliday.desc : ""))),
               sessions,
               displayLabel: `${day}`
             });
@@ -2514,6 +2588,28 @@
     }
 
     // ================= TAB 4: MANAJEMEN HARI LIBUR =================
+    function toggleLiburScope(scope) {
+      const container = document.getElementById('containerCustomLiburSessions');
+      if (!container) return;
+      if (scope === 'custom') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    }
+
+    function selectAllLiburSess(category) {
+      if (category === 'asrama') {
+        document.querySelectorAll('input[name="liburSess"][value^="asrama_"]').forEach(el => el.checked = true);
+      } else if (category === 'mdnu') {
+        document.querySelectorAll('input[name="liburSess"][value^="mdnu_"]').forEach(el => el.checked = true);
+      } else if (category === 'all') {
+        document.querySelectorAll('input[name="liburSess"]').forEach(el => el.checked = true);
+      } else if (category === 'none') {
+        document.querySelectorAll('input[name="liburSess"]').forEach(el => el.checked = false);
+      }
+    }
+
     function renderLiburTable() {
       const tbody = document.getElementById('tbodyLiburKhusus');
       const countEl = document.getElementById('countLiburLabel');
@@ -2524,12 +2620,38 @@
 
       let html = '';
       keys.forEach((dateISO, idx) => {
-        const desc = holidaysData[dateISO];
+        const item = holidaysData[dateISO];
+        let desc = '';
+        let badgeHtml = '';
+
+        if (typeof item === 'string') {
+          desc = item;
+          badgeHtml = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">Seharian (Semua Sesi)</span>';
+        } else if (item && typeof item === 'object') {
+          desc = item.desc || '-';
+          if (item.scope === 'all' || !item.sessions || item.sessions.includes('all')) {
+            badgeHtml = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">Seharian (Semua Sesi)</span>';
+          } else {
+            const labelMap = {
+              'asrama_subuh': '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Asr Subuh</span>',
+              'asrama_malam': '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Asr Malam</span>',
+              'mdnu_sore': '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">MDNU Sore</span>',
+              'mdnu_pel1': '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">MDNU Pel 1</span>',
+              'mdnu_pel2': '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">MDNU Pel 2</span>',
+              'mdnu_pel3': '<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">MDNU Pel 3</span>',
+            };
+            const sessList = Array.isArray(item.sessions) ? item.sessions : [];
+            const tags = sessList.map(s => labelMap[s] || `<span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 text-slate-700">${s}</span>`);
+            badgeHtml = `<div class="flex flex-wrap gap-1">${tags.join('')}</div>`;
+          }
+        }
+
         html += `<tr class="hover:bg-slate-50 transition">
-          <td class="py-2 px-3 font-mono text-slate-500 text-center">${idx + 1}</td>
-          <td class="py-2 px-3 font-mono font-bold text-slate-900">${dateISO}</td>
-          <td class="py-2 px-3 font-medium text-slate-800">${desc}</td>
-          <td class="py-2 px-3 text-center">
+          <td class="py-2.5 px-3 font-mono text-slate-500 text-center">${idx + 1}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-900 whitespace-nowrap">${dateISO}</td>
+          <td class="py-2.5 px-3 font-medium text-slate-800">${desc}</td>
+          <td class="py-2.5 px-3">${badgeHtml}</td>
+          <td class="py-2.5 px-3 text-center">
             <button type="button" onclick="handleHapusLibur('${dateISO}')" class="px-2 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] border border-rose-200 transition">
               Hapus
             </button>
@@ -2538,7 +2660,7 @@
       });
 
       if (keys.length === 0) {
-        html = `<tr><td colspan="4" class="p-6 text-center text-slate-400 text-xs">Belum ada hari libur khusus yang didaftarkan.</td></tr>`;
+        html = `<tr><td colspan="5" class="p-6 text-center text-slate-400 text-xs">Belum ada hari libur khusus yang didaftarkan.</td></tr>`;
       }
 
       tbody.innerHTML = html;
@@ -2548,17 +2670,49 @@
       e.preventDefault();
       const tgl = document.getElementById('inputTglLibur').value;
       const ket = document.getElementById('inputKetLibur').value.trim();
+      const scopeRadio = document.querySelector('input[name="liburScope"]:checked');
+      const scope = scopeRadio ? scopeRadio.value : 'all';
+
       if (!tgl || !ket) return;
 
-      holidaysData[tgl] = ket;
+      let payload = null;
+      if (scope === 'all') {
+        payload = {
+          desc: ket,
+          scope: 'all',
+          sessions: ['all'],
+          updatedAt: Date.now()
+        };
+      } else {
+        const checkedBoxes = Array.from(document.querySelectorAll('input[name="liburSess"]:checked')).map(el => el.value);
+        if (checkedBoxes.length === 0) {
+          alert('⚠️ Silakan pilih minimal 1 sesi/jam yang akan diliburkan!');
+          return;
+        }
+        payload = {
+          desc: ket,
+          scope: 'custom',
+          sessions: checkedBoxes,
+          updatedAt: Date.now()
+        };
+      }
+
+      holidaysData[tgl] = payload;
 
       try {
         if (firebase.apps.length) {
-          await firebase.database().ref(`absensi_ppnu/holidays/${tgl}`).set(ket);
+          await firebase.database().ref(`absensi_ppnu/holidays/${tgl}`).set(payload);
         }
         alert(`Hari libur ${tgl} (${ket}) berhasil disimpan!`);
         document.getElementById('inputKetLibur').value = '';
+        document.querySelectorAll('input[name="liburSess"]').forEach(el => el.checked = false);
+        const allRadio = document.querySelector('input[name="liburScope"][value="all"]');
+        if (allRadio) allRadio.checked = true;
+        toggleLiburScope('all');
+
         renderLiburTable();
+        if (currentAdminTab === 'asrama') renderAsramaSpreadsheet();
+        if (currentAdminTab === 'mdnu') renderMDNUSpreadsheet();
       } catch (err) {
         alert("Gagal menyimpan hari libur: " + err.message);
       }

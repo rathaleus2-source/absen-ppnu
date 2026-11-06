@@ -193,6 +193,83 @@ const PPNURules = {
   },
 
   /**
+   * Cek apakah suatu sesi berstatus LIBUR khusus berdasarkan konfigurasi Superadmin
+   * Kompatibel dengan:
+   * 1. Format legacy: string 'Keterangan Libur' -> Seharian penuh (semua sesi)
+   * 2. Format baru: objek { desc, scope: 'all'|'custom', sessions: ['asrama_subuh', 'mdnu_pel1', ...] }
+   * @param {Object} holidaysData
+   * @param {string} dateISO - 'YYYY-MM-DD'
+   * @param {'asrama'|'mdnu'} category
+   * @param {string} sessionKey - 'subuh'|'malam'|'sore'|'pel1'|'pel2'|'pel3'
+   * @returns {boolean}
+   */
+  isSessionHoliday(holidaysData, dateISO, category, sessionKey) {
+    if (!holidaysData || !dateISO) return false;
+    const holiday = holidaysData[dateISO];
+    if (!holiday) return false;
+
+    // 1. Format legacy string: Seharian penuh (semua sesi)
+    if (typeof holiday === 'string') return true;
+
+    // 2. Format objek
+    if (typeof holiday === 'object') {
+      if (holiday.scope === 'all') return true;
+      const sessList = Array.isArray(holiday.sessions) ? holiday.sessions : [];
+      if (sessList.includes('all')) return true;
+
+      // Cek format prefix spesifik: 'asrama_subuh', 'mdnu_pel1'
+      const prefixed = category + '_' + sessionKey;
+      if (sessList.includes(prefixed)) return true;
+
+      // Fallback tanpa prefix
+      if (sessList.includes(sessionKey)) return true;
+    }
+
+    return false;
+  },
+
+  /**
+   * Mengambil teks keterangan hari libur
+   * @param {Object} holidaysData
+   * @param {string} dateISO
+   * @returns {string}
+   */
+  getHolidayDescription(holidaysData, dateISO) {
+    if (!holidaysData || !dateISO) return '';
+    const holiday = holidaysData[dateISO];
+    if (!holiday) return '';
+    if (typeof holiday === 'string') return holiday;
+    if (typeof holiday === 'object') return holiday.desc || '';
+    return '';
+  },
+
+  /**
+   * Mengambil label ringkas sesi apa saja yang diliburkan
+   * @param {Object} holidaysData
+   * @param {string} dateISO
+   * @returns {string}
+   */
+  getHolidaySessionLabels(holidaysData, dateISO) {
+    if (!holidaysData || !dateISO) return '';
+    const holiday = holidaysData[dateISO];
+    if (!holiday) return '';
+    if (typeof holiday === 'string' || holiday.scope === 'all') return 'Seharian Penuh';
+    const sessList = Array.isArray(holiday.sessions) ? holiday.sessions : [];
+    if (sessList.includes('all')) return 'Seharian Penuh';
+
+    const labelMap = {
+      'asrama_subuh': 'Asr Subuh',
+      'asrama_malam': 'Asr Malam',
+      'mdnu_sore': 'MDNU Sore',
+      'mdnu_pel1': 'MDNU Pel 1',
+      'mdnu_pel2': 'MDNU Pel 2',
+      'mdnu_pel3': 'MDNU Pel 3',
+    };
+    const labels = sessList.map(s => labelMap[s] || s);
+    return labels.length > 0 ? labels.join(', ') : 'Seharian Penuh';
+  },
+
+  /**
    * Mengambil sesi yang sedang berlangsung saat ini (Real-time active session detector)
    * Berguna untuk portal Ustadz agar langsung membuka sesi yang pas tanpa pilih manual
    * @param {'mdnu'|'asrama'} category
@@ -511,12 +588,13 @@ const PPNURules = {
     const ovrMalam = manualCellOverrides[`${cleanPin}__${dateISO}__malam__asrama`];
     const hasIzinSubuh = permissionDetailsMap[`${cleanPin}__${dateISO}__subuh__asrama`];
     const hasIzinMalam = permissionDetailsMap[`${cleanPin}__${dateISO}__malam__asrama`];
-    const isSpecialLibur = (specialLiburAsrama && specialLiburAsrama[dateISO]) || (holidaysData && holidaysData[dateISO]);
+    const isSpecialLiburSubuh = (specialLiburAsrama && specialLiburAsrama[dateISO]) || this.isSessionHoliday(holidaysData, dateISO, 'asrama', 'subuh');
+    const isSpecialLiburMalam = (specialLiburAsrama && specialLiburAsrama[dateISO]) || this.isSessionHoliday(holidaysData, dateISO, 'asrama', 'malam');
 
     // 1. Evaluasi Subuh
     let subuh = '-';
     const subuhTime = raw.subuh_time || '';
-    if (isSpecialLibur) {
+    if (isSpecialLiburSubuh) {
       subuh = 'LIBUR';
     } else if (isLajuOnDate) {
       subuh = 'LAJU';
@@ -541,7 +619,7 @@ const PPNURules = {
     const malamTime = raw.malam_time || '';
     const isJadwalMalam = (dayOfWeek === 4 || dayOfWeek === 5 || (dayOfWeek === 0 && is1UA));
 
-    if (isSpecialLibur) {
+    if (isSpecialLiburMalam) {
       malam = 'LIBUR';
     } else if (isLajuOnDate) {
       malam = 'LAJU';
@@ -607,7 +685,6 @@ const PPNURules = {
     }
 
     const isBeforeStart = (dateISO < '2026-07-18');
-    const isSpecialLibur = holidaysData && holidaysData[dateISO];
     const settingMalamSabtu = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[dateISO]) || 'pel1';
 
     const res = {
@@ -625,6 +702,7 @@ const PPNURules = {
       const ovr = manualCellOverrides[`${cleanPin}__${dateISO}__${sess}__mdnu`];
       const hasIzin = permissionDetailsMap[`${cleanPin}__${dateISO}__${sess}__mdnu`];
       const scanTime = raw[`${sess}_time`] || '';
+      const isSpecialLibur = this.isSessionHoliday(holidaysData, dateISO, 'mdnu', sess);
 
       let isScheduled = false;
       if (sess === 'sore') {
