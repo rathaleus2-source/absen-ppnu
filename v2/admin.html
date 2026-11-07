@@ -1480,9 +1480,11 @@
                         dateISO,
                         dayOfWeek,
                         asramaMatrix: asramaMatrixData,
+                        mdnuMatrix: mdnuMatrixData,
                         manualCellOverrides,
                         permissionDetailsMap,
                         specialLiburAsrama,
+                        settingMalamSabtuPerTanggal,
                         holidaysData,
                         statusSantriAsrama,
                         tglMulaiLajuSantri,
@@ -1540,9 +1542,11 @@
                       dateISO,
                       dayOfWeek,
                       asramaMatrix: asramaMatrixData,
+                      mdnuMatrix: mdnuMatrixData,
                       manualCellOverrides,
                       permissionDetailsMap,
                       specialLiburAsrama,
+                      settingMalamSabtuPerTanggal,
                       holidaysData,
                       statusSantriAsrama,
                       tglMulaiLajuSantri,
@@ -1659,9 +1663,11 @@
                 dateISO: d.dateISO,
                 dayOfWeek: d.dayOfWeek,
                 asramaMatrix: asramaMatrixData,
+                mdnuMatrix: mdnuMatrixData,
                 manualCellOverrides,
                 permissionDetailsMap,
                 specialLiburAsrama,
+                settingMalamSabtuPerTanggal,
                 holidaysData,
                 statusSantriAsrama,
                 tglMulaiLajuSantri,
@@ -1774,6 +1780,7 @@
                         dateISO,
                         dayOfWeek,
                         mdnuMatrix: mdnuMatrixData,
+                        asramaMatrix: asramaMatrixData,
                         manualCellOverrides,
                         permissionDetailsMap,
                         settingMalamSabtuPerTanggal,
@@ -1830,6 +1837,7 @@
                       dateISO,
                       dayOfWeek,
                       mdnuMatrix: mdnuMatrixData,
+                      asramaMatrix: asramaMatrixData,
                       manualCellOverrides,
                       permissionDetailsMap,
                       settingMalamSabtuPerTanggal,
@@ -1949,6 +1957,7 @@
                 dateISO: d.dateISO,
                 dayOfWeek: d.dayOfWeek,
                 mdnuMatrix: mdnuMatrixData,
+                asramaMatrix: asramaMatrixData,
                 manualCellOverrides,
                 permissionDetailsMap,
                 settingMalamSabtuPerTanggal,
@@ -2578,7 +2587,7 @@
       container.innerHTML = tabsHtml + cardsHtml;
     }
 
-    function ubahSettingMalamSabtuTanggal(dateISO, sesi) {
+    async function ubahSettingMalamSabtuTanggal(dateISO, sesi) {
       if (dateISO <= '2026-09-30') {
         alert('Tanggal ini sudah di-freeze (kunci mutlak) untuk menjaga integritas data historis.');
         return;
@@ -2594,16 +2603,62 @@
       } catch (e) {}
 
       const root = (window.PPNUConfig && window.PPNUConfig.ROOT_PATH) || 'absensi_ppnu';
-      db.ref(`${root}/settingMalamSabtuPerTanggal/${dateISO}`).set(sesi)
-        .then(() => {
-          renderAdminPanelMalamSabtu();
-          if (typeof renderAsramaSpreadsheet === 'function') renderAsramaSpreadsheet();
-          if (typeof renderMDNUSpreadsheet === 'function') renderMDNUSpreadsheet();
-        })
-        .catch(err => {
-          console.error('Gagal menyimpan setting Malam Sabtu:', err);
-          alert('Gagal menyimpan ke Firebase: ' + err.message);
-        });
+
+      // Atomic update multi-path: update setting dan re-distribusikan jam scan yang sudah ada
+      const updates = {};
+      updates[`${root}/settingMalamSabtuPerTanggal/${dateISO}`] = sesi;
+
+      const allPins = Object.keys(rawSantriList.reduce((acc, s) => { acc[s.pin] = true; return acc; }, {}));
+      allPins.forEach(pin => {
+        const a_rec = (asramaMatrixData[pin] && asramaMatrixData[pin][dateISO]) || {};
+        const m_rec = (mdnuMatrixData[pin] && mdnuMatrixData[pin][dateISO]) || {};
+        if (!a_rec.malam_time && !m_rec.pel1_time && !m_rec.pel2_time && !m_rec.pel3_time) return;
+
+        const resolved = (window.PPNURules && window.PPNURules.resolveMalamSabtuScans)
+          ? window.PPNURules.resolveMalamSabtuScans(a_rec, m_rec)
+          : { j1: '', j2: '', j3: '' };
+
+        const newA = Object.assign({}, a_rec);
+        const newM = Object.assign({}, m_rec);
+
+        if (sesi === 'pel1') {
+          if (resolved.j1) { newA.malam = 'H'; newA.malam_time = resolved.j1; }
+          else { newA.malam = 'A'; newA.malam_time = ''; }
+          newM.pel1 = 'LIBUR'; delete newM.pel1_time;
+          if (resolved.j2) { newM.pel2 = 'H'; newM.pel2_time = resolved.j2; }
+          if (resolved.j3) { newM.pel3 = 'H'; newM.pel3_time = resolved.j3; }
+        } else if (sesi === 'pel2') {
+          if (resolved.j2) { newA.malam = 'H'; newA.malam_time = resolved.j2; }
+          else { newA.malam = 'A'; newA.malam_time = ''; }
+          if (resolved.j1) { newM.pel1 = 'H'; newM.pel1_time = resolved.j1; }
+          newM.pel2 = 'LIBUR'; delete newM.pel2_time;
+          if (resolved.j3) { newM.pel3 = 'H'; newM.pel3_time = resolved.j3; }
+        } else if (sesi === 'pel3') {
+          if (resolved.j3) { newA.malam = 'H'; newA.malam_time = resolved.j3; }
+          else { newA.malam = 'A'; newA.malam_time = ''; }
+          if (resolved.j1) { newM.pel1 = 'H'; newM.pel1_time = resolved.j1; }
+          if (resolved.j2) { newM.pel2 = 'H'; newM.pel2_time = resolved.j2; }
+          newM.pel3 = 'LIBUR'; delete newM.pel3_time;
+        }
+
+        if (!asramaMatrixData[pin]) asramaMatrixData[pin] = {};
+        if (!mdnuMatrixData[pin]) mdnuMatrixData[pin] = {};
+        asramaMatrixData[pin][dateISO] = newA;
+        mdnuMatrixData[pin][dateISO] = newM;
+
+        updates[`${root}/asramaMatrix/${pin}/${dateISO}`] = newA;
+        updates[`${root}/mdnuMatrix/${pin}/${dateISO}`] = newM;
+      });
+
+      try {
+        await db.ref().update(updates);
+        renderAdminPanelMalamSabtu();
+        if (typeof renderAsramaSpreadsheet === 'function') renderAsramaSpreadsheet();
+        if (typeof renderMDNUSpreadsheet === 'function') renderMDNUSpreadsheet();
+      } catch (err) {
+        console.error('Gagal menyimpan setting Malam Sabtu:', err);
+        alert('Gagal menyimpan ke Firebase: ' + err.message);
+      }
     }
 
     // ================= TAB 4: MANAJEMEN HARI LIBUR =================

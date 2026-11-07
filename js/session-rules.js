@@ -536,6 +536,37 @@ const PPNURules = {
   },
 
   /**
+   * Helper cerdas: mendistribusikan jam scan Jumat malam (Malam Sabtu)
+   * Mengumpulkan seluruh rekaman scan malam (dari Asrama maupun MDNU)
+   * lalu mengalokasikannya secara dinamis sesuai setting Malam Sabtu (pel1, pel2, atau pel3).
+   */
+  resolveMalamSabtuScans(asrRaw = {}, mdnRaw = {}) {
+    const times = [
+      asrRaw ? asrRaw.malam_time : '',
+      mdnRaw ? mdnRaw.pel1_time : '',
+      mdnRaw ? mdnRaw.pel2_time : '',
+      mdnRaw ? mdnRaw.pel3_time : ''
+    ].filter(Boolean);
+
+    let j1 = '', j2 = '', j3 = '';
+    times.forEach(t => {
+      const parts = String(t).split(':');
+      if (parts.length >= 2) {
+        const mins = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+        if (mins >= 18 * 60 + 30 && mins < 19 * 60 + 40) {
+          if (!j1 || mins < (parseInt(j1.split(':')[0], 10) * 60 + parseInt(j1.split(':')[1], 10))) j1 = t;
+        } else if (mins >= 19 * 60 + 40 && mins < 21 * 60) {
+          if (!j2 || mins < (parseInt(j2.split(':')[0], 10) * 60 + parseInt(j2.split(':')[1], 10))) j2 = t;
+        } else if (mins >= 21 * 60 && mins <= 22 * 60 + 30) {
+          if (!j3 || mins < (parseInt(j3.split(':')[0], 10) * 60 + parseInt(j3.split(':')[1], 10))) j3 = t;
+        }
+      }
+    });
+
+    return { j1, j2, j3 };
+  },
+
+  /**
    * Evaluasi cerdas status kehadiran santri pada Asrama (Subuh & Malam)
    * Menggabungkan riwayat database, scan fisik, izin resmi, dispensasi laju, dan cutoff
    */
@@ -544,9 +575,11 @@ const PPNURules = {
     dateISO,
     dayOfWeek,
     asramaMatrix = {},
+    mdnuMatrix = {},
     manualCellOverrides = {},
     permissionDetailsMap = {},
     specialLiburAsrama = {},
+    settingMalamSabtuPerTanggal = {},
     holidaysData = {},
     statusSantriAsrama = {},
     tglMulaiLajuSantri = {},
@@ -616,7 +649,21 @@ const PPNURules = {
 
     // 2. Evaluasi Malam
     let malam = '-';
-    const malamTime = raw.malam_time || '';
+    let malamTime = raw.malam_time || '';
+
+    // Resolusi cerdas khusus Jumat malam (Malam Sabtu):
+    if (dayOfWeek === 5 && mdnuMatrix && mdnuMatrix[cleanPin]) {
+      const mdnRaw = (mdnuMatrix[cleanPin] && mdnuMatrix[cleanPin][dateISO]) || {};
+      const resolved = this.resolveMalamSabtuScans(raw, mdnRaw);
+      const targetSlot = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[dateISO]) || 'pel1';
+      if (targetSlot === 'pel1' && resolved.j1) malamTime = resolved.j1;
+      else if (targetSlot === 'pel2' && resolved.j2) malamTime = resolved.j2;
+      else if (targetSlot === 'pel3' && resolved.j3) malamTime = resolved.j3;
+      else if ((targetSlot === 'pel1' && !resolved.j1) || (targetSlot === 'pel2' && !resolved.j2) || (targetSlot === 'pel3' && !resolved.j3)) {
+        malamTime = '';
+      }
+    }
+
     const isJadwalMalam = (dayOfWeek === 4 || dayOfWeek === 5 || (dayOfWeek === 0 && is1UA));
 
     if (isSpecialLiburMalam) {
@@ -625,9 +672,9 @@ const PPNURules = {
       malam = 'LAJU';
     } else if (ovrMalam !== undefined) {
       malam = ovrMalam;
-    } else if (raw.malam_time) {
+    } else if (malamTime) {
       malam = 'H'; // Scan fisik mesin selalu hadir!
-    } else if (raw.malam && raw.malam !== '-' && raw.malam !== '') {
+    } else if (raw.malam && raw.malam !== '-' && raw.malam !== '' && raw.malam !== 'LIBUR') {
       malam = raw.malam;
     } else if (hasIzinMalam) {
       malam = 'I';
@@ -656,6 +703,7 @@ const PPNURules = {
     dateISO,
     dayOfWeek,
     mdnuMatrix = {},
+    asramaMatrix = {},
     manualCellOverrides = {},
     permissionDetailsMap = {},
     settingMalamSabtuPerTanggal = {},
@@ -687,6 +735,12 @@ const PPNURules = {
     const isBeforeStart = (dateISO < '2026-07-18');
     const settingMalamSabtu = (settingMalamSabtuPerTanggal && settingMalamSabtuPerTanggal[dateISO]) || 'pel1';
 
+    let resolvedMdn = { j1: '', j2: '', j3: '' };
+    if (dayOfWeek === 5 && asramaMatrix && asramaMatrix[cleanPin]) {
+      const asrRaw = (asramaMatrix[cleanPin] && asramaMatrix[cleanPin][dateISO]) || {};
+      resolvedMdn = this.resolveMalamSabtuScans(asrRaw, raw);
+    }
+
     const res = {
       sore: '-',
       pel1: '-',
@@ -701,7 +755,14 @@ const PPNURules = {
     ['sore', 'pel1', 'pel2', 'pel3'].forEach(sess => {
       const ovr = manualCellOverrides[`${cleanPin}__${dateISO}__${sess}__mdnu`];
       const hasIzin = permissionDetailsMap[`${cleanPin}__${dateISO}__${sess}__mdnu`];
-      const scanTime = raw[`${sess}_time`] || '';
+      let scanTime = raw[`${sess}_time`] || '';
+
+      if (dayOfWeek === 5) {
+        if (sess === 'pel1') scanTime = resolvedMdn.j1 || scanTime;
+        else if (sess === 'pel2') scanTime = resolvedMdn.j2 || scanTime;
+        else if (sess === 'pel3') scanTime = resolvedMdn.j3 || scanTime;
+      }
+
       const isSpecialLibur = this.isSessionHoliday(holidaysData, dateISO, 'mdnu', sess);
 
       let isScheduled = false;
@@ -725,6 +786,7 @@ const PPNURules = {
         res[sess] = ovr;
       } else if (scanTime) {
         res[sess] = 'H'; // Scan fisik mesin selalu hadir!
+        res[`${sess}_time`] = scanTime;
       } else if (hasIzin) {
         res[sess] = 'I'; // Izin resmi Pos Keamanan / Kesiswaan
       } else if (raw[sess] && raw[sess] !== '-' && raw[sess] !== '' && raw[sess] !== 'LIBUR') {
