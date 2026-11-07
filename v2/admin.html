@@ -585,7 +585,8 @@
         <div class="flex items-center gap-2">
           <label for="selectBulanMalamSabtu" class="text-[11px] font-bold text-amber-200">Pilih Bulan:</label>
           <select id="selectBulanMalamSabtu" onchange="renderAdminPanelMalamSabtu()" class="text-xs font-bold bg-amber-900/80 border border-amber-400/40 rounded-xl px-2.5 py-1.5 text-white focus:ring-1 focus:ring-amber-300 cursor-pointer">
-            <option value="2026-10" selected>Oktober 2026 (Aktif)</option>
+            <option value="2026-11" selected>November 2026 (Aktif)</option>
+            <option value="2026-10">Oktober 2026</option>
             <option value="2026-09">September 2026</option>
             <option value="2026-08">Agustus 2026</option>
             <option value="2026-07">Juli 2026</option>
@@ -1051,7 +1052,8 @@
     function populateMonthDropdowns() {
       const selAsr = document.getElementById('selectMonthAsrama');
       const selMdn = document.getElementById('selectMonthMDNU');
-      if (!selAsr && !selMdn) return;
+      const selSabtu = document.getElementById('selectBulanMalamSabtu');
+      if (!selAsr && !selMdn && !selSabtu) return;
 
       const monthNames = [
         'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -1092,6 +1094,23 @@
           sel.value = months[0].key;
         }
       });
+
+      if (selSabtu) {
+        const prevVal = selSabtu.value;
+        let html = '';
+        if (months.length > 0) {
+          html += `<option value="${months[0].key}">${months[0].label} (Aktif)</option>`;
+        }
+        for (let i = 1; i < months.length; i++) {
+          html += `<option value="${months[i].key}">${months[i].label}</option>`;
+        }
+        selSabtu.innerHTML = html;
+        if (prevVal && months.some(m => m.key === prevVal)) {
+          selSabtu.value = prevVal;
+        } else if (months.length > 0) {
+          selSabtu.value = months[0].key;
+        }
+      }
     }
 
     function startLiveClock() {
